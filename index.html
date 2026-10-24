@@ -390,6 +390,8 @@ render();
    currentUser=user;clearError();
    try{
      await loadMembership();
+     window.noorApp={client:client,getCurrentUser:function(){return currentUser},getMembership:function(){return membership},canEdit:canEdit,toast:toast,refreshData:refreshData};
+     window.dispatchEvent(new CustomEvent('noor:session-ready'));
      const role=membership.role||'member';
      const roleLabel=document.getElementById('role-label');if(roleLabel)roleLabel.textContent=role.replace(/_/g,' ').replace(/\b\w/g,function(ch){return ch.toUpperCase()});
      const avatar=document.getElementById('avatar-label');if(avatar)avatar.textContent=role.charAt(0).toUpperCase();
@@ -443,7 +445,7 @@ render();
  });
  client.auth.onAuthStateChange(function(event,session){
    if(event==='PASSWORD_RECOVERY'){showPasswordReset();return}
-   if(event==='SIGNED_OUT'){currentUser=null;membership=null;resetForm.style.display='none';authForm.style.display='block';onboardingForm.style.display='none';resetToEmpty();gate.classList.add('open')}
+   if(event==='SIGNED_OUT'){currentUser=null;membership=null;window.noorApp=null;window.dispatchEvent(new CustomEvent('noor:session-ended'));resetForm.style.display='none';authForm.style.display='block';onboardingForm.style.display='none';resetToEmpty();gate.classList.add('open')}
  });
  resetForm.addEventListener('submit',async function(e){
    e.preventDefault();resetError.textContent='';resetError.style.display='none';
@@ -466,5 +468,6 @@ render();
  })();
 })();
 </script>
+<script src="./teacher-dashboard.js?v=20261024-live-v1"></script>
 
 </body></html>

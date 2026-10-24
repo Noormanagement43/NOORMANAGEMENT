@@ -43,4 +43,4 @@ Type-check server-side functions with Deno 2:
 deno check supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts
 ```
 
-The existing `NOOR static quality checks` workflow runs the expanded Node suite on pull requests and now includes Deno type-checking for the server-side functions. The prior run from the earlier branch is not evidence for this updated branch. This is static verification only; staging browser tests and RLS isolation tests are still required.
+The existing `NOOR static quality checks` workflow runs the expanded Node suite on pull requests and now includes Deno type-checking for the server-side functions. GitHub Actions run 40082096128 passed the Node static regression suite and frozen Deno type-check on this PR head. This is static verification only; staging browser tests and RLS isolation tests are still required.

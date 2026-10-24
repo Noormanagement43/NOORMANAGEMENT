@@ -26,7 +26,7 @@
     <button data-view="Announcements"><span class="ico">♧</span> Announcements</button>
     <button data-view="Settings"><span class="ico">⚙</span> Settings</button>
   </nav></div>
-  <div class="side-bottom"><strong>NOOR Campus</strong>Teacher workspace<br>Preview data · Not connected to a live database</div>
+  <div class="side-bottom"><strong>NOOR Campus</strong>Teacher workspace<br>Secure sign-in · Institution-scoped live data</div>
 </aside>
 <main class="main">
   <div class="topbar"><div class="crumb">Workspace&nbsp; / &nbsp;<b id="crumb-view">Dashboard</b></div><div class="top-actions"><select class="role" id="role-select" aria-label="Preview role"><option>Teacher workspace</option><option>Principal workspace (preview)</option><option>Student workspace (preview)</option></select><div class="avatar">T</div></div></div>
@@ -34,8 +34,8 @@
   <section class="stats" aria-label="Overview statistics">
     <article class="stat"><div class="stat-top">My students <span class="stat-icon">♙</span></div><strong id="student-count">128</strong><small><span class="positive">↑ 8%</span> this term · sample figures</small></article>
     <article class="stat"><div class="stat-top">Classes today <span class="stat-icon">▦</span></div><strong id="class-count">04</strong><small>Across your timetable</small></article>
-    <article class="stat"><div class="stat-top">Attendance rate <span class="stat-icon">✓</span></div><strong>94.6%</strong><small>Illustrative weekly average</small></article>
-    <article class="stat"><div class="stat-top">Pending work <span class="stat-icon">✎</span></div><strong>12</strong><small>Assignments to review · demo</small></article>
+    <article class="stat"><div class="stat-top">Attendance rate <span class="stat-icon">✓</span></div><strong>94.6%</strong><small>Requires signed-in institution data</small></article>
+    <article class="stat"><div class="stat-top">Pending work <span class="stat-icon">✎</span></div><strong>12</strong><small>Live records · signed-in account</small></article>
   </section>
   <section class="content-grid">
     <article class="panel"><div class="panel-head"><div><h2>My classes</h2><p>Manage your classes and subjects</p></div><button class="text-btn" id="manage-classes">Manage all ↗</button></div><div class="class-list" id="class-list"></div></article>
@@ -46,7 +46,7 @@
       <div class="event"><time>01:30 PM</time><div class="event-line"></div><div><strong>Mathematics</strong><small>Grade 7 · Room 201</small></div></div>
     </div><div class="notice"><span>✦</span><div><strong>A little reminder</strong><p>Review pending assignments before the end of the day.</p></div></div></article>
   </section>
-  <section class="panel lower"><div class="panel-head"><div><h2>Class attendance</h2><p>Example student list · sample data only</p></div><button class="text-btn" data-nav="Attendance">Open attendance ↗</button></div><div class="table-wrap"><table class="attendance"><thead><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Status</th></tr></thead><tbody>
+  <section class="panel lower"><div class="panel-head"><div><h2>Class attendance</h2><p>Live attendance records available to your account</p></div><button class="text-btn" data-nav="Attendance">Open attendance ↗</button></div><div class="table-wrap"><table class="attendance"><thead><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Status</th></tr></thead><tbody>
   <tr><td><div class="student"><span class="student-avatar">AR</span>Aarav Reddy</div></td><td>Grade 8-A</td><td>96%</td><td><span class="status">Present</span></td></tr>
   <tr><td><div class="student"><span class="student-avatar">SK</span>Sana Khan</div></td><td>Grade 8-A</td><td>91%</td><td><span class="status">Present</span></td></tr>
   <tr><td><div class="student"><span class="student-avatar">MI</span>Mihir Iyer</div></td><td>Grade 9-B</td><td>84%</td><td><span class="status late">Needs review</span></td></tr>
@@ -55,7 +55,7 @@
   <div class="footer">NOOR · Intelligent School &amp; University Operating System · Frontend preview</div>
 </main>
 </div>
-<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title"><form class="modal" id="class-form"><h2 id="modal-title">Add a class</h2><p>Create or edit a class in this local preview. Changes are saved in this browser only.</p><input type="hidden" id="class-id"><div class="field"><label for="class-name">Class name</label><input id="class-name" required maxlength="70" placeholder="e.g. Grade 8-A"></div><div class="field"><label for="class-subject">Subject</label><input id="class-subject" required maxlength="70" placeholder="e.g. Mathematics"></div><div class="field"><label for="class-room">Room / schedule</label><input id="class-room" required maxlength="90" placeholder="e.g. Room 204 · 09:00 AM"></div><div class="field"><label for="class-students">Number of students</label><input id="class-students" type="number" min="0" max="1000" value="30" required></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Cancel</button><button type="submit" class="primary">Save class</button></div></form></div><div class="toast" id="toast" role="status"></div>
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title"><form class="modal" id="class-form"><h2 id="modal-title">Add a class</h2><p>Create or edit a class in this local preview. Changes are saved in this browser only.</p><input type="hidden" id="class-id"><div class="field"><label for="class-name">Class / section name</label><input id="class-name" required maxlength="70" placeholder="e.g. Grade 8-A"></div><div class="field"><label for="class-subject">Subject</label><input id="class-subject" required maxlength="70" placeholder="e.g. Mathematics"></div><div class="field"><label for="class-room">Room / schedule</label><input id="class-room" required maxlength="90" placeholder="e.g. Room 204 · 09:00 AM"></div><div class="field"><label for="class-students">Class capacity (optional)</label><input id="class-students" type="number" min="0" max="1000" value="30"></div><div class="field"><label for="class-type">Group type</label><select id="class-type"><option value="class">Class</option><option value="section">Section</option></select></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Cancel</button><button type="submit" class="primary">Save class</button></div></form></div><div class="toast" id="toast" role="status"></div>
 <script>
 const initialClasses=[
 {id:1,name:'Grade 8-A',subject:'Mathematics',room:'Room 204 · 09:00 AM',students:32,status:'Active'},
@@ -76,4 +76,189 @@ document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',(
 document.getElementById('role-select').addEventListener('change',e=>{const role=e.target.value;document.getElementById('greeting').textContent=role.startsWith('Principal')?'Welcome, Principal 👋':role.startsWith('Student')?'Welcome to your learning space 👋':'Good morning, Teacher 👋';toast('Role preview changed. Role-based access is not implemented yet.')});
 render();
 </script>
+
+<!-- noor-live-data-layer: authentication and institution-scoped live data -->
+<style>
+#noor-auth-gate{position:fixed;inset:0;z-index:1000;background:#1c1016cc;display:none;align-items:center;justify-content:center;padding:18px}
+#noor-auth-gate.open{display:flex}
+.noor-auth-card{width:min(100%,430px);background:#fffdfb;border:1px solid #eadfe3;border-radius:20px;padding:26px;box-shadow:0 24px 80px #0004}
+.noor-auth-card h2{margin:0 0 7px;color:#641c35;font-size:25px}
+.noor-auth-card p{color:#827982;font-size:13px;margin:0 0 18px}
+.noor-auth-card label{display:block;font-size:12px;font-weight:750;margin:12px 0 6px}
+.noor-auth-card input{width:100%;padding:12px;border:1px solid #eadfe3;border-radius:10px}
+.noor-auth-card .auth-actions{display:flex;gap:8px;align-items:center;margin-top:16px}
+.noor-auth-card button{border:0;border-radius:10px;padding:11px 14px}
+#noor-auth-submit{background:#641c35;color:#fff;font-weight:750;flex:1}
+#noor-auth-mode{background:#f4e7eb;color:#641c35}
+#noor-auth-error{display:none;background:#fff0f0;color:#9c2636;border-radius:9px;padding:10px;margin-top:12px;font-size:12px}
+#noor-live-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-12px 0 18px;font-size:12px;color:#827982}
+#noor-live-status .badge{border-radius:99px;background:#e6f4ed;color:#247a59;padding:5px 9px;font-weight:800}
+#noor-signout{border:1px solid #eee5e7;background:#fff;color:#641c35;border-radius:9px;padding:7px 10px}
+.live-empty{padding:18px;text-align:center;color:#827982;border:1px dashed #eadfe3;border-radius:12px;font-size:12px}
+</style>
+<div id="noor-auth-gate" class="open" role="dialog" aria-modal="true" aria-labelledby="noor-auth-title">
+ <form class="noor-auth-card" id="noor-auth-form">
+  <div class="eyebrow">NOOR · Secure campus access</div><h2 id="noor-auth-title">Sign in to your campus</h2>
+  <p>Dashboard figures and class records load from your institution after authentication. No demo figures are shown as live data.</p>
+  <label for="noor-auth-email">Email address</label><input id="noor-auth-email" type="email" autocomplete="username" required placeholder="you@school.edu">
+  <label for="noor-auth-password">Password</label><input id="noor-auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="Your password">
+  <div class="auth-actions"><button id="noor-auth-submit" type="submit">Sign in</button><button id="noor-auth-mode" type="button">Create account</button></div>
+  <div id="noor-auth-error" role="alert"></div>
+ </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+ 'use strict';
+ const SUPABASE_URL='https://ayrryemawwplguaauxij.supabase.co';
+ const SUPABASE_KEY='sb_publishable_2e16MAulIE1locqlRov9iQ_VWtCjwOG';
+ const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ const gate=document.getElementById('noor-auth-gate');
+ const form=document.getElementById('noor-auth-form');
+ const errorBox=document.getElementById('noor-auth-error');
+ const submit=document.getElementById('noor-auth-submit');
+ const modeBtn=document.getElementById('noor-auth-mode');
+ let mode='signin', currentUser=null, membership=null, liveGroups=[];
+ const adminRoles=['principal','school_admin','university_admin','academic_admin'];
+ function error(message){errorBox.textContent=message;errorBox.style.display='block'}
+ function clearError(){errorBox.textContent='';errorBox.style.display='none'}
+ function setLoading(on){submit.disabled=on;submit.textContent=on?'Please wait…':(mode==='signin'?'Sign in':'Create account')}
+ function escapeText(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
+ function emptyBox(message){return '<div class="live-empty">'+escapeText(message)+'</div>'}
+ function resetToEmpty(){
+   document.getElementById('class-list').innerHTML=emptyBox('Sign in to load real classes and sections.');
+   document.querySelector('.schedule').innerHTML=emptyBox('Timetable will appear when live class sessions are available.');
+   const tbody=document.querySelector('.attendance tbody'); if(tbody) tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Sign in to view attendance records.')+'</td></tr>';
+   document.getElementById('student-count').textContent='—';
+   document.getElementById('class-count').textContent='—';
+   const statValues=document.querySelectorAll('.stats .stat strong'); if(statValues[2]) statValues[2].textContent='—'; if(statValues[3]) statValues[3].textContent='—';
+   const statsSmall=document.querySelectorAll('.stats .stat small'); if(statsSmall[0]) statsSmall[0].textContent='Live institution memberships'; if(statsSmall[1]) statsSmall[1].textContent='Active class and section records'; if(statsSmall[2]) statsSmall[2].textContent='Based on accessible marked records'; if(statsSmall[3]) statsSmall[3].textContent='Accessible attendance records';
+ }
+ function addLiveStatus(){
+   let bar=document.getElementById('noor-live-status');
+   if(!bar){bar=document.createElement('div');bar.id='noor-live-status';const heading=document.querySelector('.heading');heading.insertAdjacentElement('afterend',bar)}
+   const inst=membership && membership.institutions;
+   bar.innerHTML='<span class="badge">LIVE DATA</span><span>'+escapeText(currentUser.email||'Signed in')+'</span><span>·</span><span>'+escapeText(inst&&inst.name||'Institution workspace')+'</span><button id="noor-signout" type="button">Sign out</button>';
+   document.getElementById('noor-signout').onclick=async function(){await client.auth.signOut();location.reload()};
+ }
+ function showGate(message){
+   gate.classList.add('open');
+   if(message) error(message);
+ }
+ async function loadMembership(){
+   const res=await client.from('institution_memberships').select('id,institution_id,role,status,institutions(name,timezone,institution_type)').eq('user_id',currentUser.id).eq('status','active');
+   if(res.error) throw res.error;
+   membership=(res.data||[])[0]||null;
+   if(!membership) throw new Error('Your account is signed in, but it is not linked to an active school or university yet. Ask your institution administrator to activate your membership.');
+ }
+ function canEdit(){return !!membership&&adminRoles.indexOf(membership.role)>=0}
+ async function loadGroups(){
+   const result=await client.from('academic_groups').select('id,name,code,group_type,description,room_label,capacity,is_active,academic_group_memberships(group_role,status)').eq('institution_id',membership.institution_id).eq('is_active',true).order('name');
+   if(result.error) throw result.error;
+   liveGroups=(result.data||[]).map(function(g){const members=g.academic_group_memberships||[];return {id:g.id,name:g.name,subject:g.description||'',room:g.room_label||'Room not assigned',students:members.filter(function(m){return m.group_role==='student'&&m.status==='active'}).length,capacity:g.capacity,type:g.group_type,status:'Active',code:g.code||''}});
+   renderLiveGroups();
+ }
+ function renderLiveGroups(){
+   const list=document.getElementById('class-list');list.innerHTML='';
+   if(!liveGroups.length) list.innerHTML=emptyBox('No active classes or sections found for this institution yet.');
+   liveGroups.forEach(function(c){
+     const row=document.createElement('div');row.className='class-row';
+     row.innerHTML='<div class="class-mark"></div><div><strong class="cn"></strong><small class="cs"></small></div><span class="pill">Active</span><div class="row-actions"></div>';
+     row.querySelector('.class-mark').textContent=(c.code||c.name.split(/\s+/).slice(-1)[0]).slice(0,4);
+     row.querySelector('.cn').textContent=c.name;
+     row.querySelector('.cs').textContent=(c.type||'class')+' · '+(c.subject||'No subject specified')+' · '+c.students+' enrolled'+(c.capacity?' · capacity '+c.capacity:'')+' · '+c.room;
+     if(canEdit()){
+       const actions=row.querySelector('.row-actions');
+       const edit=document.createElement('button');edit.className='mini';edit.textContent='Edit';edit.onclick=function(){openLiveModal(c)};
+       const del=document.createElement('button');del.className='mini';del.textContent='Delete';del.onclick=async function(){if(!confirm('Delete '+c.name+'? This removes the active class/section record.'))return;const r=await client.from('academic_groups').delete().eq('id',c.id).eq('institution_id',membership.institution_id);if(r.error){toast('Delete failed: '+r.error.message);return}toast('Class/section deleted');await refreshData()};
+       actions.append(edit,del);
+     }
+     list.appendChild(row);
+   });
+   document.getElementById('class-count').textContent=String(liveGroups.length).padStart(2,'0');
+   document.getElementById('student-count').textContent=String(liveGroups.reduce(function(n,c){return n+c.students},0));
+   document.getElementById('add-class').style.display=canEdit()?'':'none';
+   document.getElementById('manage-classes').style.display=canEdit()?'':'none';
+   const formCapacity=document.getElementById('class-students');formCapacity.min='';formCapacity.removeAttribute('required');
+ }
+ function openLiveModal(c){
+   if(!canEdit()){toast('Only institution academic administrators can edit classes.');return}
+   form.dataset.liveEdit=c?c.id:'';
+   document.getElementById('class-id').value=c?c.id:'';
+   document.getElementById('class-name').value=c?c.name:'';
+   document.getElementById('class-subject').value=c?c.subject:'';
+   document.getElementById('class-room').value=c&&c.room!=='Room not assigned'?c.room:'';
+   document.getElementById('class-students').value=c&&c.capacity!=null?c.capacity:'';
+   document.getElementById('class-type').value=c&&c.type?c.type:'class';
+   document.getElementById('modal-title').textContent=c?'Edit class / section':'Add a class / section';
+   document.querySelector('#class-form .modal>p').textContent='Changes are saved to your institution database.';
+   document.getElementById('class-students').required=false;
+   document.getElementById('class-students').placeholder='Optional capacity';
+   document.getElementById('modal-backdrop').classList.add('open');
+   document.getElementById('class-name').focus();
+ }
+ async function refreshData(){
+   try{
+     await loadGroups();
+     const ids=liveGroups.map(function(g){return g.id});
+     const attendance=await client.from('attendance_records').select('attendance_status').eq('institution_id',membership.institution_id);
+     if(!attendance.error){
+       const rows=attendance.data||[], present=rows.filter(function(r){return r.attendance_status==='present'}).length, denominator=rows.filter(function(r){return ['present','absent','late'].includes(r.attendance_status)}).length;
+       const stats=document.querySelectorAll('.stats .stat strong');if(stats[2])stats[2].textContent=denominator?Math.round(present/denominator*1000)/10+'%':'—';if(stats[3])stats[3].textContent=String(rows.length);
+     }
+     document.querySelector('.stats .stat:nth-child(1) .stat-top').childNodes[0].textContent='Students in visible groups ';
+     document.querySelector('.stats .stat:nth-child(2) .stat-top').childNodes[0].textContent='Active classes / sections ';
+     document.querySelector('.stats .stat:nth-child(3) .stat-top').childNodes[0].textContent='Attendance rate ';
+     document.querySelector('.stats .stat:nth-child(4) .stat-top').childNodes[0].textContent='Attendance records ';
+     document.querySelector('.heading .eyebrow').textContent='LIVE · '+(membership.institutions&&membership.institutions.institution_type==='university'?'UNIVERSITY':'SCHOOL')+' OVERVIEW';
+     document.querySelector('.heading p').textContent='Live records for your authorized institution.';
+   }catch(e){toast('Could not refresh live data: '+e.message)}
+ }
+ async function startSession(user){
+   currentUser=user;clearError();
+   try{await loadMembership();gate.classList.remove('open');addLiveStatus();await refreshData()}
+   catch(e){resetToEmpty();showGate(e.message||'Could not load your institution membership.')}
+ }
+ form.addEventListener('submit',async function(e){
+   e.preventDefault();clearError();setLoading(true);
+   const email=document.getElementById('noor-auth-email').value.trim(),password=document.getElementById('noor-auth-password').value;
+   try{
+     if(mode==='signin'){
+       const r=await client.auth.signInWithPassword({email:email,password:password});if(r.error)throw r.error;await startSession(r.data.user);
+     }else{
+       const r=await client.auth.signUp({email:email,password:password});if(r.error)throw r.error;
+       if(r.data.session){await startSession(r.data.user)}else{error('Account created. Confirm your email, then sign in.')}
+     }
+   }catch(e){error(e.message||'Authentication failed.')}
+   finally{setLoading(false)}
+ });
+ modeBtn.onclick=function(){mode=mode==='signin'?'signup':'signin';document.getElementById('noor-auth-title').textContent=mode==='signin'?'Sign in to your campus':'Create your NOOR account';submit.textContent=mode==='signin'?'Sign in':'Create account';modeBtn.textContent=mode==='signin'?'Create account':'Back to sign in';document.getElementById('noor-auth-password').autocomplete=mode==='signin'?'current-password':'new-password';clearError()};
+ document.getElementById('add-class').onclick=function(){openLiveModal(null)};
+ document.getElementById('manage-classes').onclick=function(){openLiveModal(null)};
+ document.getElementById('class-form').addEventListener('submit',async function(e){
+   e.preventDefault();
+   if(!currentUser||!membership){toast('Sign in first to save records.');return}
+   if(!canEdit()){toast('Your institution role does not allow class management.');return}
+   const id=document.getElementById('class-id').value;
+   const name=document.getElementById('class-name').value.trim();
+   const subject=document.getElementById('class-subject').value.trim();
+   const room=document.getElementById('class-room').value.trim();
+   const capacityValue=document.getElementById('class-students').value;
+   const payload={institution_id:membership.institution_id,name:name,group_type:document.getElementById('class-type').value,description:subject||null,room_label:room||null,capacity:capacityValue===''?null:Number(capacityValue),is_active:true};
+   const result=id?await client.from('academic_groups').update(payload).eq('id',id).eq('institution_id',membership.institution_id).select('id').maybeSingle():await client.from('academic_groups').insert(payload).select('id').maybeSingle();
+   if(result.error){toast('Save failed: '+result.error.message);return}
+   document.getElementById('modal-backdrop').classList.remove('open');form.dataset.liveEdit='';
+   toast(id?'Class / section updated in Supabase':'Class / section saved to Supabase');
+   await refreshData();
+ });
+ client.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'){currentUser=null;membership=null;resetToEmpty();gate.classList.add('open')}});
+ (async function init(){
+   resetToEmpty();
+   document.getElementById('class-students').required=false;
+   document.getElementById('class-students').placeholder='Optional capacity';
+   try{const r=await client.auth.getSession();if(r.data.session)await startSession(r.data.session.user);else showGate()}catch(e){showGate('Supabase connection could not be initialized: '+e.message)}
+ })();
+})();
+</script>
+
 </body></html>

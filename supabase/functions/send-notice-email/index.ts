@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
 const allowedOrigins = new Set([
   "https://noormanagement43.github.io",

@@ -63,13 +63,13 @@ render();
 
 <!-- noor-live-data-layer: authentication and institution-scoped live data -->
 <style>
-#noor-auth-gate{position:fixed;inset:0;z-index:1000;background:#1c1016cc;display:none;align-items:center;justify-content:center;padding:18px}
+.app{visibility:hidden}#noor-auth-gate{position:fixed;inset:0;z-index:1000;background:#1c1016cc;display:none;align-items:center;justify-content:center;padding:18px}
 #noor-auth-gate.open{display:flex}
 .noor-auth-card{width:min(100%,430px);background:#fffdfb;border:1px solid #eadfe3;border-radius:20px;padding:26px;box-shadow:0 24px 80px #0004}
 .noor-auth-card h2{margin:0 0 7px;color:#641c35;font-size:25px}
 .noor-auth-card p{color:#827982;font-size:13px;margin:0 0 18px}
 .noor-auth-card label{display:block;font-size:12px;font-weight:750;margin:12px 0 6px}
-.noor-auth-card input{width:100%;padding:12px;border:1px solid #eadfe3;border-radius:10px}
+.noor-auth-card input{width:100%;padding:12px;border:1px solid #eadfe3;border-radius:10px}.noor-password-row{display:flex;gap:6px;align-items:stretch}.noor-password-row input{min-width:0;flex:1}.noor-auth-card .auth-utility{background:#f4e7eb;color:#641c35;border:0;border-radius:9px;padding:8px 10px;font-size:12px}.noor-auth-card .auth-utilities{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .noor-auth-card .auth-actions{display:flex;gap:8px;align-items:center;margin-top:16px}
 .noor-auth-card button{border:0;border-radius:10px;padding:11px 14px}
 #noor-auth-submit{background:#641c35;color:#fff;font-weight:750;flex:1}
@@ -85,9 +85,9 @@ render();
   <div class="eyebrow">NOOR · Secure campus access</div><h2 id="noor-auth-title">Sign in to your campus</h2>
   <p>Dashboard figures and class records load from your institution after authentication. No demo figures are shown as live data.</p>
   <label for="noor-auth-email">Email address</label><input id="noor-auth-email" type="email" autocomplete="username" required placeholder="you@school.edu">
-  <label for="noor-auth-password">Password</label><input id="noor-auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="Your password">
+  <label for="noor-auth-password">Password</label><div class="noor-password-row"><input id="noor-auth-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required placeholder="At least 8 characters"><button class="auth-utility" id="noor-toggle-password" type="button" aria-label="Show password">Show</button></div>
   <div class="auth-actions"><button id="noor-auth-submit" type="submit">Sign in</button><button id="noor-auth-mode" type="button">Create account</button></div>
-  <div id="noor-auth-error" role="alert"></div>
+  <div id="noor-auth-error" role="alert" aria-live="polite"></div><div class="auth-utilities"><button class="auth-utility" id="noor-forgot-password" type="button">Forgot password?</button><button class="auth-utility" id="noor-resend-verification" type="button">Resend verification email</button></div>
   <button id="noor-open-onboarding" type="button" style="display:none;width:100%;margin-top:12px;background:#f4e7eb;color:#641c35">Register my school / university</button>
  </form>
  <form class="noor-auth-card" id="noor-onboard-form" style="display:none">
@@ -153,8 +153,11 @@ render();
  async function loadMembership(){
    const res=await client.from('institution_memberships').select('id,institution_id,role,status,institutions(name,timezone,institution_type)').eq('user_id',currentUser.id).eq('status','active');
    if(res.error) throw res.error;
-   membership=(res.data||[])[0]||null;
+   const activeMemberships=res.data||[];
+   membership=activeMemberships[0]||null;
    if(!membership) throw new Error('Your account is signed in, but it is not linked to an active school or university yet. Ask your institution administrator to activate your membership.');
+   if(activeMemberships.length>1) throw new Error('Your account belongs to more than one institution. Institution selection is not available yet, so access is paused to avoid loading the wrong campus.');
+   if(adminRoles.indexOf(membership.role)<0) throw new Error('This workspace is currently for institution administrators. Teacher and student portals are not implemented yet; no dashboard data was opened.');
  }
  function canEdit(){return !!membership&&adminRoles.indexOf(membership.role)>=0}
  async function loadGroups(){
@@ -261,7 +264,7 @@ render();
      const avatar=document.getElementById('avatar-label');if(avatar)avatar.textContent=role.charAt(0).toUpperCase();
      const greetings={principal:'Welcome, Principal 👋',school_admin:'Welcome, School Admin 👋',university_admin:'Welcome, University Admin 👋',academic_admin:'Welcome, Academic Admin 👋',teacher:'Good morning, Teacher 👋',faculty:'Welcome, Faculty 👋',student:'Welcome to your learning space 👋',university_student:'Welcome to your learning space 👋',staff:'Welcome to your workspace 👋'};
      document.getElementById('greeting').textContent=greetings[role]||'Welcome to NOOR 👋';
-     gate.classList.remove('open');addLiveStatus();await refreshData();
+     gate.classList.remove('open');document.querySelector('.app').style.visibility='visible';addLiveStatus();await refreshData();
    }
    catch(e){resetToEmpty();if((e.message||'').includes('not linked to an active school or university'))openOnboarding.style.display='block';showGate(e.message||'Could not load your institution membership.')}
  }
@@ -286,6 +289,9 @@ render();
  onboardingForm.addEventListener('submit',async function(e){e.preventDefault();onboardingError.style.display='none';const submitBtn=document.getElementById('noor-onboard-submit');submitBtn.disabled=true;submitBtn.textContent='Registering…';try{if(!currentUser)throw new Error('Please sign in first, then register your campus.');const result=await client.rpc('register_institution_for_current_user',{p_name:document.getElementById('noor-institution-name').value.trim(),p_slug:document.getElementById('noor-institution-slug').value.trim(),p_type:document.getElementById('noor-institution-type').value});if(result.error)throw result.error;onboardingForm.style.display='none';authForm.style.display='block';openOnboarding.style.display='none';await startSession(currentUser);toast('Campus registered successfully.');}catch(e){onboardingError.textContent=e.message||'Campus registration failed.';onboardingError.style.display='block'}finally{submitBtn.disabled=false;submitBtn.textContent='Register campus'}});
 
  modeBtn.onclick=function(){mode=mode==='signin'?'signup':'signin';document.getElementById('noor-auth-title').textContent=mode==='signin'?'Sign in to your campus':'Create your NOOR account';submit.textContent=mode==='signin'?'Sign in':'Create account';modeBtn.textContent=mode==='signin'?'Create account':'Back to sign in';document.getElementById('noor-auth-password').autocomplete=mode==='signin'?'current-password':'new-password';clearError()};
+ document.getElementById('noor-toggle-password').onclick=function(){const input=document.getElementById('noor-auth-password');const reveal=input.type==='password';input.type=reveal?'text':'password';this.textContent=reveal?'Hide':'Show';this.setAttribute('aria-label',(reveal?'Hide':'Show')+' password')};
+ document.getElementById('noor-forgot-password').onclick=async function(){clearError();const email=document.getElementById('noor-auth-email').value.trim();if(!email){error('Enter your email address first, then request a password reset.');document.getElementById('noor-auth-email').focus();return}try{const r=await client.auth.resetPasswordForEmail(email,{redirectTo:'https://noormanagement43.github.io/NOORMANAGEMENT/'});if(r.error)throw r.error;errorBox.textContent='If this email is registered, password reset instructions have been requested. Check your inbox.';errorBox.style.display='block';errorBox.style.background='#eaf6ef';errorBox.style.color='#226847'}catch(e){error(e.message||'Password reset request failed.')}};
+ document.getElementById('noor-resend-verification').onclick=async function(){clearError();const email=document.getElementById('noor-auth-email').value.trim();if(!email){error('Enter your email address first, then request verification again.');document.getElementById('noor-auth-email').focus();return}try{const r=await client.auth.resend({type:'signup',email:email,options:{emailRedirectTo:'https://noormanagement43.github.io/NOORMANAGEMENT/'}});if(r.error)throw r.error;errorBox.textContent='If this account needs verification, a verification email has been requested. Check your inbox.';errorBox.style.display='block';errorBox.style.background='#eaf6ef';errorBox.style.color='#226847'}catch(e){error(e.message||'Verification resend failed.')}};
  document.getElementById('add-class').onclick=function(){openLiveModal(null)};
  document.getElementById('manage-classes').onclick=function(){openLiveModal(null)};
  document.getElementById('class-form').addEventListener('submit',async function(e){

@@ -37,6 +37,7 @@
     <div class="row" id="login-options"><label class="remember"><input type="checkbox" id="remember"> Keep me signed in</label><button class="link" type="button" id="forgot">Forgot password?</button></div>
     <button class="primary" id="submit" type="submit">Sign in</button>
   </form>
+  <button class="link hidden" type="button" id="resend-verification" style="margin-top:14px">Resend verification email</button>
   <div class="switch" id="switch-copy">New to NOOR? <button class="link" type="button" data-switch="student">Create a student account</button></div>
   <div class="fineprint">By continuing, you agree to follow your institution's acceptable-use and privacy policies.</div>
 </div></main>
@@ -56,7 +57,7 @@
  function notice(text,type='info'){const el=$('message');el.textContent=text;el.className='notice show '+type}
  function clearNotice(){const el=$('message');el.textContent='';el.className='notice'}
  function setMode(next){
-  mode=next;clearNotice();$('auth-form').reset();
+  mode=next;clearNotice();$('resend-verification').classList.add('hidden');$('auth-form').reset();
   document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.mode===mode)));
   $('title').textContent=labels[mode][0];$('subtitle').textContent=labels[mode][1];$('submit').textContent=labels[mode][2];
   show(fields.name,mode!=='login');show(fields.school,mode==='school');show(fields.code,mode==='staff');show(fields.studentId,mode==='student');show(fields.confirm,mode!=='login');show(fields.role,mode==='staff');show(fields.photo,mode==='school');
@@ -67,6 +68,7 @@
  document.addEventListener('click',e=>{const b=e.target.closest('[data-switch]');if(b)setMode(b.dataset.switch)});
  document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const input=$(b.dataset.toggle);const reveal=input.type==='password';input.type=reveal?'text':'password';b.textContent=reveal?'Hide':'Show';b.setAttribute('aria-label',(reveal?'Hide':'Show')+' '+(input.id==='password'?'password':'confirmation password') )}));
  $('forgot').addEventListener('click',()=>{clearNotice();if(!$('email').value.trim()){notice('Enter your email address first. A password reset request can be sent once authentication is connected.','info');$('email').focus();return}notice('Password reset is not connected yet. No email has been sent. Supabase Auth integration is required to enable this action.','info')});
+ $('resend-verification').addEventListener('click',()=>notice('Verification email cannot be resent yet because Supabase Auth is not connected. No email was sent.','info'));
  $('school-logo').addEventListener('change',()=>{const f=$('school-logo').files[0];if(f&&(f.size>2*1024*1024||!['image/png','image/jpeg','image/webp'].includes(f.type))){$('school-logo').value='';notice('Please choose a PNG, JPG, or WebP image smaller than 2 MB.','error')}});
  $('auth-form').addEventListener('submit',e=>{
   e.preventDefault();clearNotice();
@@ -79,7 +81,7 @@
   if(mode==='staff'&&!$('invite-code').value.trim()){notice('Please enter the invitation code supplied by your school.','error');$('invite-code').focus();return}
   // Intentionally no fake sign-in or account creation: server/Supabase Auth is not wired into this UI yet.
   if(mode==='login')notice('Authentication is not connected yet. No sign-in was attempted and no credentials were sent. Connect Supabase Auth before enabling login.','info');
-  if(mode==='student')notice('Student sign-up UI validated. Account was not created; connect Supabase Auth and institution-membership verification next.','info');
+  if(mode==='student'){notice('Student sign-up UI validated. Account was not created; connect Supabase Auth and institution-membership verification next.','info');$('resend-verification').classList.remove('hidden');}
   if(mode==='school')notice('School request form validated. Nothing was submitted; connect a protected server-side registration workflow before use.','info');
   if(mode==='staff')notice('Staff access form validated. No access was granted; verify the invitation and assign roles server-side before enabling this flow.','info');
  });

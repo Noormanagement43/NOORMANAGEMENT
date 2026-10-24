@@ -79,3 +79,12 @@ test('unverified users cannot see preview data behind the auth gate', () => {
   assert.match(html, /resetPasswordForEmail/);
   assert.match(html, /client\\.auth\\.resend/);
 });
+
+test('timetable reads upcoming sessions within the authenticated institution', () => {
+  assert.match(html, /from\('class_sessions'\)/);
+  assert.match(html, /from\('class_sessions'\)[\s\S]{0,300}eq\('institution_id',membership\.institution_id\)/);
+  assert.match(html, /gte\('starts_at',now\.toISOString\(\)\)/);
+  assert.match(html, /lte\('starts_at',horizon\.toISOString\(\)\)/);
+  assert.match(html, /timeZone:timezone/);
+  assert.doesNotMatch(html, /<time>09:00 AM<|<strong>Mathematics<|<small>Grade 8 · Room 204/);
+});

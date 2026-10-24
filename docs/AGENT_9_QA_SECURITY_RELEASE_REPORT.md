@@ -37,7 +37,7 @@ The repository remains a single-file static frontend without a conventional `src
 - **Evidence:** The repository already had `tests/static-audit.test.mjs` and `.github/workflows/quality.yml`; this PR extends that suite and adds a Deno type-check job for the new Edge Function source. An earlier GitHub Actions run passed a previous branch, not the current expanded suite.
 - **Reproduction:** Attempt to locate package scripts and run the documented lint, type-check, unit, E2E and production build commands.
 - **Expected:** Reproducible static checks in CI, with separate browser and backend security testing.
-- **Actual:** The existing Node suite runs with `node --test tests/*.test.mjs`. The expanded current suite and Deno type-check have not yet been confirmed green on the latest PR head. No browser E2E suite exists.
+- **Actual:** The existing Node suite runs with `node --test tests/*.test.mjs`. A V8 harness executed all 19 current static-audit assertions successfully and parsed the inline JavaScript blocks; the actual Node test runner and Deno type-check have not yet been confirmed green on the latest PR head. No browser E2E suite exists.
 - **Impact:** Regressions cannot be caught by a reproducible automated pipeline.
 - **Recommended fix:** Confirm the new validation workflow passes, then add browser smoke/E2E tests and staging security tests. If the app has a separate source repo/branch, link that source and review it too.
 - **Status:** PARTIALLY ADDRESSED — earlier static CI passed; latest CI and runtime tests pending.
@@ -108,7 +108,7 @@ The repository remains a single-file static frontend without a conventional `src
 | Gemini / Brevo | SOURCE ADDED, NOT DEPLOYED | Server-side function source exists; secrets, quotas, Deno lockfile, provider tests and staging deployment pending |
 | Responsive CSS | PARTIAL / static only | Breakpoints present; no real device/browser testing |
 | Keyboard / screen reader | NOT TESTED | Browser tooling unavailable |
-| Static syntax / foundation tests | EARLIER PASS; LATEST PENDING | Run 40080643681 passed before later additions; latest full suite has not been confirmed |
+| Static syntax / foundation tests | SOURCE ASSERTIONS PASS; CI PENDING | 19 static-audit assertions passed in a V8 harness; actual Node runner and Deno check pending |
 | Production deployment | NOT PERFORMED | Explicitly not authorized |
 
 ## Commands and checks actually executed
@@ -119,7 +119,7 @@ The repository remains a single-file static frontend without a conventional `src
 4. Existing `tests/static-audit.test.mjs`, `.github/workflows/quality.yml`, and registration migration source were reviewed; the three earlier applied migration files were not found at their expected filenames.
 5. Fetch conventional paths `src/App.tsx`, `src/main.tsx`, `vite.config.ts`, `vite.config.js`, `supabase/migrations`-related search terms — **NOT FOUND / no matching code search results**.
 6. GitHub code searches for policy/RPC/dashboard function/Gemini/Brevo terms — **no matching results returned**. This is not proof that remote Supabase resources do not exist.
-7. GitHub Actions run 40080643681 — **PASS** for a previous branch only. Current expanded Node tests and Deno type-check — **PENDING** on this PR. Browser, SQL, E2E and security penetration tests — **NOT RUN**.
+7. 19 static-audit assertions — **PASS** in a V8 harness; inline JavaScript parsed successfully. GitHub Actions/Node test runner and Deno type-check — **PENDING** on this PR. Browser, SQL, E2E and security penetration tests — **NOT RUN**.
 
 ## Release / recovery instructions
 

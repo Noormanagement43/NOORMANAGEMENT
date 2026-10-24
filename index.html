@@ -112,6 +112,14 @@ render();
   <div class="auth-actions"><button type="button" id="noor-onboard-back">Back to sign in</button><button type="submit" id="noor-onboard-submit" style="background:#641c35;color:#fff;font-weight:750;flex:1">Register campus</button></div>
   <div id="noor-onboard-error" role="alert" style="display:none;background:#fff0f0;color:#9c2636;border-radius:9px;padding:10px;margin-top:12px;font-size:12px"></div>
  </form>
+ <form class="noor-auth-card" id="noor-password-reset-form" style="display:none">
+  <div class="eyebrow">NOOR · Account recovery</div><h2>Choose a new password</h2>
+  <p>Use a new password you do not use for another account.</p>
+  <label for="noor-reset-password">New password</label><input id="noor-reset-password" type="password" autocomplete="new-password" minlength="8" required>
+  <label for="noor-reset-password-confirm">Confirm new password</label><input id="noor-reset-password-confirm" type="password" autocomplete="new-password" minlength="8" required>
+  <div class="auth-actions"><button id="noor-reset-submit" type="submit" style="background:#641c35;color:#fff;font-weight:750;flex:1">Update password</button></div>
+  <div id="noor-reset-error" role="alert" aria-live="polite" style="display:none;background:#fff0f0;color:#9c2636;border-radius:9px;padding:10px;margin-top:12px;font-size:12px"></div>
+ </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
 <script>
@@ -131,6 +139,10 @@ render();
  const openOnboarding=document.getElementById('noor-open-onboarding');
  const onboardingForm=document.getElementById('noor-onboard-form');
  const onboardingError=document.getElementById('noor-onboard-error');
+ const resetForm=document.getElementById('noor-password-reset-form');
+ const resetError=document.getElementById('noor-reset-error');
+ const resetPasswordInput=document.getElementById('noor-reset-password');
+ const resetPasswordConfirm=document.getElementById('noor-reset-password-confirm');
  const authForm=document.getElementById('noor-auth-form');
  let mode='signin', currentUser=null, membership=null, liveGroups=[];
  const adminRoles=['principal','school_admin','university_admin','academic_admin'];
@@ -167,6 +179,14 @@ render();
    const badgeLabel=adminRoles.indexOf(membership.role)>=0?'LIVE DATA':'ACCOUNT ACTIVE';
    bar.innerHTML='<span class="badge">'+badgeLabel+'</span><span>'+escapeText(currentUser.email||'Signed in')+'</span><span>·</span><span>'+escapeText(inst&&inst.name||'Institution workspace')+'</span><button id="noor-signout" type="button">Sign out</button>';
    document.getElementById('noor-signout').onclick=async function(){await client.auth.signOut();location.reload()};
+ }
+ function showPasswordReset(){
+   gate.classList.add('open');
+   authForm.style.display='none';
+   onboardingForm.style.display='none';
+   resetForm.style.display='block';
+   resetError.textContent='';resetError.style.display='none';
+   resetPasswordInput.focus();
  }
  function showGate(message){
    gate.classList.add('open');
@@ -412,7 +432,23 @@ render();
    toast(id?'Class / section updated in Supabase':'Class / section saved to Supabase');
    await refreshData();
  });
- client.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'){currentUser=null;membership=null;resetToEmpty();gate.classList.add('open')}});
+ client.auth.onAuthStateChange(function(event,session){
+   if(event==='PASSWORD_RECOVERY'){showPasswordReset();return}
+   if(event==='SIGNED_OUT'){currentUser=null;membership=null;resetForm.style.display='none';authForm.style.display='block';onboardingForm.style.display='none';resetToEmpty();gate.classList.add('open')}
+ });
+ resetForm.addEventListener('submit',async function(e){
+   e.preventDefault();resetError.textContent='';resetError.style.display='none';
+   const password=resetPasswordInput.value;
+   if(password.length<8){resetError.textContent='Use at least 8 characters for your new password.';resetError.style.display='block';return}
+   if(password!==resetPasswordConfirm.value){resetError.textContent='The passwords do not match.';resetError.style.display='block';resetPasswordConfirm.focus();return}
+   const button=document.getElementById('noor-reset-submit');button.disabled=true;button.textContent='Updating…';
+   try{
+     const result=await client.auth.updateUser({password:password});if(result.error)throw result.error;
+     resetForm.style.display='none';authForm.style.display='block';success('Password updated. Sign in with your new password.');
+     await client.auth.signOut();
+   }catch(e){resetError.textContent=e.message||'Password update failed. Request a new reset link and try again.';resetError.style.display='block'}
+   finally{button.disabled=false;button.textContent='Update password'}
+ });
  (async function init(){
    resetToEmpty();
    document.getElementById('class-students').required=false;

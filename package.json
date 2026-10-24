@@ -1,0 +1,10 @@
+{
+  "name": "noor-campus-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free validation for the NOOR static frontend",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/validate-static.mjs"
+  }
+}

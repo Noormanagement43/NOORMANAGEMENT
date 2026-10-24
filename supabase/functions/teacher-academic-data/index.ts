@@ -243,7 +243,17 @@ Deno.serve(async (req: Request) => {
       if (profileResult.error || groupRosterResult.error || attendanceResult.error) {
         throw new Error("Some dashboard records could not be read. Check institution setup and permissions.");
       }
-      const distinctStudents = new Set((groupRosterResult.data ?? []).map((row) => row.membership_id));
+      const rawGroupRoster = groupRosterResult.data ?? [];
+      const rawStudentIds = [...new Set(rawGroupRoster.map((row) => row.membership_id))];
+      const activeStudentsResult = rawStudentIds.length
+        ? await admin.from("institution_memberships").select("id")
+          .eq("institution_id", institutionId).in("id", rawStudentIds)
+          .eq("status", "active").in("role", ["student", "university_student"]).limit(5000)
+        : { data: [], error: null };
+      if (activeStudentsResult.error) throw new Error("Active student membership counts could not be verified.");
+      const activeStudentIds = new Set((activeStudentsResult.data ?? []).map((row) => row.id));
+      const activeGroupRoster = rawGroupRoster.filter((row) => activeStudentIds.has(row.membership_id));
+      const distinctStudents = new Set(activeGroupRoster.map((row) => row.membership_id));
       const statusCounts: Record<string, number> = { present: 0, absent: 0, late: 0, leave: 0 };
       for (const record of attendanceResult.data ?? []) {
         if (record.attendance_status in statusCounts) statusCounts[record.attendance_status] += 1;
@@ -254,7 +264,7 @@ Deno.serve(async (req: Request) => {
         profile: profileResult.data ?? { full_name: userResult.user.email?.split("@")[0] ?? "Teacher", avatar_url: null },
         groups: groups.map((group) => ({
           ...group,
-          student_count: (groupRosterResult.data ?? []).filter((row) => row.group_id === group.id).length,
+          student_count: activeGroupRoster.filter((row) => row.group_id === group.id).length,
         })),
         sessions: decoratedSessions,
         attendance: attendanceResult.data ?? [],
@@ -327,6 +337,9 @@ Deno.serve(async (req: Request) => {
       const attendanceDate = asText(body.attendance_date, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate) || dateKey(session.starts_at, timezone) !== attendanceDate) {
         return json(origin, { error: "The session does not match the chosen attendance date." }, 400);
+      }
+      if (attendanceDate > dateKey(new Date().toISOString(), timezone)) {
+        return json(origin, { error: "Attendance cannot be saved for a future institution-local date." }, 400);
       }
       const rawMarks = body.marks;
       if (!Array.isArray(rawMarks) || rawMarks.length < 1 || rawMarks.length > 500) {

@@ -21,4 +21,4 @@
 
 ## Verification
 
-Source-level checks confirm the new controls and Supabase Auth calls exist. Automated execution of the latest test file and live auth flows is still pending confirmation; no live emails were sent during this work.
+Source-level checks confirm the new controls and Supabase Auth calls exist. The current quality workflow passed on this PR head (run 40082096128). Live Auth recovery and email flows still require staging E2E verification; no live emails were sent during this work.

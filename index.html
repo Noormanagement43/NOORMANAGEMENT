@@ -205,9 +205,42 @@ render();
    document.getElementById('modal-backdrop').classList.add('open');
    document.getElementById('class-name').focus();
  }
+ async function loadTimetable(){
+   const schedule=document.querySelector('.schedule');
+   try{
+     const now=new Date();
+     const horizon=new Date(now.getTime()+7*24*60*60*1000);
+     const result=await client.from('class_sessions')
+       .select('id,title,room_label,starts_at,ends_at,session_status,academic_groups(name)')
+       .eq('institution_id',membership.institution_id)
+       .eq('session_status','scheduled')
+       .gte('starts_at',now.toISOString())
+       .lte('starts_at',horizon.toISOString())
+       .order('starts_at',{ascending:true})
+       .limit(8);
+     if(result.error)throw result.error;
+     schedule.innerHTML='';
+     if(!(result.data||[]).length){schedule.appendChild(document.createElement('div')).className='live-empty';schedule.firstChild.textContent='No upcoming sessions are scheduled for the next seven days.';return}
+     const timezone=membership.institutions&&membership.institutions.timezone||'Asia/Kolkata';
+     result.data.forEach(function(session,index){
+       const event=document.createElement('div');event.className='event';
+       const time=document.createElement('time');
+       time.textContent=new Intl.DateTimeFormat('en',{hour:'2-digit',minute:'2-digit',timeZone:timezone}).format(new Date(session.starts_at));
+       const line=document.createElement('div');line.className='event-line';
+       const details=document.createElement('div');
+       const title=document.createElement('strong');title.textContent=session.title||'Scheduled session';
+       const meta=document.createElement('small');meta.textContent=((session.academic_groups&&session.academic_groups.name)||'Class not assigned')+' · '+(session.room_label||'Room not assigned');
+       details.append(title,meta);event.append(time,line,details);schedule.appendChild(event);
+     });
+   }catch(error){
+     schedule.innerHTML='';const box=document.createElement('div');box.className='live-empty';box.textContent='Timetable could not be loaded for this account. Check your institution access or try again.';schedule.appendChild(box);
+     console.error('NOOR timetable load failed',error);
+   }
+ }
  async function refreshData(){
    try{
      await loadGroups();
+     await loadTimetable();
      const nonAdminLabels=document.querySelectorAll('.stats .stat small');
      const statValues=document.querySelectorAll('.stats .stat strong');
      const statTitles=document.querySelectorAll('.stats .stat .stat-top');

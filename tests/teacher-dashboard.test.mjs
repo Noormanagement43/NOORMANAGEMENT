@@ -64,7 +64,7 @@ test('unsupported assignments and notices are disclosed rather than fabricated',
   assert.match(endpoint, /submissions: false/);
   assert.match(endpoint, /notices: false/);
   assert.match(dashboard, /no assignment, submission, or resource tables/i);
-  assert.match(dashboard, /no notice\/notification table is present/i);
+  assert.match(dashboard, /no institution notice or notification table/i);
 });
 
 test('teacher dashboard contains responsive accessible and theme-aware styles', () => {

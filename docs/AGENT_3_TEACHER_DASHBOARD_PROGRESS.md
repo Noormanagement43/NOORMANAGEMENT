@@ -19,4 +19,4 @@
 
 ## Verification
 
-The Agent 2 overview code passed the prior syntax/foundation workflow run. Agent 3 changes and tests are newer than that run; the latest workflow result for these exact commits has not yet been confirmed. No browser/E2E or live backend tests are claimed.
+The current quality workflow passed on this PR head (run 40082096128), including the Node static regression suite and frozen Deno type-check. No browser/E2E or live backend tests are claimed.

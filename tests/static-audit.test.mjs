@@ -5,6 +5,8 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const authPage = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
 const registrationMigration = await readFile(new URL('../supabase/migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
+const askNoorSource = await readFile(new URL('../supabase/functions/ask-noor/index.ts', import.meta.url), 'utf8');
+const emailFunctionSource = await readFile(new URL('../supabase/functions/send-notice-email/index.ts', import.meta.url), 'utf8');
 
 test('dashboard starts with empty, non-demo metrics and attendance', () => {
   assert.match(html, /id="student-count">—/);
@@ -43,7 +45,8 @@ test('institution registration validates auth and does not grant anonymous execu
 
 test('dashboard invokes the protected server-side metrics function', () => {
   assert.match(html, /functions\.invoke\('principal-dashboard-data'/);
-  assert.match(html, /emailRedirectTo:'https:\/\/noormanagement43\.github\.io\/NOORMANAGEMENT\//);
+  assert.match(html, /emailRedirectTo:window\.location\.origin\+window\.location\.pathname/);
+  assert.match(html, /redirectTo:window\.location\.origin\+window\.location\.pathname/);
 });
 
 test('legacy auth URL forwards to the single active auth gate', () => {
@@ -97,4 +100,66 @@ test('timetable reads upcoming sessions within the authenticated institution', (
   assert.match(html, /lte\('starts_at',horizon\.toISOString\(\)\)/);
   assert.match(html, /timeZone:timezone/);
   assert.doesNotMatch(html, /<time>09:00 AM<|<strong>Mathematics<|<small>Grade 8 · Room 204/);
+});
+
+
+test('principal setup-health metrics derive from active institution groups', () => {
+  assert.match(html, /id="health-title"/);
+  assert.match(html, /function renderInstitutionHealth\(\)[\s\S]{0,800}liveGroups\.length/);
+  assert.match(html, /liveGroups\.filter\(function\(group\)\{return group\.room/);
+  assert.match(html, /liveGroups\.filter\(function\(group\)\{return !!\(group\.subject/);
+  assert.match(html, /No active academic groups are available yet/);
+});
+
+test('teacher and student roles enter safe shells before principal-only refresh', () => {
+  assert.match(html, /const teacherRoles=\[['"]teacher['"],['"]faculty['"]\]/);
+  assert.match(html, /const studentRoles=\[['"]student['"],['"]university_student['"]\]/);
+  assert.match(html, /if\(teacherRoles\.indexOf\(role\)>=0\)\{showTeacherWorkspace\(\);return;\}/);
+  assert.match(html, /if\(studentRoles\.indexOf\(role\)>=0\)\{showStudentWorkspace\(\);return;\}/);
+  for (const name of ['showTeacherWorkspace','showStudentWorkspace']) {
+    const match = html.match(new RegExp('function '+name+'\\(\\)\\{([\\s\\S]*?)\\n \\}'));
+    assert.ok(match, name+' exists');
+    assert.doesNotMatch(match[1], /from\(['"]academic_groups['"]\)|functions\.invoke/);
+  }
+  assert.match(html, /activeMemberships\.length>1/);
+});
+
+test('password recovery flow validates matching passwords and updates Supabase Auth', () => {
+  assert.match(html, /id="noor-password-reset-form"/);
+  assert.match(html, /event===['"]PASSWORD_RECOVERY['"]/);
+  assert.match(html, /client\.auth\.updateUser\(\{password:password\}\)/);
+  assert.match(html, /password!==resetPasswordConfirm\.value/);
+  assert.match(html, /Use at least 8 characters for your new password/);
+});
+
+test('principal attendance reads are institution-scoped and safely rendered', () => {
+  assert.match(html, /function loadRecentAttendance\(\)[\s\S]{0,700}from\(['"]attendance_records['"]\)[\s\S]{0,300}eq\(['"]institution_id['"],\s*membership\.institution_id\)/);
+  assert.match(html, /from\(['"]class_sessions['"]\)\.select\(['"]id,title,academic_group_id['"]\)\.eq\(['"]institution_id['"],\s*membership\.institution_id\)/);
+  assert.match(html, /statusCell\.appendChild\(status\)/);
+  assert.match(html, /No attendance has been marked yet for this institution/);
+});
+
+test('keyboard focus and reduced-motion preferences are supported', () => {
+  assert.match(html, /:focus-visible/);
+  assert.match(html, /prefers-reduced-motion\s*:\s*reduce/);
+});
+
+test('Ask Noor requires authenticated institution membership and server-side Gemini secret', () => {
+  assert.match(askNoorSource, /Deno\.env\.get\(["']GEMINI_API_KEY["']\)/);
+  assert.match(askNoorSource, /supabase\.auth\.getUser\(\)/);
+  assert.match(askNoorSource, /\.eq\(["']institution_id["'],\s*institutionId\)/);
+  assert.match(askNoorSource, /x-goog-api-key/);
+  assert.match(askNoorSource, /prompt\.length > 4000/);
+  assert.match(askNoorSource, /AbortController/);
+  assert.doesNotMatch(askNoorSource, /AIza[0-9A-Za-z_-]{20,}/);
+});
+
+test('Brevo mail is administrator-gated and limited to institution membership addresses', () => {
+  assert.match(emailFunctionSource, /Deno\.env\.get\(["']BREVO_API_KEY["']\)/);
+  assert.match(emailFunctionSource, /adminRoles\.has\(membership\.role\)/);
+  assert.match(emailFunctionSource, /\.eq\(["']institution_id["'],\s*institutionId\)/);
+  assert.match(emailFunctionSource, /\.eq\(["']invited_email["'],\s*recipientEmail\)/);
+  assert.match(emailFunctionSource, /https:\/\/api\.brevo\.com\/v3\/smtp\/email/);
+  assert.match(emailFunctionSource, /textContent:\s*message/);
+  assert.doesNotMatch(emailFunctionSource, /xkeysib-[A-Za-z0-9_-]{20,}/);
 });

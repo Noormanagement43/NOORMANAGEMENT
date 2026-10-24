@@ -1,12 +1,107 @@
 -- =========================================================================
--- NOOR SCHOOL MANAGEMENT: PRODUCTION-READY DEMO SEED & STUDENT MANAGEMENT RPCs
--- TARGET: "Al noor" School & Principal Syeda Bushra Tabassum (annoorhub786@gmail.com)
--- STRICT MULTI-TENANCY: Only touches Al-Noor (v_school_id)
--- LIGHTWEIGHT LIMITS: Exactly 10 Teachers, Exactly 100 Students (5 per section)
+-- NOOR SCHOOL MANAGEMENT: BULK DEMO SEED & REPAIR SCRIPT
+-- TARGET: Whole NOOR School System (Works for any Principal/Staff/Student login)
+-- MULTI-TENANCY: Scoped safely to the NOOR School
+-- STORAGE LIGHTWEIGHT: Exactly 10 Teachers, Exactly 100 Students (5 per section)
 -- =========================================================================
 
 -- =========================================================================
--- PART 1: SECURE RPC FUNCTIONS FOR STUDENT & SECTION MANAGEMENT
+-- STEP 0: SELF-HEALING SCHEMA GUARD (ENSURE ALL REQUIRED TABLES & COLUMNS EXIST)
+-- =========================================================================
+
+-- 1. Profiles Table Columns
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school_id uuid;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS class_id uuid;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS section_id uuid;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS roll_number text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS mobile_number text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parent_name text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS academic_year_id uuid;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS requested_class_name text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS requested_section_name text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school_name_submitted text;
+
+-- 2. Classes & Sections Columns
+ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 1;
+ALTER TABLE public.sections ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+
+-- 3. School Memberships Columns
+ALTER TABLE public.school_memberships ADD COLUMN IF NOT EXISTS employee_id text;
+ALTER TABLE public.school_memberships ADD COLUMN IF NOT EXISTS username text;
+
+-- 4. Dependent Tables
+CREATE TABLE IF NOT EXISTS public.noor_staff_attendance (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  teacher_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  attendance_date date NOT NULL,
+  status text NOT NULL CHECK(status IN ('present','absent','leave','late')),
+  checked_in_at timestamptz,
+  UNIQUE(school_id, teacher_id, attendance_date)
+);
+
+CREATE TABLE IF NOT EXISTS public.noor_teacher_periods (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  teacher_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  weekday int NOT NULL CHECK(weekday BETWEEN 0 AND 6),
+  period_number int NOT NULL,
+  start_time time NOT NULL,
+  end_time time NOT NULL,
+  subject_name text NOT NULL,
+  class_label text,
+  class_id uuid REFERENCES public.classes(id) ON DELETE SET NULL,
+  section_id uuid REFERENCES public.sections(id) ON DELETE SET NULL,
+  block_type text NOT NULL DEFAULT 'class',
+  approval_status text NOT NULL DEFAULT 'approved',
+  status text NOT NULL DEFAULT 'upcoming'
+);
+
+CREATE TABLE IF NOT EXISTS public.noor_teacher_period_runs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  teacher_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  period_id uuid NOT NULL REFERENCES public.noor_teacher_periods(id) ON DELETE CASCADE,
+  class_date date NOT NULL,
+  status text NOT NULL DEFAULT 'done',
+  started_at timestamptz,
+  finished_at timestamptz,
+  UNIQUE(school_id, teacher_id, period_id, class_date)
+);
+
+CREATE TABLE IF NOT EXISTS public.noor_teacher_profile_details (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  teacher_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  employee_code text,
+  qualification text,
+  joined_on date,
+  address text,
+  UNIQUE(school_id, teacher_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.noor_student_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  class_id uuid REFERENCES public.classes(id) ON DELETE CASCADE,
+  section_id uuid REFERENCES public.sections(id) ON DELETE CASCADE,
+  subject_id uuid REFERENCES public.subjects(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  max_marks numeric NOT NULL DEFAULT 100,
+  due_at timestamptz,
+  published_at timestamptz DEFAULT now(),
+  is_active boolean DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.noor_principal_dashboard_settings (
+  school_id uuid PRIMARY KEY REFERENCES public.schools(id) ON DELETE CASCADE,
+  insight text NOT NULL DEFAULT 'Leadership in education builds brighter tomorrows.',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- =========================================================================
+-- STEP 1: RPC FUNCTIONS FOR STUDENT & SECTION MANAGEMENT
 -- =========================================================================
 
 CREATE OR REPLACE FUNCTION public.noor_add_student(
@@ -103,14 +198,13 @@ GRANT EXECUTE ON FUNCTION public.noor_create_section(uuid, text) TO authenticate
 
 
 -- =========================================================================
--- PART 2: DYNAMIC AL-NOOR SEED SCRIPT (PL/pgSQL ANONYMOUS BLOCK)
+-- STEP 2: DYNAMIC POPULATION BLOCK ACROSS THE NOOR SCHOOL
 -- =========================================================================
 
 DO $$
 DECLARE
   v_school_id uuid;
   v_acad_id uuid;
-  v_principal_id uuid;
   v_teacher_id uuid;
   v_student_id uuid;
   
@@ -153,7 +247,6 @@ DECLARE
   w_idx int;
   day_offset int;
   
-  -- Teacher names matching dashboard mockups
   t_names text[] := ARRAY[
     'Ms. Fathima Ali', 'Mr. Aamir Khan', 'Dr. Sarah Khan',
     'Mrs. Sana Begum', 'Mr. Imran Siddiqui', 'Mrs. Nida Ahmed',
@@ -166,7 +259,6 @@ DECLARE
   ];
   teacher_uuids uuid[] := ARRAY[]::uuid[];
   
-  -- Student Names for Class 8B (matching Teacher Dashboard screenshot)
   c8b_names text[] := ARRAY['Ayesha Khan', 'Mohammad Zaid', 'Sana Fatima', 'Arjun Mehta'];
   c8b_rolls text[] := ARRAY['801', '802', '803', '804'];
   
@@ -175,32 +267,46 @@ DECLARE
   all_secs_cursor record;
 BEGIN
   -- =========================================================================
-  -- STEP 1: RESOLVE AL-NOOR SCHOOL & STRICT ACTIVE MULTI-TENANCY STATUS
+  -- 1. RESOLVE THE NOOR SCHOOL (NOT TIED TO ANY SINGLE EMAIL)
   -- =========================================================================
-  SELECT school_id INTO v_school_id FROM public.profiles 
-  WHERE email = 'annoorhub786@gmail.com' AND school_id IS NOT NULL 
-  LIMIT 1;
+  SELECT id INTO v_school_id FROM public.schools 
+  WHERE name ILIKE '%noor%' OR name ILIKE '%al%noor%' 
+  ORDER BY created_at ASC LIMIT 1;
 
   IF v_school_id IS NULL THEN
-    SELECT id INTO v_school_id FROM public.schools 
-    WHERE name ILIKE '%Al%noor%' OR name ILIKE '%NOOR%' 
-    ORDER BY created_at ASC LIMIT 1;
+    SELECT id INTO v_school_id FROM public.schools ORDER BY created_at ASC LIMIT 1;
   END IF;
 
   IF v_school_id IS NULL THEN
-    RAISE EXCEPTION 'School "Al noor" not found! Please create the school first.';
+    INSERT INTO public.schools (name, verification_status, account_status, is_active)
+    VALUES ('Al noor', 'verified', 'active', true)
+    RETURNING id INTO v_school_id;
+  ELSE
+    UPDATE public.schools
+    SET verification_status = 'verified', account_status = 'active', is_active = true
+    WHERE id = v_school_id;
   END IF;
 
-  -- Ensure Al-Noor is active and verified for RLS policies
-  UPDATE public.schools
-  SET verification_status = 'verified',
-      account_status = 'active',
-      is_active = true,
-      name = 'Al noor'
-  WHERE id = v_school_id;
+  -- =========================================================================
+  -- 2. ENSURE ALL PRINCIPALS / OWNERS ARE ACTIVE FOR THIS SCHOOL
+  -- =========================================================================
+  UPDATE public.profiles
+  SET school_id = v_school_id, status = 'active'
+  WHERE role IN ('principal', 'owner', 'manager');
+
+  INSERT INTO public.school_memberships (school_id, user_id, role, status)
+  SELECT v_school_id, p.id, p.role, 'active'
+  FROM public.profiles p
+  WHERE p.role IN ('principal', 'owner', 'manager')
+  ON CONFLICT (school_id, user_id) DO UPDATE SET status = 'active', role = EXCLUDED.role;
+
+  -- Principal Dashboard Weekly Insight
+  INSERT INTO public.noor_principal_dashboard_settings (school_id, insight, updated_at)
+  VALUES (v_school_id, 'Leadership in education builds brighter tomorrows.', now())
+  ON CONFLICT (school_id) DO UPDATE SET insight = EXCLUDED.insight, updated_at = now();
 
   -- =========================================================================
-  -- STEP 2: ENSURE CURRENT ACADEMIC YEAR
+  -- 3. ENSURE CURRENT ACADEMIC YEAR
   -- =========================================================================
   SELECT id INTO v_acad_id FROM public.academic_years 
   WHERE school_id = v_school_id AND is_current = true LIMIT 1;
@@ -213,38 +319,7 @@ BEGIN
   END IF;
 
   -- =========================================================================
-  -- STEP 3: CONFIGURE PRINCIPAL (Syeda Bushra Tabassum, annoorhub786@gmail.com)
-  -- =========================================================================
-  SELECT id INTO v_principal_id FROM public.profiles 
-  WHERE email = 'annoorhub786@gmail.com' LIMIT 1;
-
-  IF v_principal_id IS NULL THEN
-    SELECT id INTO v_principal_id FROM public.profiles 
-    WHERE school_id = v_school_id AND role IN ('principal','owner','creator') LIMIT 1;
-  END IF;
-
-  IF v_principal_id IS NOT NULL THEN
-    UPDATE public.profiles
-    SET full_name = 'Syeda Bushra Tabassum',
-        role = 'principal',
-        status = 'active',
-        school_id = v_school_id,
-        mobile_number = COALESCE(mobile_number, '+91 98765 43210'),
-        updated_at = now()
-    WHERE id = v_principal_id;
-
-    INSERT INTO public.school_memberships (school_id, user_id, role, status)
-    VALUES (v_school_id, v_principal_id, 'principal', 'active')
-    ON CONFLICT (school_id, user_id) DO UPDATE SET status = 'active', role = 'principal';
-  END IF;
-
-  -- Principal Dashboard Weekly Insight
-  INSERT INTO public.noor_principal_dashboard_settings (school_id, insight, updated_at)
-  VALUES (v_school_id, 'Leadership in education builds brighter tomorrows.', now())
-  ON CONFLICT (school_id) DO UPDATE SET insight = EXCLUDED.insight, updated_at = now();
-
-  -- =========================================================================
-  -- STEP 4: CREATE CLASSES 1 TO 10, SECTIONS (A & B) & CORE SUBJECTS
+  -- 4. CREATE CLASSES 1 TO 10, SECTIONS (A & B) & CORE SUBJECTS
   -- =========================================================================
   FOR c_idx IN 1..10 LOOP
     INSERT INTO public.classes (school_id, name, sort_order, is_active)
@@ -286,26 +361,23 @@ BEGIN
   END LOOP;
 
   -- =========================================================================
-  -- STEP 5: TOTAL 10 TEACHERS (1 EXISTING + 9 DUMMY TEACHERS)
+  -- 5. TOTAL 10 TEACHERS (1 EXISTING + 9 DUMMY TEACHERS)
   -- =========================================================================
   SELECT id INTO v_teacher_id FROM public.profiles 
-  WHERE school_id = v_school_id AND role = 'teacher' AND email NOT LIKE '%@alnoor.demo'
+  WHERE role = 'teacher' AND email NOT LIKE '%@alnoor.demo'
   LIMIT 1;
 
   IF v_teacher_id IS NULL THEN
     SELECT id INTO v_teacher_id FROM public.profiles 
-    WHERE school_id = v_school_id AND role = 'teacher'
+    WHERE role = 'teacher'
     LIMIT 1;
   END IF;
 
-  -- Configure Existing Teacher (Syeda Aafra Fathima - Class 8B)
+  -- Configure Existing Teacher
   IF v_teacher_id IS NOT NULL THEN
     UPDATE public.profiles
-    SET full_name = 'Syeda Aafra Fathima',
-        mobile_number = COALESCE(mobile_number, '+91 98765 43210'),
-        status = 'active',
-        role = 'teacher',
-        school_id = v_school_id
+    SET status = 'active', role = 'teacher', school_id = v_school_id,
+        mobile_number = COALESCE(mobile_number, '+91 98765 43210')
     WHERE id = v_teacher_id;
 
     INSERT INTO public.school_memberships (school_id, user_id, role, status, employee_id)
@@ -317,7 +389,7 @@ BEGIN
     ON CONFLICT (school_id, teacher_id) DO UPDATE 
     SET employee_code = EXCLUDED.employee_code, qualification = EXCLUDED.qualification;
 
-    -- Existing Teacher checked in today at 08:02 AM
+    -- Teacher checked in today at 08:02 AM
     INSERT INTO public.noor_staff_attendance (school_id, teacher_id, attendance_date, status, checked_in_at)
     VALUES (v_school_id, v_teacher_id, v_today, 'present', v_today + TIME '08:02:00')
     ON CONFLICT (school_id, teacher_id, attendance_date) DO UPDATE 
@@ -330,7 +402,7 @@ BEGIN
     teacher_uuids := array_append(teacher_uuids, v_teacher_id);
   END IF;
 
-  -- Generate 9 Dummy Teachers (Total Teachers = 10)
+  -- Generate 9 Dummy Teachers
   FOR i IN 1..9 LOOP
     v_email := 'demo_tch_' || i || '@alnoor.demo';
     v_name := t_names[i];
@@ -374,15 +446,15 @@ BEGIN
   END LOOP;
 
   -- =========================================================================
-  -- STEP 6: EXACTLY 5 STUDENTS PER SECTION (TOTAL 100 STUDENTS ACROSS 20 SECTIONS)
+  -- 6. EXACTLY 5 STUDENTS PER SECTION (TOTAL 100 STUDENTS ACROSS 20 SECTIONS)
   -- =========================================================================
   SELECT id INTO v_student_id FROM public.profiles 
-  WHERE school_id = v_school_id AND role = 'student' AND email NOT LIKE '%@alnoor.demo'
+  WHERE role = 'student' AND email NOT LIKE '%@alnoor.demo'
   LIMIT 1;
 
   IF v_student_id IS NULL THEN
     SELECT id INTO v_student_id FROM public.profiles 
-    WHERE school_id = v_school_id AND role = 'student'
+    WHERE role = 'student'
     LIMIT 1;
   END IF;
 
@@ -393,7 +465,6 @@ BEGIN
       SELECT id, name FROM public.sections WHERE class_id = all_classes_cursor.id ORDER BY name
     LOOP
       FOR s_idx IN 1..5 LOOP
-        -- Class 8 Section B (Where existing Student Syeda Sofiya Imran & mock classmates live)
         IF all_classes_cursor.sort_order = 8 AND all_secs_cursor.name = 'Section B' THEN
           IF s_idx = 5 AND v_student_id IS NOT NULL THEN
             UPDATE public.profiles
@@ -420,7 +491,6 @@ BEGIN
           v_email := 'demo_stu_c' || all_classes_cursor.sort_order || '_' || lower(SUBSTRING(all_secs_cursor.name FROM 9 FOR 1)) || '_' || s_idx || '@alnoor.demo';
         END IF;
 
-        -- Ensure User in auth.users
         SELECT id INTO v_uid FROM auth.users WHERE email = v_email LIMIT 1;
         IF v_uid IS NULL THEN
           v_uid := gen_random_uuid();
@@ -436,7 +506,6 @@ BEGIN
           );
         END IF;
 
-        -- Insert or Update Profile
         INSERT INTO public.profiles (
           id, email, full_name, role, status, school_id, class_id, section_id, roll_number, academic_year_id, updated_at
         ) VALUES (
@@ -447,7 +516,6 @@ BEGIN
           school_id = v_school_id, class_id = all_classes_cursor.id, section_id = all_secs_cursor.id,
           roll_number = EXCLUDED.roll_number, academic_year_id = v_acad_id, updated_at = now();
 
-        -- Membership
         INSERT INTO public.school_memberships (school_id, user_id, role, status)
         VALUES (v_school_id, v_uid, 'student', 'active')
         ON CONFLICT (school_id, user_id) DO UPDATE SET status = 'active', role = 'student';
@@ -456,7 +524,7 @@ BEGIN
   END LOOP;
 
   -- =========================================================================
-  -- STEP 7: TODAY & PAST 7 DAYS ATTENDANCE (POPULATING BAR CHARTS & TRENDLINES)
+  -- 7. TODAY & PAST 7 DAYS ATTENDANCE
   -- =========================================================================
   FOR day_offset IN REVERSE 6..0 LOOP
     FOR all_classes_cursor IN 
@@ -465,7 +533,6 @@ BEGIN
       FOR all_secs_cursor IN 
         SELECT id, name FROM public.sections WHERE class_id = all_classes_cursor.id ORDER BY name
       LOOP
-        -- Create Attendance Session with status = 'submitted'
         INSERT INTO public.attendance_sessions (school_id, class_id, section_id, attendance_date, status, taken_by)
         VALUES (v_school_id, all_classes_cursor.id, all_secs_cursor.id, v_today - (day_offset || ' days')::interval, 'submitted', v_teacher_id)
         ON CONFLICT (school_id, class_id, section_id, attendance_date) DO UPDATE SET status = 'submitted'
@@ -478,7 +545,6 @@ BEGIN
           LIMIT 1;
         END IF;
 
-        -- Fetch the 5 students of this section
         SELECT array_agg(id ORDER BY roll_number) INTO sec_students
         FROM public.profiles
         WHERE school_id = v_school_id AND class_id = all_classes_cursor.id AND section_id = all_secs_cursor.id AND role = 'student';
@@ -486,19 +552,8 @@ BEGIN
         IF sec_students IS NOT NULL AND array_length(sec_students, 1) > 0 THEN
           FOR i IN 1..array_length(sec_students, 1) LOOP
             IF all_classes_cursor.sort_order = 8 AND all_secs_cursor.name = 'Section B' AND day_offset = 0 THEN
-              -- Match Teacher Dashboard Table exactly:
-              -- Student 1 (Ayesha): Present
-              -- Student 2 (Zaid): Present
-              -- Student 3 (Sana Fatima): Leave
-              -- Student 4 (Arjun Mehta): Absent
-              -- Student 5 (Sofiya Imran): Present
-              v_status := CASE 
-                WHEN i = 3 THEN 'leave' 
-                WHEN i = 4 THEN 'absent' 
-                ELSE 'present' 
-              END;
+              v_status := CASE WHEN i = 3 THEN 'leave' WHEN i = 4 THEN 'absent' ELSE 'present' END;
             ELSE
-              -- 4 present and 1 absent/leave per section (80% rate)
               v_status := CASE 
                 WHEN (i = 5 AND (all_classes_cursor.sort_order + day_offset) % 3 = 0) THEN 'absent'
                 WHEN (i = 4 AND (all_classes_cursor.sort_order + day_offset) % 5 = 0) THEN 'leave'
@@ -515,7 +570,7 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  -- 30-Day Attendance history for existing student (Sofiya Imran) to hit 94% rate
+  -- 30-Day Attendance history for existing student (Sofiya Imran)
   IF v_student_id IS NOT NULL THEN
     FOR day_offset IN 7..30 LOOP
       INSERT INTO public.attendance_sessions (school_id, class_id, section_id, attendance_date, status, taken_by)
@@ -537,19 +592,15 @@ BEGIN
   END IF;
 
   -- =========================================================================
-  -- STEP 8: TEACHER TIMETABLES & DYNAMIC ACTIVE PERIOD (ACTIVE CLASSES > 0)
+  -- 8. DYNAMIC ONGOING PERIOD (ACTIVE CLASSES NOW > 0)
   -- =========================================================================
   DELETE FROM public.noor_teacher_periods WHERE school_id = v_school_id;
 
-  -- Calculate dynamic start and end time covering CURRENT_TIME
   v_p2_start := to_char(GREATEST(TIME '00:00:00', v_now_time - INTERVAL '30 minutes'), 'HH24:MI');
   v_p2_end := to_char(LEAST(TIME '23:59:00', v_now_time + INTERVAL '45 minutes'), 'HH24:MI');
 
-  -- Seed periods across all weekdays (0 to 6)
   FOR w_idx IN 0..6 LOOP
-    -- Existing Teacher (Syeda Aafra Fathima)
     IF v_teacher_id IS NOT NULL THEN
-      -- Period 1: Completed earlier today
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, v_teacher_id, w_idx, 1, '08:00', '08:45', 'English', 'Class 8 - Section B', v_class_8_id, v_sec_8b_id, 'class', 'approved', 'done')
       RETURNING id INTO v_period_id;
@@ -559,7 +610,6 @@ BEGIN
         ON CONFLICT (school_id, teacher_id, period_id, class_date) DO UPDATE SET status = 'done';
       END IF;
 
-      -- Period 2: ONGOING RIGHT NOW (Guarantees Active Classes Now > 0)
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, v_teacher_id, w_idx, 2, v_p2_start, v_p2_end, 'Mathematics', 'Class 9 - Section A', v_class_9_id, v_sec_9a_id, 'class', 'approved', 'ongoing')
       RETURNING id INTO v_period_id;
@@ -569,7 +619,6 @@ BEGIN
         ON CONFLICT (school_id, teacher_id, period_id, class_date) DO UPDATE SET status = 'ongoing';
       END IF;
 
-      -- Periods 3, 4, 5: Upcoming
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES 
         (v_school_id, v_teacher_id, w_idx, 3, '11:45', '12:30', 'Science', 'Class 8 - Section A', v_class_8_id, v_sec_8a_id, 'class', 'approved', 'upcoming'),
@@ -577,9 +626,7 @@ BEGIN
         (v_school_id, v_teacher_id, w_idx, 5, '13:35', '14:20', 'Mathematics', 'Class 10 - Section A', v_class_10_id, v_sec_10a_id, 'class', 'approved', 'upcoming');
     END IF;
 
-    -- Other Teachers matching Principal Schedule table
     IF array_length(teacher_uuids, 1) >= 7 THEN
-      -- Ms. Fathima Ali | Mathematics | Class 8 | Sec A | Ongoing
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, teacher_uuids[2], w_idx, 2, v_p2_start, v_p2_end, 'Mathematics', 'Class 8 - Section A', v_class_8_id, v_sec_8a_id, 'class', 'approved', 'ongoing')
       RETURNING id INTO v_period_id;
@@ -589,22 +636,19 @@ BEGIN
         ON CONFLICT (school_id, teacher_id, period_id, class_date) DO UPDATE SET status = 'ongoing';
       END IF;
 
-      -- Mr. Aamir Khan | History | Class 10 | Sec B
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, teacher_uuids[3], w_idx, 3, '14:00', '15:00', 'History', 'Class 10 - Section B', v_class_10_id, v_sec_10b_id, 'class', 'approved', 'upcoming');
 
-      -- Dr. Sarah Khan | Physics | Class 10 | Sec A
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, teacher_uuids[4], w_idx, 4, '15:00', '16:00', 'Physics', 'Class 10 - Section A', v_class_10_id, v_sec_10a_id, 'class', 'approved', 'upcoming');
 
-      -- Mrs. Sana Begum | English | Class 7 | Sec B
       INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
       VALUES (v_school_id, teacher_uuids[5], w_idx, 5, '16:00', '17:00', 'English', 'Class 7 - Section B', v_class_7_id, v_sec_7b_id, 'class', 'approved', 'upcoming');
     END IF;
   END LOOP;
 
   -- =========================================================================
-  -- STEP 9: ALL 5 SUBJECT TEST MARKS & HOMEWORK (STUDENT SYEDA SOFIYA IMRAN)
+  -- 9. EXISTING STUDENT 5 SUBJECTS MARKS & HOMEWORK
   -- =========================================================================
   IF v_student_id IS NOT NULL THEN
     SELECT id INTO v_subj_math FROM public.subjects WHERE school_id = v_school_id AND class_id = v_class_8_id AND name = 'Mathematics' LIMIT 1;
@@ -613,7 +657,6 @@ BEGIN
     SELECT id INTO v_subj_sst FROM public.subjects WHERE school_id = v_school_id AND class_id = v_class_8_id AND name = 'Social Studies' LIMIT 1;
     SELECT id INTO v_subj_urdu FROM public.subjects WHERE school_id = v_school_id AND class_id = v_class_8_id AND name = 'Urdu' LIMIT 1;
 
-    -- 1. Mathematics: 85/100 (Grade A)
     INSERT INTO public.school_assessments (school_id, academic_year_id, class_id, section_id, subject_id, title, assessment_type, assessment_date, max_marks, status)
     VALUES (v_school_id, v_acad_id, v_class_8_id, v_sec_8b_id, v_subj_math, 'Mathematics - Unit Test', 'unit_test', v_today - INTERVAL '5 days', 100, 'marked')
     RETURNING id INTO v_assessment_id;
@@ -621,7 +664,6 @@ BEGIN
     VALUES (v_school_id, v_assessment_id, v_student_id, 85, 'A', 'Strong analytical understanding', now() - INTERVAL '4 days')
     ON CONFLICT (assessment_id, student_id) DO UPDATE SET marks_obtained = 85, grade_label = 'A';
 
-    -- 2. Science: 78/100 (Grade B+)
     INSERT INTO public.school_assessments (school_id, academic_year_id, class_id, section_id, subject_id, title, assessment_type, assessment_date, max_marks, status)
     VALUES (v_school_id, v_acad_id, v_class_8_id, v_sec_8b_id, v_subj_sci, 'Science - Chapter Test', 'chapter_test', v_today - INTERVAL '10 days', 100, 'marked')
     RETURNING id INTO v_assessment_id;
@@ -629,7 +671,6 @@ BEGIN
     VALUES (v_school_id, v_assessment_id, v_student_id, 78, 'B+', 'Good grasp of photosynthesis concepts', now() - INTERVAL '9 days')
     ON CONFLICT (assessment_id, student_id) DO UPDATE SET marks_obtained = 78, grade_label = 'B+';
 
-    -- 3. English: 92/100 (Grade A+)
     INSERT INTO public.school_assessments (school_id, academic_year_id, class_id, section_id, subject_id, title, assessment_type, assessment_date, max_marks, status)
     VALUES (v_school_id, v_acad_id, v_class_8_id, v_sec_8b_id, v_subj_eng, 'English - Reading Test', 'quiz', v_today - INTERVAL '15 days', 100, 'marked')
     RETURNING id INTO v_assessment_id;
@@ -637,7 +678,6 @@ BEGIN
     VALUES (v_school_id, v_assessment_id, v_student_id, 92, 'A+', 'Outstanding vocabulary and expression', now() - INTERVAL '14 days')
     ON CONFLICT (assessment_id, student_id) DO UPDATE SET marks_obtained = 92, grade_label = 'A+';
 
-    -- 4. Social Studies: 70/100 (Grade B)
     INSERT INTO public.school_assessments (school_id, academic_year_id, class_id, section_id, subject_id, title, assessment_type, assessment_date, max_marks, status)
     VALUES (v_school_id, v_acad_id, v_class_8_id, v_sec_8b_id, v_subj_sst, 'Social Studies - Periodic Assessment', 'term_test', v_today - INTERVAL '20 days', 100, 'marked')
     RETURNING id INTO v_assessment_id;
@@ -645,7 +685,6 @@ BEGIN
     VALUES (v_school_id, v_assessment_id, v_student_id, 70, 'B', 'Focus on medieval history timelines', now() - INTERVAL '19 days')
     ON CONFLICT (assessment_id, student_id) DO UPDATE SET marks_obtained = 70, grade_label = 'B';
 
-    -- 5. Urdu: 88/100 (Grade A)
     INSERT INTO public.school_assessments (school_id, academic_year_id, class_id, section_id, subject_id, title, assessment_type, assessment_date, max_marks, status)
     VALUES (v_school_id, v_acad_id, v_class_8_id, v_sec_8b_id, v_subj_urdu, 'Urdu - Language Assessment', 'quiz', v_today - INTERVAL '25 days', 100, 'marked')
     RETURNING id INTO v_assessment_id;
@@ -653,7 +692,6 @@ BEGIN
     VALUES (v_school_id, v_assessment_id, v_student_id, 88, 'A', 'Nasta’liq script and poetry analysis is great', now() - INTERVAL '24 days')
     ON CONFLICT (assessment_id, student_id) DO UPDATE SET marks_obtained = 88, grade_label = 'A';
 
-    -- Upcoming Assignments
     INSERT INTO public.noor_student_assignments (school_id, class_id, section_id, subject_id, title, max_marks, due_at, published_at, is_active)
     VALUES 
       (v_school_id, v_class_8_id, v_sec_8b_id, v_subj_eng, 'English Essay: My Favourite Book', 20, now() + INTERVAL '1 day', now() - INTERVAL '1 day', true),
@@ -664,7 +702,7 @@ BEGIN
   END IF;
 
   -- =========================================================================
-  -- STEP 10: NOTICES & CALENDAR EVENTS (ALL ROLES)
+  -- 10. NOTICES & CALENDAR EVENTS
   -- =========================================================================
   INSERT INTO public.school_notices (school_id, title, body, starts_at, ends_at, is_active, target_roles)
   VALUES 
@@ -680,5 +718,5 @@ BEGIN
     (v_school_id, 'Curriculum Update', 'With Senior Teachers', 'meeting', v_today + INTERVAL '2 days' + TIME '14:00:00', 'confirmed', ARRAY['principal','teacher'])
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE 'Al-Noor School demo data populated successfully with strict lightweight limits!';
+  RAISE NOTICE 'NOOR School bulk data populated successfully across the entire institution!';
 END $$;

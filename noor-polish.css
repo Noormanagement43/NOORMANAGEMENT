@@ -1,0 +1,43 @@
+/* Noor shared polish — keep role permissions and premium burgundy themes unchanged. */
+#view-profile .noor-profile-avatar.avatar{width:116px;height:116px;border-radius:50%;border:4px solid var(--paper);box-shadow:0 0 0 2px var(--rose-line),0 9px 26px rgba(84,36,59,.16);font-size:31px}
+#view-profile .noor-profile-avatar img{width:100%;height:100%;object-fit:cover}
+#view-profile .noor-profile-card{align-items:center;gap:20px;flex-wrap:wrap}
+#view-profile .noor-profile-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
+#view-profile #noorProfilePhotoInput{width:min(100%,310px);font-size:14px}
+#view-profile .noor-profile-help{margin:9px 0 0;color:var(--muted);font-size:13px}
+#view-profile .detailgrid{gap:12px}
+#view-profile .detail small{font-size:12px}
+#view-profile .detail b{font-size:14px;overflow-wrap:anywhere}
+#workspace .content .small-note{font-size:max(12px, .82rem)}
+#workspace .headrow p{font-size:14px;line-height:1.65}
+#workspace .panelhead p,#workspace .detail small{font-size:13px}
+#workspace .class-item small{font-size:12px}
+#workspace input,#workspace textarea,#workspace select{font-size:max(14px,1rem)}
+#workspace button{min-height:38px}
+#workspace .avatar{width:43px;height:43px;font-size:13px}
+#workspace .sidebar button{min-height:42px}
+#workspace .topbar .user-mini b{font-size:13px}
+#workspace .topbar .user-mini small{font-size:11px}
+#noorMobileNav{display:none}
+@media(max-width:760px){
+ #workspace .content{padding:19px 13px calc(107px + env(safe-area-inset-bottom))}
+ #workspace .topbar{padding:12px;gap:7px}
+ #workspace .topbar .user-mini{gap:6px;min-width:0}
+ #workspace .headrow h1{font-size:clamp(25px,7vw,31px)}
+ #workspace .stats .stat strong{font-size:clamp(22px,6vw,28px)}
+ #workspace .panel{padding:16px}
+ #workspace .small-note{line-height:1.6}
+ #workspace .table{overflow-x:auto}
+ #workspace button{min-height:44px}
+ #noorMobileNav{position:fixed;left:0;right:0;bottom:0;z-index:19;display:flex;gap:3px;justify-content:space-around;padding:8px 7px calc(8px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--rose-line);box-shadow:0 -7px 29px rgba(56,23,44,.12)}
+ #noorMobileNav button{border:0;background:transparent;color:var(--muted);flex:1;min-width:0;display:flex;align-items:center;flex-direction:column;gap:3px;padding:6px 2px;font:700 11px "DM Sans",sans-serif;border-radius:12px;min-height:49px}
+ #noorMobileNav button .ico{font-size:21px;line-height:1}
+ #noorMobileNav button.active{background:var(--rose-soft);color:var(--berry)}
+ #workspace .mobilemenu,#workspace #mobileBackBtn{width:44px;height:44px;min-width:44px}
+}
+@media(max-width:390px){
+ #workspace #topRole,#workspace #topCaption{display:none}
+ #workspace .content{padding-inline:10px}
+ #workspace .topbar .user-mini b{max-width:96px}
+}
+@media(prefers-reduced-motion:reduce){#noorMobileNav *{transition:none!important}}

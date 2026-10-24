@@ -1,0 +1,96 @@
+
+#ntTeacherPlanners{display:block;min-width:0;margin:16px 0}
+#ntTeacherPlanners *{box-sizing:border-box}
+#ntTeacherPlanners .ntp-title{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:0 0 12px;flex-wrap:wrap}
+#ntTeacherPlanners .ntp-title small{font:850 10px 'DM Sans',sans-serif;letter-spacing:1.5px;color:#ad738c}
+#ntTeacherPlanners .ntp-title h2{margin:4px 0;color:#53273e;font:850 clamp(21px,2.6vw,26px)/1.25 Manrope,'DM Sans',sans-serif}
+#ntTeacherPlanners .ntp-title p,#ntTeacherPlanners .ntp-muted{color:#826b78;font-size:13px;margin:6px 0}
+#ntTeacherPlanners .ntp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#ntTeacherPlanners .ntp-card{border:1px solid #ebd8e2;border-radius:20px;background:#fffcfd;box-shadow:0 7px 28px #602c4710;padding:18px;min-width:0}
+#ntTeacherPlanners .ntp-card h3{color:#652b48;font:850 18px Manrope,'DM Sans',sans-serif;margin:0 0 10px}
+#ntTeacherPlanners .ntp-card p{font-size:13px;color:#826877}
+#ntTeacherPlanners .ntp-card label{font-size:13px;font-weight:750;color:#694056;display:block;margin:10px 0}
+#ntTeacherPlanners .ntp-card select,#ntTeacherPlanners .ntp-card input{font:14px 'DM Sans',sans-serif;color:#482b3b;border:1px solid #ddc4d0;border-radius:11px;padding:11px;background:white;width:100%;max-width:100%;display:block;margin-top:5px;min-height:44px}
+#ntTeacherPlanners .ntp-inline{display:grid;grid-template-columns:1.4fr .6fr;gap:10px}
+#ntTeacherPlanners button{min-height:44px;border-radius:11px;border:1px solid #e7cedc;background:#672940;color:white;padding:11px 14px;font:800 13px 'DM Sans',sans-serif;cursor:pointer}
+#ntTeacherPlanners button:disabled{opacity:.5;cursor:not-allowed}
+#ntTeacherPlanners #ntpRefresh{color:#66354f;background:#fff1f7}
+#ntTeacherPlanners .ntp-deadline{border-top:1px solid #f0e2e9;display:grid;gap:9px;padding:13px 0}
+#ntTeacherPlanners .ntp-deadline>b{font-size:13px}
+#ntTeacherPlanners .ntp-deadline b,#ntTeacherPlanners .ntp-deadline small{display:block;overflow-wrap:anywhere}
+#ntTeacherPlanners .ntp-deadline small{font-size:11px;color:#806a76}
+#ntTeacherPlanners .ntp-deadline small strong{color:#ad723e}
+#ntTeacherPlanners #ntpStatus{font-size:13px;min-height:20px;margin-top:8px}
+.nt-offline-bar{padding:13px;background:linear-gradient(125deg,#fff3e4,#fffaf5);border-radius:13px;border:1px solid #ecd6bc;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:13px;color:#805534}
+.nt-offline-bar button{font-size:13px}
+#view-attendance .ta-offline-panel{background:#fff4e6;border:1px solid #efdac1}
+#view-attendance .ta-offline-panel .ta-tools{gap:14px}
+@media(max-width:860px){#ntTeacherPlanners .ntp-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){
+ #ntTeacherPlanners{margin:13px 0}
+ #ntTeacherPlanners .ntp-card{border-radius:16px;padding:14px}
+ #ntTeacherPlanners .ntp-title{flex-direction:column;align-items:stretch}
+ #ntTeacherPlanners #ntpRefresh{width:100%}
+ #ntTeacherPlanners .ntp-inline{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #ntTeacherPlanners .ntp-deadline button{width:100%}
+ .nt-offline-bar{align-items:stretch;flex-direction:column}
+ .nt-offline-bar button{width:100%;min-height:44px}
+ #view-attendance .ta-offline-panel button{width:100%;min-height:44px}
+}
+@media(max-width:380px){#ntTeacherPlanners .ntp-inline{grid-template-columns:minmax(0,1fr)}}
+
+/* Phone attendance cards: no wide spreadsheet on handhelds */
+.nt-att-mobile-list{display:grid;gap:10px;min-width:0}
+.nt-att-mobile-row{background:#fffdfa;border:1px solid #ecd9e2;border-radius:14px;padding:13px;box-shadow:0 5px 15px #4e23360c;display:grid;gap:10px}
+.nt-att-mobile-name{display:grid;gap:3px;min-width:0}
+.nt-att-mobile-name b{font-size:15px;color:#4b293a;line-height:1.4;overflow-wrap:anywhere}
+.nt-att-mobile-name small{font-size:12px;color:#866c7a}
+.nt-att-mobile-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#workspace .noor-t4 .nt-att-mobile-options .nt-radio{
+ display:flex;width:100%!important;min-width:0!important;height:46px!important;
+ padding:10px 6px!important;border-radius:10px!important;justify-content:center;align-items:center;
+ font-size:12px!important;font-weight:800!important;line-height:1.2;white-space:nowrap;
+ background:#f8f1f5;border:1px solid #e8d6df;box-shadow:none
+}
+#workspace .noor-t4 .nt-att-mobile-options .nt-radio.present[aria-checked=true]{background:#dff7e9!important;color:#226c46!important;border:2px solid #7dc39b!important}
+#workspace .noor-t4 .nt-att-mobile-options .nt-radio.absent[aria-checked=true]{background:#ffe4e8!important;color:#a33447!important;border:2px solid #e7a3b2!important}
+#workspace .noor-t4 .nt-att-mobile-options .nt-radio.late[aria-checked=true]{background:#fff0d5!important;color:#835a20!important;border:2px solid #e5bb74!important}
+#workspace .noor-t4 .nt-att-mobile-options .nt-radio:focus-visible{outline:3px solid #ad6589;outline-offset:2px}
+@media(max-width:380px){#workspace .noor-t4 .nt-att-mobile-options .nt-radio{font-size:11px!important}}
+
+
+/* Teacher reference palette and responsive data cards */
+.noor-t4 .nt-reference-kpis{margin:14px 0 18px}
+.noor-t4 .nt-reference-greeting{color:#754c65;margin-bottom:10px;font-size:14px}
+.noor-t4 .nt-reference-greeting strong{color:#511b37}
+.noor-t4 .nt-reference-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.noor-t4 .nt-reference-kpi{min-width:0;display:flex;gap:12px;align-items:center;padding:16px;border-radius:17px;border:1px solid #eadbe4}
+.noor-t4 .nt-reference-kpi.purple{background:linear-gradient(120deg,#f3edff,#e9dfff)}
+.noor-t4 .nt-reference-kpi.pink{background:linear-gradient(120deg,#fff0f6,#fbdce9)}
+.noor-t4 .nt-reference-kpi.green{background:linear-gradient(120deg,#e8fbf1,#d9f4e7)}
+.noor-t4 .nt-reference-kpi>span{font-size:26px;color:#b34b8b}
+.noor-t4 .nt-reference-kpi small{display:block;font-size:12px;color:#765e70}
+.noor-t4 .nt-reference-kpi b{display:block;font-size:20px;color:#53243e;overflow-wrap:anywhere}
+.noor-t4 .nt-reference-panels{margin:16px 0}
+.noor-t4 .nt-reference-chart-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:14px}
+.noor-t4 .nt-reference-chart{min-width:0;padding:18px;border-radius:17px}
+.noor-t4 .nt-reference-bars{display:grid;gap:18px;margin:20px 0}
+.noor-t4 .nt-reference-bar-label{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#754b63;margin-bottom:7px}
+.noor-t4 .nt-reference-track{height:15px;border-radius:10px;background:#f7eaf0;overflow:hidden}
+.noor-t4 .nt-reference-fill{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#ff87ae,#e9408a)}
+.noor-t4 .nt-reference-fill.c1{background:linear-gradient(90deg,#c9a6fc,#8e69df)}
+.noor-t4 .nt-reference-fill.c2{background:linear-gradient(90deg,#78ded1,#31b9b3)}
+.noor-t4 .nt-reference-ring{--progress:0;width:152px;height:152px;border-radius:50%;margin:18px auto;display:grid;place-items:center;background:conic-gradient(#37bb8e calc(var(--progress)*1%),#f5dbe6 0)}
+.noor-t4 .nt-reference-ring>div{width:116px;height:116px;border-radius:50%;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.noor-t4 .nt-reference-ring strong{font-size:27px;color:#59233d}
+.noor-t4 .nt-reference-ring small{font-size:11px;color:#806779}
+.noor-t4 .nt-reference-ring-caption{text-align:center;font-size:13px;color:#806779}
+.noor-t4 .nt-reference-quick{margin-top:14px;padding:16px}
+.noor-t4 .nt-reference-action-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.noor-t4 .nt-reference-action{min-height:86px;border:1px solid #f0dbe6;border-radius:13px;background:#fbeaf2;color:#602d49;display:grid;align-content:center;justify-items:center;gap:8px;padding:10px 5px;cursor:pointer;font-size:12px}
+.noor-t4 .nt-reference-action:nth-child(3n+1){background:#e8f7f4}
+.noor-t4 .nt-reference-action:nth-child(3n+2){background:#f1e9ff}
+.noor-t4 .nt-reference-action span{font-size:24px}
+.noor-t4 .nt-reference-action:focus-visible{outline:3px solid #aa5a89}
+@media(max-width:800px){.noor-t4 .nt-reference-chart-grid{grid-template-columns:minmax(0,1fr)}.noor-t4 .nt-reference-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.noor-t4 .nt-reference-kpi-grid{gap:7px}.noor-t4 .nt-reference-kpi{padding:9px 6px;min-height:76px;flex-direction:column;gap:4px;text-align:center}.noor-t4 .nt-reference-kpi>span{font-size:19px}.noor-t4 .nt-reference-kpi b{font-size:14px}.noor-t4 .nt-reference-kpi small{font-size:10px}.noor-t4 .nt-reference-chart{padding:13px}.noor-t4 .nt-reference-quick{padding:13px}.noor-t4 .nt-reference-action-grid{gap:7px}.noor-t4 .nt-reference-action{min-height:80px;font-size:11px}}

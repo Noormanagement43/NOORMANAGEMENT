@@ -1,0 +1,289 @@
+
+/* NOOR 2026 responsive teacher upgrade: desktop profile preserved, mobile intentionally redesigned */
+#ntTeacherIntelligence{display:block;margin:16px 0 20px;min-width:0}
+#ntTeacherIntelligence *{box-sizing:border-box}
+#ntTeacherIntelligence .nti-title{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
+#ntTeacherIntelligence h2{font:850 clamp(22px,2.5vw,29px)/1.3 Manrope,'DM Sans',sans-serif;color:#511f39;letter-spacing:-.6px;margin:4px 0}
+#ntTeacherIntelligence h3{font:800 17px/1.4 Manrope,'DM Sans',sans-serif;color:#5e2a42;margin:0 0 12px}
+#ntTeacherIntelligence .nti-title p,#ntTeacherIntelligence .nti-help{font-size:13px;color:#856b78;margin:4px 0}
+#ntTeacherIntelligence .nti-eyebrow{font-size:10px;color:#b37892;letter-spacing:1.7px;font-weight:800}
+#ntTeacherIntelligence .nti-refresh,#ntTeacherIntelligence .nti-action,
+#ntTeacherIntelligence .nti-lesson button,#ntTeacherIntelligence .nti-resource-form button,
+#ntTeacherIntelligence .nti-subhead button{border:1px solid #e4c9d5;background:#f9eaf1;color:#68364f;border-radius:12px;min-height:44px;padding:9px 13px;font:750 13px 'DM Sans',sans-serif;cursor:pointer}
+#ntTeacherIntelligence button:hover{filter:brightness(.96)}
+#ntTeacherIntelligence .nti-loading,#ntTeacherIntelligence .nti-empty{font-size:14px;color:#816e79;padding:16px 0}
+#ntTeacherIntelligence .nti-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+#ntTeacherIntelligence .nti-kpi{padding:17px 15px;min-height:120px;border-radius:19px;border:1px solid #ecdbdf;background:#fff;display:flex;flex-direction:column;gap:4px;min-width:0;box-shadow:0 10px 22px #5d35450e}
+#ntTeacherIntelligence .nti-kpi strong{font:900 clamp(24px,3vw,31px) Manrope,'DM Sans',sans-serif;letter-spacing:-1px}
+#ntTeacherIntelligence .nti-kpi span{font-size:13px;font-weight:800;color:#402b38}
+#ntTeacherIntelligence .nti-kpi small{font-size:11px;color:#74626d}
+#ntTeacherIntelligence .nti-kpi.violet{background:linear-gradient(125deg,#f7ebff,#fff8fe)}
+#ntTeacherIntelligence .nti-kpi.violet strong{color:#7342a0}
+#ntTeacherIntelligence .nti-kpi.peach{background:linear-gradient(125deg,#fff0eb,#fffaf6)}
+#ntTeacherIntelligence .nti-kpi.peach strong{color:#ad6b45}
+#ntTeacherIntelligence .nti-kpi.teal{background:linear-gradient(125deg,#e9f8f6,#f7ffff)}
+#ntTeacherIntelligence .nti-kpi.teal strong{color:#2a8b7a}
+#ntTeacherIntelligence .nti-kpi.rose{background:linear-gradient(125deg,#fbe7ef,#fff8fa)}
+#ntTeacherIntelligence .nti-kpi.rose strong{color:#9e4774}
+#ntTeacherIntelligence .nti-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 14px}
+#ntTeacherIntelligence .nti-pane{background:#fff;border:1px solid #e9d7df;box-shadow:0 9px 27px #54243b0c;border-radius:21px;padding:18px;min-width:0}
+#ntTeacherIntelligence .nti-pane.nti-brief{background:linear-gradient(140deg,#57253d,#742c4c 72%,#96556f);color:#fff}
+#ntTeacherIntelligence .nti-brief h3,#ntTeacherIntelligence .nti-brief .nti-help{color:#fff}
+#ntTeacherIntelligence .nti-brief ul{list-style:disc;margin:8px 0 5px;padding:0 0 0 20px;display:grid;gap:9px;font-size:14px}
+#ntTeacherIntelligence .nti-brief .nti-help{opacity:.78}
+#ntTeacherIntelligence .nti-subhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+#ntTeacherIntelligence .nti-subhead h3{margin:0}
+#ntTeacherIntelligence .nti-insight{padding:11px 0;border-top:1px solid #f3e6ed}
+#ntTeacherIntelligence .nti-insight b,#ntTeacherIntelligence .nti-insight span{display:block;font-size:13px}
+#ntTeacherIntelligence .nti-insight span{font-size:12px;color:#836a78}
+#ntTeacherIntelligence .nti-meter-row{display:grid;grid-template-columns:minmax(105px,1fr) minmax(80px,1fr) 42px;gap:10px;align-items:center;margin:12px 0}
+#ntTeacherIntelligence .nti-meter-row b,#ntTeacherIntelligence .nti-meter-row small{display:block;font-size:12px}
+#ntTeacherIntelligence .nti-meter-row small{font-size:11px;color:#89717e}
+#ntTeacherIntelligence .nti-meter{height:10px;overflow:hidden;border-radius:20px;background:#f1e8ed}
+#ntTeacherIntelligence .nti-meter span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#c37aab,#6e5bb9)}
+#ntTeacherIntelligence .nti-meter-row>strong{font-size:13px;color:#764562;text-align:right}
+#ntTeacherIntelligence .nti-lesson{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #f0e4ea;padding:11px 0}
+#ntTeacherIntelligence .nti-lesson b,#ntTeacherIntelligence .nti-lesson small{display:block}
+#ntTeacherIntelligence .nti-lesson b{font-size:13px}
+#ntTeacherIntelligence .nti-lesson small{font-size:11px;color:#8e7480;margin:3px 0}
+#ntTeacherIntelligence .nti-lesson .nti-saved{color:#2e8267}
+#ntTeacherIntelligence .nti-lesson button{white-space:nowrap;flex:none;min-width:100px}
+#ntTeacherIntelligence .nti-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+#ntTeacherIntelligence .nti-action{display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center;text-align:left;min-height:78px;white-space:normal;background:#fff8fb}
+#ntTeacherIntelligence .nti-action span{font-size:21px;color:#a64b79}
+#ntTeacherIntelligence .nti-pill{font:750 11px 'DM Sans';color:#763b5a;background:#f8e7ee;border-radius:20px;padding:7px 10px}
+#ntTeacherIntelligence .nti-resource-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+#ntTeacherIntelligence .nti-resource-form label{font-size:12px;color:#70445a;font-weight:800}
+#ntTeacherIntelligence .nti-resource-form input,#ntTeacherIntelligence .nti-resource-form select{
+display:block;min-height:44px;width:100%;border-radius:11px;background:#fff;border:1px solid #e3c9d5;padding:10px 9px;font-size:13px;color:#48243a;margin-top:5px}
+#ntTeacherIntelligence .nti-resource-form button{background:#672b47;color:#fff;font-size:13px}
+#ntTeacherIntelligence .nti-resource{border-top:1px solid #f2e5eb;padding:9px 0;display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap}
+#ntTeacherIntelligence .nti-resource a{color:#7a3153;font-size:13px;word-break:break-all}
+#ntTeacherIntelligence .nti-resource small{font-size:11px;color:#957e88}
+#ntTeacherIntelligence .nti-banner{padding:12px 15px;border-radius:13px;background:#fff3e6;color:#815734;font-size:13px;margin:10px 0}
+#ntTeacherIntelligence .nti-error{padding:10px;border-radius:11px;background:#ffedf0;color:#a44156;font-size:13px}
+#ntTeacherIntelligence .nti-feedback{min-height:18px;font-size:13px;margin:8px 0 0}
+.nt-attendance{border:1px solid #ecd5df!important;background:linear-gradient(140deg,#fffdfb,#fff7fa)!important;box-shadow:0 15px 32px #51253c14!important}
+.nt-attendance>.nt-card-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.nt-attendance .nt-att-head{background:#fff6fb;border:1px solid #f2e2e9;border-radius:14px;padding:13px}
+.nt-attendance .nt-att-actions{gap:13px}
+#ntTeacherIntelligence + .nt-attendance{margin:0 0 18px}
+.nt-attendance .nt-att-table{font-size:14px}
+.nt-attendance .nt-att-table th,.nt-attendance .nt-att-table td{font-size:13px;padding:13px 12px}
+.nt-attendance .nt-radio{width:27px;height:27px;min-width:27px}
+#workspace.noor-teacher-handset .noor-t4 .nt-attendance .nt-att-table{min-width:490px!important}
+.nt-attendance .nt-att-scroll{overflow-x:auto;max-width:100%;scrollbar-width:thin}
+.nt-attendance .nt-att-table td:first-child{position:sticky;left:0;background:#fffafc;z-index:1}
+.nt-attendance .nt-att-table th:first-child{position:sticky;left:0;background:#f9f0f5;z-index:2}
+.nt4-intelligence-profile-note{font-size:12px;color:#845c73}
+.nti-dialog{border:1px solid #e6cbd8;border-radius:19px;padding:22px;max-width:min(95vw,560px);width:100%;background:#fffafc;color:#4e263c;box-shadow:0 18px 50px #260e1a48}
+.nti-dialog::backdrop{background:#24121d99}
+.nti-dialog .nti-modal{display:grid;gap:13px}
+.nti-dialog h3{font-size:19px;margin:0}
+.nti-dialog label{font:800 13px 'DM Sans';color:#643e54}
+.nti-dialog input,.nti-dialog textarea{width:100%;box-sizing:border-box;display:block;border:1px solid #dcc2cf;border-radius:10px;padding:10px;margin-top:5px;font:14px 'DM Sans';background:white;color:#3e2935}
+.nti-dialog textarea{min-height:70px;resize:vertical}
+.nti-dialog .nti-subhead,.nti-dialog .nti-modal-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.nti-dialog button{border:1px solid #e4ced9;background:#fff4f7;border-radius:11px;color:#6a324e;padding:11px 15px;min-height:44px;font-size:14px;cursor:pointer}
+.nti-dialog button.nti-primary{background:#63223e;color:#fff}
+.nsc{font:15px/1.55 'DM Sans',system-ui,sans-serif;color:#502a3d;max-width:1200px;margin:auto;padding-bottom:36px}
+.nsc *{box-sizing:border-box}
+.nsc .nsc-head,.nsc .nsc-row{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.nsc .nsc-head h1{font:850 clamp(24px,4vw,33px) Manrope,sans-serif;margin:0;color:#54243b}
+.nsc .nsc-head p,.nsc .nsc-hint{font-size:13px;color:#82717b;margin:6px 0}
+.nsc .nsc-head small{letter-spacing:1px;text-transform:uppercase;font-size:11px;color:#a55c80;font-weight:800}
+.nsc .nsc-card{background:#fffdfb;border:1px solid #ead8e2;padding:20px;border-radius:21px;margin:15px 0;box-shadow:0 9px 24px #4e1d3610}
+.nsc .nsc-card h2{font:800 19px Manrope,sans-serif;margin:0;color:#54243b}
+.nsc button{border-radius:11px;min-height:42px;padding:10px 13px;background:#f9e6ef;border:1px solid #e8cad9;color:#68344e;font:750 13px 'DM Sans';cursor:pointer}
+.nsc #nscAdd{background:#642740;color:white}
+.nsc .nsc-month{display:flex;gap:15px;align-items:center;justify-content:center;padding:5px 0 13px}
+.nsc .nsc-month button{font-size:23px;min-width:42px}
+.nsc .nsc-weekdays,.nsc .nsc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.nsc .nsc-weekdays b{text-align:center;font:800 12px 'DM Sans';color:#977688;padding:9px 0}
+.nsc .nsc-day{background:white;border:1px solid #eddee6;border-radius:11px;text-align:left;min-width:0;min-height:92px;display:flex;flex-direction:column;gap:7px;padding:9px}
+.nsc .nsc-day b{font-size:15px}
+.nsc .nsc-day.selected{border:2px solid #71354f;background:#fff1f7}
+.nsc .nsc-day.today>b{background:#71354f;color:#fff;border-radius:50%;width:27px;height:27px;display:grid;place-items:center}
+.nsc .nsc-mini{display:grid;gap:3px}
+.nsc .nsc-mini small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:5px;padding:3px 4px;font-size:10px;background:#fae8ef;color:#672c47}
+.nsc .nsc-mini small.holiday{background:#fff0df;color:#985d35}
+.nsc .nsc-legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;margin:8px 0;color:#7d5770}
+.nsc .nsc-legend span:first-child{color:#9c4771}.nsc .nsc-legend span:last-child{color:#b37d3b}
+.nsc .nsc-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f3e5ea}
+.nsc .nsc-entry i{background:#9d4a73;width:10px;height:10px;flex:none;border-radius:50%;margin-top:6px}
+.nsc .nsc-entry.festival i{background:#cd9b54}
+.nsc .nsc-entry b,.nsc .nsc-entry small{display:block}
+.nsc .nsc-entry small{font-size:12px;color:#887780}
+#nscModal{max-width:min(92vw,540px);border:1px solid #ebd6e1;border-radius:20px;padding:20px;background:#fffbfd}
+#nscModal::backdrop{background:#24101f99}
+#nscModal form{display:grid;gap:11px;font:14px 'DM Sans'}
+#nscModal h2{color:#58233c}
+#nscModal label{font-size:13px;font-weight:750;color:#72415a}
+#nscModal input,#nscModal textarea,#nscModal select{display:block;width:100%;border:1px solid #e0c8d3;border-radius:9px;padding:11px;font-size:14px;margin-top:5px}
+#nscModal button{border:1px solid #e2c8d5;border-radius:10px;background:#64293f;color:white;padding:11px;min-height:44px;cursor:pointer}
+#nscModal .nsc-modal-actions{display:flex;gap:10px;justify-content:flex-end}
+@media(max-width:1050px){
+ #ntTeacherIntelligence .nti-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #ntTeacherIntelligence .nti-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #ntTeacherIntelligence .nti-resource-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ #workspace.noor-teacher-activated #view-overview{width:100%;max-width:100%;overflow-x:hidden}
+ #workspace.noor-teacher-activated .content{width:100%;max-width:100vw;overflow-x:hidden}
+ #workspace.noor-teacher-activated .noor-t4{width:100%;max-width:100%;min-width:0;padding-bottom:82px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-head{flex-direction:column;align-items:stretch;gap:12px;margin-bottom:16px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-head .nt-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-head .nt-btn{min-width:0;white-space:normal}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;text-align:left}
+ #workspace.noor-teacher-activated .noor-t4 .nt-photo-column{display:flex;justify-content:center;align-items:center;position:relative;width:140px;max-width:50vw;margin:auto}
+ #workspace.noor-teacher-activated .noor-t4 .nt-photo{height:138px;min-width:138px;width:138px;max-width:138px;border:6px solid #f9e8f0;border-radius:50%;font-size:39px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-camera{width:43px;height:43px;right:4px;bottom:4px;font-size:18px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-person-head{align-items:center;justify-content:center;text-align:center;gap:9px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-person-head h2{font-size:22px;line-height:1.25;overflow-wrap:anywhere;text-align:center;flex:1 0 100%}
+ #workspace.noor-teacher-activated .noor-t4 .nt-person-head .nt-row{justify-content:center;width:100%}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile-grid,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-detail{padding:5px 0;font-size:13px;min-width:0;overflow-wrap:anywhere}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote,
+ #workspace.noor-teacher-handset .noor-t4 .nt-quote{grid-column:auto!important;min-height:75px!important;text-align:center}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote p{font-size:15px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-card{border-radius:17px;padding:15px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-columns{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-card-head{gap:9px;flex-wrap:wrap}
+ #workspace.noor-teacher-activated .noor-t4 .nt-card-head h2{font-size:17px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-card-head .nt-btn{min-height:44px;white-space:normal}
+ #ntTeacherIntelligence .nti-title{gap:8px}
+ #ntTeacherIntelligence .nti-title h2{font-size:22px}
+ #ntTeacherIntelligence .nti-grid{grid-template-columns:minmax(0,1fr)}
+ #ntTeacherIntelligence .nti-pane{padding:15px;border-radius:18px}
+ #ntTeacherIntelligence .nti-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #ntTeacherIntelligence .nti-resource-form{grid-template-columns:1fr}
+ #ntTeacherIntelligence .nti-lesson{align-items:flex-start;flex-direction:column;gap:7px}
+ #ntTeacherIntelligence .nti-lesson button{align-self:stretch}
+ #ntTeacherIntelligence .nti-meter-row{grid-template-columns:1fr minmax(85px,1fr) 40px}
+ .nsc{padding-bottom:85px}
+ .nsc .nsc-card{padding:13px;border-radius:16px}
+ .nsc .nsc-weekdays,.nsc .nsc-grid{gap:3px}
+ .nsc .nsc-day{min-height:57px;padding:5px;border-radius:8px;gap:3px}
+ .nsc .nsc-day b{font-size:12px}
+ .nsc .nsc-day.today>b{width:21px;height:21px;font-size:11px}
+ .nsc .nsc-mini{gap:2px}
+ .nsc .nsc-mini small{height:5px;font-size:0;padding:0;border-radius:2px}
+ .nsc .nsc-weekdays b{font-size:10px;padding:6px 0}
+ .nsc .nsc-month{gap:10px}
+ .nsc .nsc-month h2{font-size:18px}
+}
+@media(max-width:390px){
+ #ntTeacherIntelligence .nti-kpi{padding:13px;min-height:110px}
+ #ntTeacherIntelligence .nti-kpi strong{font-size:23px}
+ #ntTeacherIntelligence .nti-kpi span{font-size:11px}
+ .noor-t4 .nt-profile{padding:12px!important}
+}
+
+/* 2026-10-20 confirmed user revision: NO round photo. Big portrait rectangle, WhatsApp-simple mobile teacher UX */
+#workspace.noor-teacher-activated .noor-t4 .nt-profile{
+ grid-template-columns:minmax(195px,245px) minmax(0,1fr) minmax(170px,.55fr);
+ align-items:center;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column{
+ width:100%;max-width:245px;position:relative;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo{
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ aspect-ratio:4/5!important;height:auto!important;
+ border-radius:16px!important;border:3px solid #f7e6ee!important;
+ box-shadow:0 10px 30px #5c25401e;
+ background:linear-gradient(155deg,#f8e8ed,#dbbad0);
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo img{
+ width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:12px!important;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-camera{
+ right:10px!important;bottom:10px!important;width:44px!important;height:44px!important;
+ border-radius:12px!important;background:#642c48!important;color:white!important;
+ border:2px solid white!important;box-shadow:0 3px 14px #37132455;
+}
+#ntTeacherIntelligence .nti-quick-grid{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 16px;
+}
+#ntTeacherIntelligence .nti-quick-grid button{
+ cursor:pointer;text-align:left;min-height:96px;padding:13px;display:grid;align-content:center;gap:7px;
+ border:1px solid #ead2df;border-radius:15px;background:linear-gradient(140deg,#fffdfd,#fff3f8);color:#602c46;
+}
+#ntTeacherIntelligence .nti-quick-grid button:nth-child(4n+2){background:linear-gradient(130deg,#faf1ff,#fffaff)}
+#ntTeacherIntelligence .nti-quick-grid button:nth-child(4n+3){background:linear-gradient(130deg,#eaf8f7,#f9fffd)}
+#ntTeacherIntelligence .nti-quick-grid button:nth-child(4n+4){background:linear-gradient(130deg,#fff5e9,#fffcf5)}
+#ntTeacherIntelligence .nti-quick-grid button b{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+#ntTeacherIntelligence .nti-quick-grid button small{font-size:12px;color:#88737e;line-height:1.35}
+#ntTeacherIntelligence .nti-quick-grid button:focus-visible{
+ outline:3px solid #aa688a;outline-offset:2px
+}
+@media(max-width:1150px) {
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile{
+  grid-template-columns:minmax(170px,210px) minmax(0,1fr);
+ }
+ #ntTeacherIntelligence .nti-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ #workspace.noor-teacher-activated #view-overview,
+ #workspace.noor-teacher-handset #view-overview{overflow-x:clip!important;width:100%!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:16px!important;
+  padding:18px!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column{
+  width:min(100%,220px)!important;max-width:220px!important;margin:0 auto!important;
+  display:block!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo{
+  width:100%!important;min-width:0!important;max-width:220px!important;
+  height:auto!important;aspect-ratio:4/5!important;border-radius:15px!important;
+  border:3px solid #f7e6ee!important;font-size:40px!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-camera,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-camera{
+  width:45px!important;height:45px!important;border-radius:12px!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-person-head{
+  flex-direction:column;gap:7px;justify-content:center;text-align:center!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile-grid{
+  background:#fff7fb;border-radius:13px;padding:10px 13px;
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-detail{overflow-wrap:anywhere;word-break:break-word}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote{min-height:60px!important}
+ #ntTeacherIntelligence .nti-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #ntTeacherIntelligence .nti-quick-grid button{min-height:102px;padding:11px;gap:5px;border-radius:13px}
+ #ntTeacherIntelligence .nti-quick-grid b{font-size:13px!important}
+ #ntTeacherIntelligence .nti-quick-grid small{font-size:11px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-attendance{scroll-margin-top:12px}
+ #ntTeacherIntelligence{margin:14px 0!important}
+ #ntTeacherIntelligence .nti-title{flex-direction:column;align-items:flex-start}
+ #ntTeacherIntelligence .nti-title .nti-refresh{align-self:stretch}
+ #ntTeacherIntelligence .nti-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #ntTeacherIntelligence .nti-kpi{min-height:110px;padding:12px}
+ #ntTeacherIntelligence .nti-kpi strong{font-size:24px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-att-scroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+ #workspace.noor-teacher-activated .noor-t4 .nt-att-table{min-width:490px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-btn{min-height:44px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-period{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;
+  padding:14px!important;margin:9px 0!important
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-period:before{display:none!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-period .nt-subject-icon{display:none!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-period .nt-complete-btn{
+  grid-column:1!important;min-height:44px!important;width:100%!important;font-size:13px!important
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-timeline{padding:0!important;margin:0!important}
+}
+@media(max-width:380px){
+ #ntTeacherIntelligence .nti-quick-grid{grid-template-columns:minmax(0,1fr)}
+ #ntTeacherIntelligence .nti-quick-grid button{min-height:67px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column{max-width:200px!important}
+}

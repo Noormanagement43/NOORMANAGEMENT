@@ -1,0 +1,221 @@
+/* NOOR teacher workspace · approved burgundy reference design.
+   All rules scoped to the authenticated teacher dashboard. */
+#workspace.noor-teacher-activated{
+ --nt-wine:#491426;--nt-wine-dark:#2c0e1b;--nt-rose:#9b496b;--nt-pink:#faeaf0;
+ --nt-ivory:#fff9f6;--nt-text:#402637;--nt-muted:#876c7b;--nt-border:#efdee5;
+}
+#workspace.noor-teacher-activated .app-shell{background:#fff7f5}
+#workspace.noor-teacher-activated .sidebar{
+ background:linear-gradient(167deg,#230914 0%,#491427 43%,#501829 100%);
+ color:#fff7f4;border-radius:0;box-shadow:12px 0 32px #2c0e1b13;
+}
+#workspace.noor-teacher-activated .sidebar .brand{border-color:#ffffff1d}
+#workspace.noor-teacher-activated .sidebar .nav button{border-radius:12px;color:#f4e7ea;min-height:43px;font-weight:700;gap:13px;font-size:12px}
+#workspace.noor-teacher-activated .sidebar .nav button.active{background:linear-gradient(100deg,#793c55,#6d2d45);color:#fff;box-shadow:inset 3px 0 #dfb58c,0 7px 21px #1a051035;border-color:#9e6b8039}
+#workspace.noor-teacher-activated .sidebar .nav button:hover:not(.active){background:#fff2f21a}
+#workspace.noor-teacher-activated .sidebar .navlabel{color:#dfbac6}
+#workspace.noor-teacher-activated .sidebar .schoolbadge{border-color:#ffffff24}
+#workspace.noor-teacher-activated .sidebar .schoolbadge small{color:#e2bfc9}
+#workspace.noor-teacher-activated .main{background:linear-gradient(128deg,#fff9f7 4%,#fef7f6 55%,#fdf0f4 100%);min-width:0}
+#workspace.noor-teacher-activated .topbar{background:#fffdfce6;border-bottom:1px solid #f3e8eb}
+#workspace.noor-teacher-activated .content{max-width:1520px;padding-top:20px}
+#workspace.noor-teacher-activated .sidebar-bottom{position:relative}
+#workspace.noor-teacher-activated .sidebar-bottom:before{content:"❦";display:block;text-align:center;font-size:79px;line-height:1.5;color:#b166856d}
+.noor-t4{font-family:Manrope,'DM Sans',system-ui,sans-serif;color:#3b2631;font-size:13px;line-height:1.45;max-width:1400px;margin:auto}
+.noor-t4 *{box-sizing:border-box}
+.noor-t4 h1,.noor-t4 h2,.noor-t4 h3,.noor-t4 p{margin-top:0}
+.noor-t4 h1{font-size:clamp(24px,3vw,33px);letter-spacing:-.8px;margin:0 0 4px;color:#4b1c33}
+.noor-t4 h2{font-size:18px;letter-spacing:-.25px;color:#501e35;margin:0}
+.noor-t4 h3{font-size:14px;color:#52283a;margin:0}
+.noor-t4 .nt-kicker{display:inline-block;font-size:10px;font-weight:850;letter-spacing:2.15px;text-transform:uppercase;color:#94536f}
+.noor-t4 .nt-muted{font-size:12px;color:#8c7581}
+.noor-t4 .nt-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:1px 0 18px}
+.noor-t4 .nt-card{background:#fff;border-radius:22px;border:1px solid #f0e5e8;box-shadow:0 12px 38px #58283b0e;padding:clamp(16px,2vw,23px);min-width:0}
+.noor-t4 .nt-card+.nt-card{margin-top:15px}
+.noor-t4 .nt-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.noor-t4 .nt-card-head>div{display:flex;gap:10px;align-items:center}
+.noor-t4 .nt-icon{color:#893d5b;font-size:19px;display:inline-grid;place-items:center}
+.noor-t4 button{font:inherit;cursor:pointer}
+.noor-t4 button:disabled{opacity:.45;cursor:not-allowed}
+.noor-t4 .nt-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;color:#692d48;background:#fff8fa;border:1px solid #e5c8d5;border-radius:12px;font-size:11px;font-weight:850;white-space:nowrap}
+.noor-t4 .nt-btn:hover{background:#f8e9ef}
+.noor-t4 .nt-btn.primary{background:#6f2a45;border-color:#6f2a45;color:white}
+.noor-t4 .nt-btn.primary:hover{background:#4d1c31}
+.noor-t4 .nt-btn.small{padding:7px 9px;font-size:10px}
+.noor-t4 .nt-row{display:flex;align-items:center;gap:10px}
+.noor-t4 .nt-pill{font-size:10px;font-weight:800;border-radius:99px;background:#f3e8f5;color:#7b537d;padding:5px 10px}
+.noor-t4 .nt-pill.done{background:#e2f5e7;color:#287443}
+.noor-t4 .nt-pill.active{background:#fce3ef;color:#a3346b}
+.noor-t4 .nt-pill.waiting{background:#fcf1dd;color:#986620}
+.noor-t4 .nt-pulse{height:7px;width:7px;border-radius:50%;background:#39ad65;display:inline-block;box-shadow:0 0 0 3px #c8ecd4}
+.noor-t4 .nt-profile{display:grid;grid-template-columns:clamp(140px,16vw,190px) minmax(0,1.3fr) minmax(185px,.64fr);gap:clamp(16px,2vw,28px);align-items:center;margin-bottom:17px}
+.noor-t4 .nt-photo{width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 25% 20%,#f6d4e4,#d9b9d5 72%,#d6a6ba);border:7px solid #f8e8f0;display:grid;place-items:center;overflow:hidden;position:relative;color:#7d3c61;font-size:50px;font-weight:900}
+.noor-t4 .nt-photo img{width:100%;height:100%;object-fit:cover}
+.noor-t4 .nt-photo-column{position:relative}
+.noor-t4 .nt-camera{position:absolute;right:5px;bottom:6px;background:#faf0fb;border:2px solid white;color:#7c4069;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;box-shadow:0 4px 16px #552e4640;font-size:19px}
+.noor-t4 .nt-person-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.noor-t4 .nt-person-head h2{font-size:clamp(20px,2.5vw,27px);color:#461629;font-weight:900}
+.noor-t4 .nt-profile-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:15px;row-gap:11px;margin-top:14px}
+.noor-t4 .nt-detail{display:flex;align-items:flex-start;gap:9px;min-width:0;font-size:11px}
+.noor-t4 .nt-detail .nt-d-icon{color:#962f60;flex:none;font-size:14px}
+.noor-t4 .nt-detail b{color:#593448;margin-right:5px;font-size:11px}
+.noor-t4 .nt-detail span:last-child{overflow-wrap:anywhere;color:#776572}
+.noor-t4 .nt-quote{border-radius:18px;background:linear-gradient(130deg,#f9e7ef,#fff3f7 85%);min-height:175px;padding:22px 17px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.noor-t4 .nt-quote:before{content:"“";font:bold 59px Georgia;line-height:31px;color:#bd829d}
+.noor-t4 .nt-quote p{font:italic 19px/1.4 Georgia,serif;color:#692e48;margin:9px 0 0;max-width:180px;position:relative;z-index:1}
+.noor-t4 .nt-quote:after{content:"❧";position:absolute;right:-10px;bottom:-28px;font-size:126px;color:#c784a74d;transform:rotate(-28deg)}
+.noor-t4 .nt-columns{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(265px,.9fr);gap:16px;margin-bottom:16px}
+.noor-t4 .nt-timeline{padding-left:22px;margin-left:10px;border-left:2px solid #e3cad5}
+.noor-t4 .nt-period{margin:0 0 10px 14px;position:relative;display:grid;grid-template-columns:66px 42px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #eee5e9;border-radius:16px;padding:12px 13px;background:linear-gradient(110deg,#fdfafd,#fffafc)}
+.noor-t4 .nt-period:nth-child(2n){background:linear-gradient(110deg,#fcf0f5,#fffbfc)}
+.noor-t4 .nt-period:before{content:"";height:14px;width:14px;position:absolute;top:50%;transform:translateY(-50%);left:-33px;border-radius:50%;background:#bbb3b7;border:3px solid #fff;box-shadow:0 0 0 1px #d1c4c9}
+.noor-t4 .nt-period.complete:before{background:#43aa68;box-shadow:0 0 0 1px #43aa68}
+.noor-t4 .nt-period.ongoing:before{background:#722949;box-shadow:0 0 0 1px #722949}
+.noor-t4 .nt-period-num b{font-size:12px;display:block;color:#54253c}
+.noor-t4 .nt-period-num small{font-size:10px;color:#857582;display:block;margin-top:4px;line-height:1.35}
+.noor-t4 .nt-subject-icon{background:#f9e6ee;border-radius:50%;width:41px;height:41px;color:#863b5c;display:grid;place-items:center;font-size:21px}
+.noor-t4 .nt-subject b{display:block;color:#522739;font-size:12px}
+.noor-t4 .nt-subject small{display:block;color:#8a7781;font-size:11px;overflow-wrap:anywhere}
+.noor-t4 .nt-complete-btn{border:1px solid #e9ced9;background:white;color:#87506b;border-radius:11px;padding:8px 9px;font-size:10px;font-weight:850;white-space:nowrap;min-width:100px}
+.noor-t4 .nt-complete-btn[aria-pressed=true]{background:#e7f7e9;border-color:#abd9b9;color:#247a45}
+.noor-t4 .nt-complete-btn[aria-pressed=false]:hover{background:#f9e8ee}
+.noor-t4 .nt-timeline-footer{font-size:11px;color:#86566e;background:#fcf0f5;border-radius:13px;padding:11px 13px;margin:14px 0 0}
+.noor-t4 .nt-progress{height:7px;border-radius:12px;background:#eee4ea;overflow:hidden;margin-top:13px}
+.noor-t4 .nt-progress>span{display:block;height:100%;background:linear-gradient(90deg,#742c4a,#d38daf);transition:width .2s}
+.noor-t4 .nt-status-list{display:grid;gap:10px}
+.noor-t4 .nt-status-box{display:flex;align-items:center;gap:13px;border-radius:15px;padding:12px;background:#fcf7fa}
+.noor-t4 .nt-status-box.good{background:#eaf8ed}
+.noor-t4 .nt-round{height:40px;width:40px;border-radius:50%;background:#f4e0e8;color:#763150;display:grid;place-items:center;font-size:21px;flex:none}
+.noor-t4 .nt-status-box.good .nt-round{background:#55b978;color:white}
+.noor-t4 .nt-status-box b{display:block;font-size:12px}
+.noor-t4 .nt-status-box small{display:block;font-size:10px;color:#86777f;line-height:1.5;margin-top:4px}
+.noor-t4 .nt-status-box .nt-btn{margin-left:auto}
+.noor-t4 .nt-event{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #f1e7eb;cursor:pointer}
+.noor-t4 .nt-event b{display:block;font-size:12px}
+.noor-t4 .nt-event small{color:#8f7b83;font-size:10px}
+.noor-t4 .nt-event .nt-round{height:34px;width:34px;font-size:15px;background:#f8e7ef}
+.noor-t4 .nt-event .nt-arrow{margin-left:auto;color:#985f77;font-size:16px}
+.noor-t4 .nt-attendance{margin-bottom:16px}
+.noor-t4 .nt-att-head{display:flex;align-items:end;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-bottom:15px}
+.noor-t4 .nt-att-controls{display:flex;gap:9px;flex-wrap:wrap}
+.noor-t4 .nt-att-controls label{display:grid;gap:5px;font-size:10px;color:#92798a;font-weight:800}
+.noor-t4 select,.noor-t4 input[type=date],.noor-t4 input[type=text],.noor-t4 input[type=tel],.noor-t4 input[type=email]{border:1px solid #e4d1da;border-radius:10px;padding:9px 11px;background:#fff;color:#573248;font:inherit;font-size:12px;min-width:0}
+.noor-t4 select{min-width:105px}
+.noor-t4 .nt-att-summary{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.noor-t4 .nt-att-chip{padding:9px 13px;border-radius:12px;background:#e9f6ec;color:#2c8b54;font-size:11px;font-weight:800}
+.noor-t4 .nt-att-chip.absent{background:#fdebeb;color:#b34450}
+.noor-t4 .nt-att-chip.late{background:#fff3e3;color:#ba7c27}
+.noor-t4 .nt-att-chip.unmarked{background:#f1edf7;color:#846689}
+.noor-t4 .nt-att-table{width:100%;border-collapse:collapse;font-size:12px}
+.noor-t4 .nt-att-table th{padding:10px;background:#f9f4f7;color:#784e64;font-weight:850;text-align:left}
+.noor-t4 .nt-att-table td{border-bottom:1px solid #f3e8ed;padding:10px;line-height:1.35}
+.noor-t4 .nt-att-table td:first-child{max-width:190px;overflow-wrap:anywhere}
+.noor-t4 .nt-att-table tr:nth-child(even){background:#fffbfc}
+.noor-t4 .nt-radio{height:21px;width:21px;border:2px solid #d5c2cd;border-radius:50%;background:white;display:inline-grid;place-items:center;cursor:pointer}
+.noor-t4 .nt-radio[aria-checked=true]{border-color:var(--radio-color,#6e2946);background:var(--radio-color,#6e2946);box-shadow:inset 0 0 0 4px white}
+.noor-t4 .nt-radio.present{--radio-color:#2fa967}
+.noor-t4 .nt-radio.absent{--radio-color:#df5264}
+.noor-t4 .nt-radio.late{--radio-color:#ef982e}
+.noor-t4 .nt-att-scroll{overflow:auto;max-height:360px;border:1px solid #f0e5e9;border-radius:13px}
+.noor-t4 .nt-att-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:13px}
+.noor-t4 .nt-att-actions .nt-muted{max-width:70%}
+.noor-t4 .nt-followup{background:#fff7ed;border:1px solid #efdbbd;border-radius:13px;padding:12px;margin-top:9px;color:#8a5f2d;font-size:11px}
+.noor-t4 .nt-activity{display:grid;grid-template-columns:1fr;gap:0}
+.noor-t4 .nt-activity-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #f3e8ed}
+.noor-t4 .nt-activity-row:last-child{border:0}
+.noor-t4 .nt-activity-row strong{display:block;font-size:12px}
+.noor-t4 .nt-activity-row small{display:block;font-size:11px;color:#8e7885;margin-top:3px}
+.noor-t4 .nt-activity-row .nt-time{margin-left:auto;font-size:10px;color:#8b7985;white-space:nowrap}
+.noor-t4 .nt-empty{font-size:12px;padding:14px;color:#917982;background:#fff9fa;border-radius:13px}
+.nt4-overlay{position:fixed;inset:0;background:#280e1dc0;backdrop-filter:blur(4px);z-index:10040;display:flex;align-items:center;justify-content:center;padding:15px}
+.nt4-dialog{width:min(590px,100%);max-height:95vh;overflow:auto;background:#fff9f8;color:#44283a;border-radius:23px;padding:clamp(18px,3vw,28px);box-shadow:0 25px 70px #270b1e55}
+.nt4-dialog h2{font-size:21px;margin:0 0 6px;color:#572037}
+.nt4-dialog p{font-size:12px;color:#806778}
+.nt4-dialog form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.nt4-dialog label{display:grid;gap:6px;color:#713b52;font-size:11px;font-weight:800}
+.nt4-dialog input,.nt4-dialog select,.nt4-dialog textarea{width:100%;min-width:0;border:1px solid #e8d4dd;background:#fff;border-radius:11px;padding:11px;font:inherit;color:#3e2733}
+.nt4-dialog textarea{resize:vertical;min-height:75px}
+.nt4-dialog .nt4-span{grid-column:1/-1}
+.nt4-dialog button{border:0;background:#6f2e49;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:850}
+.nt4-dialog button.secondary{background:#f0e2e8;color:#72354e}
+.nt4-dialog button:disabled{opacity:.5}
+.nt4-dialog .nt4-actions{display:flex;justify-content:flex-end;gap:9px;grid-column:1/-1}
+.nt4-dialog .nt4-feedback{grid-column:1/-1;font-size:12px;min-height:16px;color:#8c3853}
+@media(max-width:1120px){.noor-t4 .nt-profile{grid-template-columns:125px minmax(0,1fr)}.noor-t4 .nt-quote{grid-column:1/-1;min-height:80px;padding:13px 19px}.noor-t4 .nt-quote p{max-width:none;font-size:17px}.noor-t4 .nt-quote:after{bottom:-69px}}
+@media(max-width:980px){.noor-t4 .nt-columns{grid-template-columns:1fr}.noor-t4 .nt-profile-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){#workspace.noor-teacher-activated .sidebar{position:fixed;left:-265px;width:245px;top:0;height:100vh;border-radius:0}#workspace.noor-teacher-activated .sidebar.open{left:0}.noor-t4 .nt-card{padding:15px}.noor-t4 .nt-head{gap:8px}.noor-t4 h1{font-size:25px}.noor-t4 .nt-profile{grid-template-columns:90px minmax(0,1fr);align-items:start}.noor-t4 .nt-photo{font-size:29px;border-width:4px}.noor-t4 .nt-camera{height:30px;width:30px;font-size:14px;right:0;bottom:0}.noor-t4 .nt-person-head{flex-wrap:wrap}.noor-t4 .nt-person-head h2{font-size:20px}.noor-t4 .nt-profile-grid{grid-template-columns:1fr}.noor-t4 .nt-quote{grid-column:1/-1}}
+@media(max-width:500px){.noor-t4 .nt-columns{display:block}.noor-t4 .nt-period{grid-template-columns:54px 33px minmax(0,1fr);gap:7px;margin-left:8px;padding:10px}.noor-t4 .nt-period:before{left:-27px}.noor-t4 .nt-timeline{padding-left:16px;margin-left:8px}.noor-t4 .nt-subject-icon{width:33px;height:33px;font-size:15px}.noor-t4 .nt-period .nt-complete-btn{grid-column:2/4;width:100%;font-size:11px}.noor-t4 .nt-att-head{align-items:start}.noor-t4 .nt-att-summary{justify-content:flex-start}.noor-t4 .nt-att-table th,.noor-t4 .nt-att-table td{padding:8px 5px;font-size:11px}.noor-t4 .nt-radio{width:20px;height:20px}.nt4-dialog form{grid-template-columns:1fr}.nt4-dialog .nt4-span{grid-column:1}}
+@media(prefers-reduced-motion:reduce){.noor-t4 *{transition:none!important;animation:none!important}}
+
+
+/* Consistent burgundy look for full Student Attendance and Smart Notes */
+#workspace.noor-teacher-activated #view-attendance .ta-page{color:#4c2738}
+#workspace.noor-teacher-activated #view-attendance .ta-header h1{color:#511e34}
+#workspace.noor-teacher-activated #view-attendance .ta-panel{border:1px solid #efdee5;border-radius:21px;box-shadow:0 12px 30px #57243c0d}
+#workspace.noor-teacher-activated #view-attendance .ta-stat{background:#f7eaf0;color:#8a425f}
+#workspace.noor-teacher-activated #view-attendance .ta-avatar{background:#f9e6ed;color:#8b4261}
+#workspace.noor-teacher-activated #view-attendance .ta-primary{background:#6b2a45;color:white}
+#workspace.noor-teacher-activated #view-attendance .ta-soft{background:#faebf0;color:#73344c;border-color:#edcddd}
+#workspace.noor-teacher-activated #view-attendance .ta-fields label{color:#70455b}
+#workspace.noor-teacher-activated #view-attendance .ta-fields input,
+#workspace.noor-teacher-activated #view-attendance .ta-fields select{border-color:#e8d1dc;background:#fffafc}
+#workspace.noor-teacher-activated #view-attendance .ta-buttons [data-status=present][aria-pressed=true]{background:#ddf6e7;color:#187444}
+#workspace.noor-teacher-activated #view-attendance .ta-buttons [data-status=absent][aria-pressed=true]{background:#ffe6e9;color:#bc3c51}
+#workspace.noor-teacher-activated #view-attendance .ta-buttons [data-status=late][aria-pressed=true]{background:#fff2d8;color:#ad761f}
+#workspace.noor-teacher-activated #view-teaching .acad-hero{background:linear-gradient(120deg,#67243e,#8f4965);color:white;border-radius:22px}
+#workspace.noor-teacher-activated #view-teaching .acad-hero h1,
+#workspace.noor-teacher-activated #view-teaching .acad-hero p{color:white}
+#workspace.noor-teacher-activated #view-teaching .acad-panel{background:#fff;border:1px solid #f0dee6;border-radius:22px;box-shadow:0 11px 29px #4b1e350c}
+#workspace.noor-teacher-activated #view-teaching .acad-panel h3{color:#542238;font-size:18px}
+#workspace.noor-teacher-activated #view-teaching .acad-btn{background:#6b2c47;color:white;border-radius:12px}
+#workspace.noor-teacher-activated #view-teaching .acad-btn.alt{background:#f7e7ee;color:#6b2c47}
+#workspace.noor-teacher-activated #view-teaching .acad-context-optional{border:1px solid #ead8e1;border-radius:14px;padding:11px;background:#fff8fb}
+#workspace.noor-teacher-activated #view-teaching .acad-context-optional summary{cursor:pointer;color:#753750;font-weight:850;padding:7px}
+#workspace.noor-teacher-activated #view-teaching #syllabusImages{border:2px dashed #e4c6d5;background:#fff5fa;border-radius:14px;padding:16px}
+#workspace.noor-teacher-activated #view-teaching #notesEditor{min-height:250px}
+#workspace.noor-teacher-activated #view-teaching #notesAiStatus,
+#workspace.noor-teacher-activated #view-teaching #ocrStatus{display:block!important;min-height:0}
+
+/* Android browsers may request a desktop-sized viewport. Keep teacher pages handset-friendly. */
+#workspace.noor-teacher-handset .app-shell{display:block!important;grid-template-columns:none!important}
+#workspace.noor-teacher-handset .sidebar{position:fixed!important;left:-265px!important;top:0!important;width:245px!important;height:100vh!important;z-index:100!important;border-radius:0!important}
+#workspace.noor-teacher-handset .sidebar.open{left:0!important}
+#workspace.noor-teacher-handset .main{width:100%!important;margin:0!important}
+#workspace.noor-teacher-handset .mobilemenu{display:inline-grid!important;place-items:center!important}
+#workspace.noor-teacher-handset .content{padding:14px!important;max-width:100vw!important}
+#workspace.noor-teacher-handset .noor-t4 .nt-columns{grid-template-columns:1fr!important}
+#workspace.noor-teacher-handset .noor-t4 .nt-profile{grid-template-columns:90px minmax(0,1fr)!important}
+#workspace.noor-teacher-handset .noor-t4 .nt-photo{border-width:4px;font-size:30px}
+#workspace.noor-teacher-handset .noor-t4 .nt-quote{grid-column:1/-1!important;min-height:75px}
+#workspace.noor-teacher-handset .noor-t4 .nt-profile-grid{grid-template-columns:1fr!important}
+#workspace.noor-teacher-handset .noor-t4 .nt-period{grid-template-columns:52px 33px minmax(0,1fr)!important;gap:7px;padding:10px}
+#workspace.noor-teacher-handset .noor-t4 .nt-period .nt-complete-btn{grid-column:2/4!important;width:100%}
+#workspace.noor-teacher-handset .noor-t4 .nt-att-head{align-items:flex-start}
+#workspace.noor-teacher-handset .noor-t4 .nt-att-table{min-width:0}
+#workspace.noor-teacher-handset .noor-t4 .nt-att-table th,
+#workspace.noor-teacher-handset .noor-t4 .nt-att-table td{padding:8px 5px;font-size:11px}
+#workspace.noor-teacher-handset .noor-t4 .nt-att-summary{justify-content:flex-start}
+#workspace.noor-teacher-handset .noor-t4 .nt-card{padding:15px!important}
+
+
+/* 2026-10-20: teacher accessibility polish while preserving burgundy/rose-gold theme */
+.noor-t4{font-size:15px;line-height:1.6}
+.noor-t4 .nt-muted,.noor-t4 .nt-detail,.noor-t4 .nt-event,
+.noor-t4 .nt-activity-row,.noor-t4 .nt-att-table{font-size:14px;line-height:1.55}
+.noor-t4 .nt-detail b,.noor-t4 .nt-detail span,.noor-t4 .nt-status-box small{font-size:13px}
+.noor-t4 .nt-btn,.noor-t4 .nt-complete-btn{font-size:14px;min-height:44px;padding:10px 14px}
+.noor-t4 .nt-btn.small{font-size:13px;min-height:40px;padding:8px 12px}
+.noor-t4 .nt-att-table th,.noor-t4 .nt-att-table td{padding:13px 10px;font-size:13px}
+.noor-t4 .nt-radio{width:26px;height:26px}
+.noor-t4 .nt-profile .nt-photo{min-width:125px;border-radius:50%}
+.noor-t4 .nt-review-requests{padding:4px 0}
+.noor-t4 .nt-review-requests p{padding:9px 12px;border-radius:10px;background:#fdf2de;color:#80572d}
+.noor-t4 :is(button,input,select,textarea):focus-visible{outline:3px solid #b87798;outline-offset:2px}
+@media(max-width:760px){
+ .noor-t4{font-size:15px}
+ .noor-t4 .nt-profile-grid{grid-template-columns:1fr}
+ .noor-t4 .nt-head h1{font-size:clamp(25px,6vw,33px)}
+ .noor-t4 .nt-btn{white-space:normal;text-align:center}
+ .noor-t4 .nt-att-table{min-width:550px}
+ .noor-t4 .nt-att-scroll{overflow-x:auto;overscroll-behavior-x:contain}
+}

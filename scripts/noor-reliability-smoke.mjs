@@ -1,0 +1,45 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+const read=path=>fs.readFileSync(path,'utf8');
+const attendance=read('teacher-attendance.js'),schema=read('supabase/migrations/20261020_noor_atomic_attendance_submit.sql'),mobile=read('index.html');
+const notes=read('academic.js'),paper=read('teacher-paper-generator.js'),parent=read('noor-parent-support.js');
+// Compile the public application's inline JavaScript as well as its linked modules.
+const inlineScripts=[...mobile.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(Boolean);
+for(const [number,script] of inlineScripts.entries())new vm.Script(script,{filename:'index.html#inline-'+number});
+assert.match(attendance,/\.rpc\('noor_submit_attendance_atomic'/,'attendance must call atomic RPC');
+assert.doesNotMatch(attendance,/\.from\('attendance_sessions'\)\.insert/,'attendance must not create session separately');
+assert.doesNotMatch(attendance,/\.from\('attendance_records'\)\.upsert/,'attendance must not save marks separately');
+assert.match(schema,/SECURITY INVOKER/);
+assert.match(schema,/private\.noor_active_school_access/);
+assert.match(schema,/p_section_id IS NULL OR p\.section_id=p_section_id/,'full-class roster works across sections');
+assert.match(schema,/ON CONFLICT \(session_id,student_id\) DO UPDATE/);
+assert.match(mobile,/function renderMobileNav\(/);
+assert.match(mobile,/noorProfilePhotoInput/);
+assert.match(mobile,/noor-polish\.css/);
+assert.match(notes,/function renderStudentNotes\(\)/);
+assert.match(notes,/published_to_students',true/);
+assert.match(notes,/async function saveReport/);
+assert.match(paper,/functions\.invoke\('noor-ai-academic-assistant'/);
+assert.match(paper,/noor_teacher_paper_drafts/);
+assert.match(paper,/Print \/ Save PDF/);
+assert.match(parent,/academic_alerts_enabled/);
+assert.doesNotMatch(parent,/functions\.invoke\(|\/messages\/send|api\.whatsapp/,'parent notes must not pretend to deliver third-party messages');
+const browser=await chromium.launch({headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:390,height:844}});
+ const errors=[];page.on('pageerror',err=>errors.push(err.message));
+ const base=process.env.SITE_URL||'http://127.0.0.1:8060/';
+ await page.goto(new URL('preview/parent-support-preview.html',base).href);
+ await page.waitForFunction(()=>document.querySelector('#npContacts')?.textContent.includes('No parent follow-up'));
+ assert.match(await page.locator('#npState').innerText(),/School-scoped records loaded/);
+ assert.equal(await page.locator('#npEnabled').isChecked(),false);
+ assert.match(await page.locator('#npAlerts').innerText(),/No academic alerts/);
+ assert.equal(await page.locator('#npStudent option').count(),1);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=390),'mobile should fit width');
+ await page.evaluate(()=>{window.NOOR_AI_APP.profile.role='student';window.NOOR_PARENT_SUPPORT.open()});
+ assert.match(await page.locator('#view-parent-support').innerText(),/Only verified school leadership/);
+ assert.deepEqual(errors,[]);
+ console.log('PASS: atomic attendance contract; Smart Notes/paper wiring; mobile navigation; parent empty/role guard');
+}finally{await browser.close()}

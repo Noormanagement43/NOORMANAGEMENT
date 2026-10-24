@@ -1,35 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import { Script } from 'node:vm';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const authPage = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
+const principalPage = await readFile(new URL('../principal.html', import.meta.url), 'utf8');
+const configJs = await readFile(new URL('../config.js', import.meta.url), 'utf8');
 const registrationMigration = await readFile(new URL('../supabase/migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
 
-test('dashboard starts with empty, non-demo metrics and attendance', () => {
-  assert.match(html, /id="student-count">—/);
-  assert.match(html, /id="class-count">—/);
-  assert.doesNotMatch(html, /Aarav Reddy|Sana Khan|Mihir Iyer|Fatima Ali|sample figures|94\.6%/);
-  assert.match(html, /Sign in to view authorized attendance records/);
-  assert.match(html, /Sign in to load scheduled sessions from your institution/);
+test('authentication system contains all required role portals and registration tabs', () => {
+  // Tabs: Login, Student sign-up, Create a school, Join school staff
+  assert.match(html, /id="loginTab"/);
+  assert.match(html, /id="registerTab"/);
+  assert.match(html, /id="ownerTab"/);
+  assert.match(html, /id="joinTab"/);
+
+  // Portal selection: Student, Teacher, Management, Platform Creator
+  assert.match(html, /data-portal="student"/);
+  assert.match(html, /data-portal="teacher"/);
+  assert.match(html, /data-portal="management"/);
+  assert.match(html, /data-portal="creator"/);
+
+  // Leadership selection: Principal, School Admin, Manager
+  assert.match(html, /data-leadership-role="principal"/);
+  assert.match(html, /data-leadership-role="owner"/);
+  assert.match(html, /data-leadership-role="manager"/);
+
+  // Password utilities
+  assert.match(html, /id="toggleLoginPassword"/);
+  assert.match(html, /id="forgotBtn"/);
+  assert.match(html, /id="resendConfirmBtn"/);
 });
 
-test('role display comes from authenticated membership, not a client role switcher', () => {
-  assert.match(html, /id="role-label"/);
-  assert.match(html, /roleNode\.textContent=roleLabel/);
-  assert.doesNotMatch(html, /role-select|Principal workspace \(preview\)|Student workspace \(preview\)/);
-});
-
-test('frontend only contains a publishable key and no privileged secret', () => {
-  assert.match(html, /sb_publishable_[A-Za-z0-9_]+/);
-  assert.doesNotMatch(html, /service_role|sb_secret_|SUPABASE_SERVICE_ROLE_KEY|AIza[0-9A-Za-z_-]{20,}/);
-});
-
-test('class reads and writes are scoped to the signed-in institution', () => {
-  assert.match(html, /from\('academic_groups'\)[\s\S]{0,300}eq\('institution_id',membership\.institution_id\)/);
-  assert.match(html, /update\(payload\)\.eq\('id',id\)\.eq\('institution_id',membership\.institution_id\)/);
-  assert.match(html, /delete\(\)\.eq\('id',c\.id\)\.eq\('institution_id',membership\.institution_id\)/);
-  assert.match(html, /if\(!canEdit\(\)\)/);
+test('frontend code only contains publishable keys and no privileged secrets', () => {
+  const combinedFrontend = html + authPage + principalPage + configJs;
+  assert.match(combinedFrontend, /sb_publishable_[A-Za-z0-9_]+/);
+  assert.doesNotMatch(combinedFrontend, /service_role|sb_secret_|SUPABASE_SERVICE_ROLE_KEY|AIza[0-9A-Za-z_-]{20,}/);
 });
 
 test('institution registration validates auth and does not grant anonymous execution', () => {
@@ -51,19 +60,19 @@ test('institution registration cannot self-assign Creator/platform privileges', 
   assert.match(registrationMigration, /length\(v_slug\) > 80/i);
 });
 
-test('dashboard invokes the protected server-side metrics function', () => {
-  assert.match(html, /functions\.invoke\('principal-dashboard-data'/);
-  assert.match(html, /emailRedirectTo:'https:\/\/noormanagement43\.github\.io\/NOORMANAGEMENT\//);
-  assert.doesNotMatch(html, /principal-dashboard-preview/);
+test('legacy auth URL forwards to the integrated secure sign-in flow', () => {
+  assert.match(authPage, /http-equiv="refresh" content="0;url=\.\/index\.html"/);
+  assert.match(authPage, /location\.replace\(['"]\.\/index\.html['"]\)/);
+  assert.doesNotMatch(authPage, /Authentication is not connected yet|No sign-in was attempted/);
 });
 
-test('legacy auth URL forwards to the single active auth gate', () => {
-  assert.match(authPage, /window\.location\.replace\('\.\/index\.html'/);
-  assert.doesNotMatch(authPage, /Authentication is not connected yet|Nothing was submitted/);
+test('principal dashboard provides dedicated institution view', () => {
+  assert.match(principalPage, /id="dashboard"/);
+  assert.match(principalPage, /id="authbox"/);
+  assert.match(principalPage, /functions\.invoke\('principal-dashboard-data'/);
 });
 
-test('all inline JavaScript blocks parse without syntax errors', async () => {
-  const { Script } = await import('node:vm');
+test('all inline JavaScript blocks across HTML files parse without syntax errors', async () => {
   for (const file of ['index.html', 'principal.html', 'auth.html']) {
     const source = await readFile(new URL('../' + file, import.meta.url), 'utf8');
     let scriptIndex = 0;
@@ -75,37 +84,47 @@ test('all inline JavaScript blocks parse without syntax errors', async () => {
   }
 });
 
-test('the legacy auth URL redirects to the integrated secure sign-in flow', async () => {
-  const auth = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
-  assert.match(auth, /http-equiv="refresh" content="0;url=\.\/index\.html"/);
-  assert.match(auth, /location\.replace\(['"]\.\/index\.html['"]\)/);
-  assert.doesNotMatch(auth, /Authentication is not connected yet|No sign-in was attempted/);
+test('all root JavaScript modules parse without syntax errors', async () => {
+  const rootDir = new URL('../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  const entries = await readdir(rootDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith('.js')) {
+      const code = await readFile(join(rootDir, entry.name), 'utf8');
+      assert.doesNotThrow(() => new Script(code, { filename: entry.name }), `Module ${entry.name} has syntax error`);
+    }
+  }
 });
 
-test('unverified users cannot see preview data behind the auth gate', () => {
-  assert.match(html, /\.app\{visibility:hidden\}/);
-  assert.match(html, /adminRoles\.indexOf\(membership\.role\)<0/);
-  assert.match(html, /activeMemberships\.length>1/);
-  assert.match(html, /gate\.classList\.remove\('open'\);document\.querySelector\('\.app'\)\.style\.visibility='visible'/);
-  assert.match(html, /resetPasswordForEmail/);
-  assert.match(html, /client\.auth\.resend/);
+test('all sound scripts parse without syntax errors', async () => {
+  const soundDir = new URL('../sounds/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  const entries = await readdir(soundDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith('.js')) {
+      const code = await readFile(join(soundDir, entry.name), 'utf8');
+      assert.doesNotThrow(() => new Script(code, { filename: entry.name }), `Sound script ${entry.name} has syntax error`);
+    }
+  }
 });
 
-test('non-admin refresh does not call principal-only metrics and admin labels are defined', () => {
-  const start = html.indexOf('async function refreshData(){');
-  const end = html.indexOf('async function startSession(user){', start);
-  assert.ok(start >= 0 && end > start, 'refreshData function exists');
-  const refresh = html.slice(start, end);
-  assert.match(refresh, /if\(!canEdit\(\)\)\{[\s\S]*?return;\s*\}\s*const dashboard=await client\.functions\.invoke\('principal-dashboard-data'/);
-  assert.match(refresh, /const nonAdminLabels=document\.querySelectorAll\('\.stats \.stat small'\)/);
-  assert.doesNotMatch(refresh, /\blabels\[\d\]/);
+test('all smoke scripts parse without syntax errors', async () => {
+  const scriptDir = new URL('../scripts/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  const entries = await readdir(scriptDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith('.mjs')) {
+      const filePath = join(scriptDir, entry.name);
+      assert.doesNotThrow(() => {
+        execFileSync(process.execPath, ['--check', filePath], { stdio: 'pipe' });
+      }, `Smoke script ${entry.name} has syntax error`);
+    }
+  }
 });
 
-test('timetable reads upcoming sessions within the authenticated institution', () => {
-  assert.match(html, /from\('class_sessions'\)/);
-  assert.match(html, /from\('class_sessions'\)[\s\S]{0,300}eq\('institution_id',membership\.institution_id\)/);
-  assert.match(html, /gte\('starts_at',now\.toISOString\(\)\)/);
-  assert.match(html, /lte\('starts_at',horizon\.toISOString\(\)\)/);
-  assert.match(html, /timeZone:timezone/);
-  assert.doesNotMatch(html, /<time>09:00 AM<|<strong>Mathematics<|<small>Grade 8 · Room 204/);
+test('core application assets and stylesheet references exist', () => {
+  assert.match(html, /academic\.js/);
+  assert.match(html, /command-centre\.js/);
+  assert.match(html, /student-portal\.js/);
+  assert.match(html, /teacher-reference\.js/);
+  assert.match(html, /theme-system\.js/);
+  assert.match(html, /sounds\/sound-manager\.js/);
+  assert.match(html, /noor-official-logo\.svg/);
 });

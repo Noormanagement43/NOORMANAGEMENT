@@ -1,0 +1,39 @@
+.sound-feel-panel{margin-top:20px;padding:clamp(18px,3vw,28px);overflow:hidden}
+.sound-feel-head,.sound-preview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.sound-feel-head h2{font:800 21px Manrope,sans-serif;letter-spacing:-.6px;margin:7px 0}
+.sound-feel-head p,.sound-preview-head p{font-size:11px;color:var(--muted);line-height:1.8;margin:0;max-width:620px}
+.sound-sync-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #c8e8d5;border-radius:30px;padding:7px 10px;color:var(--green);background:var(--green-soft);font-size:9px;font-weight:800;white-space:nowrap}
+.sound-sync-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:#329466}
+.sound-sync-pill.is-local{color:#805b23;background:var(--gold-soft);border-color:#efdfbc}
+.sound-sync-pill.is-local:before{background:#c48b31}
+.sound-master-row,.sound-volume-row,.sound-minor-row{display:flex;justify-content:space-between;align-items:center;gap:18px}
+.sound-master-row{margin-top:22px;padding:17px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sound-volume-row{padding:17px 0;border-bottom:1px solid var(--line)}
+.sound-control-copy{min-width:0;display:grid;gap:5px}
+.sound-control-copy b{font-size:12px;font-weight:800;color:var(--ink)}
+.sound-control-copy small{font-size:10px;line-height:1.65;color:var(--muted);max-width:550px}
+.sound-switch{display:inline-flex;flex-shrink:0;position:relative;cursor:pointer}
+.sound-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.sound-switch span{width:44px;height:25px;background:#d6c8ce;border:1px solid #c7b5be;border-radius:30px;display:block;position:relative;transition:background .16s ease,border-color .16s ease}
+.sound-switch span:after{content:"";position:absolute;left:3px;top:3px;height:17px;width:17px;background:#fff;border-radius:50%;box-shadow:0 1px 4px #32132322;transition:transform .16s ease}
+.sound-switch input:checked+span{background:var(--berry);border-color:var(--berry)}
+.sound-switch input:checked+span:after{transform:translateX(19px);background:var(--gold-soft)}
+.sound-switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:3px}
+.sound-volume-control{display:flex;align-items:center;gap:12px;min-width:min(300px,55%)}
+.sound-volume-control input{width:100%;accent-color:var(--berry);cursor:pointer}
+.sound-volume-control output{min-width:38px;text-align:right;color:var(--berry);font:800 11px Manrope}
+.sound-toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 24px;padding:18px 0;border-bottom:1px solid var(--line)}
+.sound-minor-row{align-items:center;min-width:0}
+.sound-preview-head{margin:22px 0 13px}
+.sound-preview-head h3{font:800 14px Manrope;margin:0 0 5px}
+.sound-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sound-category-card{min-width:0;display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,#fffdfb,#fff9fb)}
+.sound-category-icon{height:33px;width:33px;border-radius:11px;display:grid;place-items:center;background:var(--rose-soft);color:var(--berry);font-size:16px;font-weight:800}
+.sound-category-copy{min-width:0;display:grid;gap:4px}
+.sound-category-copy b{font-size:10px;font-weight:800}
+.sound-category-copy small{font-size:9px;color:var(--muted);line-height:1.55}
+.sound-preview-btn{padding:8px 10px;font-size:9px;white-space:nowrap}
+.sound-note{margin:16px 0 0;padding:11px 12px;border-radius:10px;background:#fff9fb;border:1px solid var(--rose-line);color:var(--muted);font-size:9px;line-height:1.7}
+@media(max-width:760px){.sound-category-grid{grid-template-columns:1fr}.sound-toggle-grid{grid-template-columns:1fr}.sound-volume-control{min-width:52%;}}
+@media(max-width:420px){.sound-master-row,.sound-volume-row{align-items:flex-start}.sound-volume-control{min-width:48%;gap:7px}.sound-category-card{grid-template-columns:30px minmax(0,1fr) auto;gap:7px;padding:10px}.sound-category-icon{height:30px;width:30px}.sound-preview-btn{padding:7px 8px}}
+@media(prefers-reduced-motion:reduce){.sound-switch span,.sound-switch span:after{transition:none}}

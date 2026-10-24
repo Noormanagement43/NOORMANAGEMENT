@@ -97,8 +97,8 @@ test("authentication email redirects follow the current hosted route", () => {
 
 
 test("principal timetable reads only the signed-in institution's scheduled sessions", () => {
-  assert.match(html, /function loadSchedule\(\)[\s\S]{0,700}from\(['"]class_sessions['"]\)[\s\S]{0,500}eq\(['"]institution_id['"],\s*membership\.institution_id\)[\s\S]{0,250}session_status/);
-  assert.match(html, /No upcoming sessions are scheduled for this institution/);
+  assert.match(html, /async function loadTimetable\(\)[\s\S]{0,700}from\(['"]class_sessions['"]\)[\s\S]{0,500}eq\(['"]institution_id['"],\s*membership\.institution_id\)[\s\S]{0,250}session_status/);
+  assert.match(html, /No upcoming sessions are scheduled for the next seven days/);
 });
 
 test("principal attendance reads are institution-scoped and render safe text", () => {

@@ -92,3 +92,21 @@ test("authentication email redirects follow the current hosted route", () => {
   assert.match(html, /emailRedirectTo:window\.location\.origin\+window\.location\.pathname/);
   assert.match(html, /redirectTo:window\.location\.origin\+window\.location\.pathname/);
 });
+
+
+test("principal timetable reads only the signed-in institution's scheduled sessions", () => {
+  assert.match(html, /function loadSchedule\(\)[\s\S]{0,700}from\(['"]class_sessions['"]\)[\s\S]{0,500}eq\(['"]institution_id['"],\s*membership\.institution_id\)[\s\S]{0,250}session_status/);
+  assert.match(html, /No upcoming sessions are scheduled for this institution/);
+});
+
+test("principal attendance reads are institution-scoped and render safe text", () => {
+  assert.match(html, /function loadRecentAttendance\(\)[\s\S]{0,700}from\(['"]attendance_records['"]\)[\s\S]{0,300}eq\(['"]institution_id['"],\s*membership\.institution_id\)/);
+  assert.match(html, /statusCell\.appendChild\(status\)/);
+  assert.match(html, /No attendance has been marked yet for this institution/);
+  assert.match(html, /Attendance records could not be loaded\. Verify institution access policies/);
+});
+
+test("teacher and student workspaces return before principal-only data refresh", () => {
+  assert.match(html, /if\(teacherRoles\.indexOf\(role\)>=0\)\{showTeacherWorkspace\(\);return;\}/);
+  assert.match(html, /if\(studentRoles\.indexOf\(role\)>=0\)\{showStudentWorkspace\(\);return;\}/);
+});

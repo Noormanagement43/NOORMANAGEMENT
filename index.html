@@ -242,7 +242,6 @@ render();
      if(stats[1])stats[1].textContent=String(metrics.active_classes==null?'—':metrics.active_classes).padStart(2,'0');
      if(stats[2])stats[2].textContent=attendance.rate==null?'—':attendance.rate+'%';
      if(stats[3])stats[3].textContent=String(attendance.marked==null?'—':attendance.marked);
-     const labels=document.querySelectorAll('.stats .stat small');
      if(labels[0])labels[0].textContent='Active student memberships';
      if(labels[1])labels[1].textContent='Active classes and sections';
      if(labels[2])labels[2].textContent='Today · '+(data.timezone||'institution time');

@@ -128,6 +128,7 @@ render();
  const authForm=document.getElementById('noor-auth-form');
  let mode='signin', currentUser=null, membership=null, liveGroups=[];
  const adminRoles=['principal','school_admin','university_admin','academic_admin'];
+ const teacherRoles=['teacher','faculty'];
  function error(message){errorBox.textContent=message;errorBox.style.display='block'}
  function clearError(){errorBox.textContent='';errorBox.style.display='none'}
  function setLoading(on){submit.disabled=on;submit.textContent=on?'Please wait…':(mode==='signin'?'Sign in':'Create account')}
@@ -154,8 +155,9 @@ render();
    const roleNode=document.getElementById('role-label');if(roleNode)roleNode.textContent=roleLabel;
    const avatarNode=document.getElementById('avatar-label');if(avatarNode)avatarNode.textContent=(currentUser.email||'N').charAt(0).toUpperCase();
    const greeting=document.getElementById('greeting');if(greeting)greeting.textContent='Welcome, '+roleLabel+' 👋';
-   const workspace=document.querySelector('.side-bottom');if(workspace)workspace.innerHTML='<strong>'+escapeText(inst&&inst.name||'NOOR Campus')+'</strong><span class="workspace-label">Institution administration</span><br>Secure sign-in · Institution-scoped live data';
-   bar.innerHTML='<span class="badge">LIVE DATA</span><span>'+escapeText(currentUser.email||'Signed in')+'</span><span>·</span><span>'+escapeText(inst&&inst.name||'Institution workspace')+'</span><button id="noor-signout" type="button">Sign out</button>';
+   const workspace=document.querySelector('.side-bottom');if(workspace)workspace.innerHTML='<strong>'+escapeText(inst&&inst.name||'NOOR Campus')+'</strong><span class="workspace-label">'+(teacherRoles.indexOf(membership.role)>=0?'Teacher workspace':'Institution administration')+'</span><br>Secure sign-in · Institution-scoped access';
+   const badgeLabel=teacherRoles.indexOf(membership.role)>=0?'ACCOUNT ACTIVE':'LIVE DATA';
+   bar.innerHTML='<span class="badge">'+badgeLabel+'</span><span>'+escapeText(currentUser.email||'Signed in')+'</span><span>·</span><span>'+escapeText(inst&&inst.name||'Institution workspace')+'</span><button id="noor-signout" type="button">Sign out</button>';
    document.getElementById('noor-signout').onclick=async function(){await client.auth.signOut();location.reload()};
  }
  function showGate(message){
@@ -165,8 +167,10 @@ render();
  async function loadMembership(){
    const res=await client.from('institution_memberships').select('id,institution_id,role,status,institutions(name,timezone,institution_type)').eq('user_id',currentUser.id).eq('status','active');
    if(res.error) throw res.error;
-   membership=(res.data||[])[0]||null;
-   if(!membership) throw new Error('Your account is signed in, but it is not linked to an active school or university yet. Ask your institution administrator to activate your membership.');
+   const activeMemberships=res.data||[];
+   if(!activeMemberships.length) throw new Error('Your account is signed in, but it is not linked to an active school or university yet. Ask your institution administrator to activate your membership.');
+   if(activeMemberships.length>1) throw new Error('Your account belongs to more than one institution. Institution selection is not available yet, so access is paused to avoid loading the wrong campus.');
+   membership=activeMemberships[0];
  }
  function canEdit(){return !!membership&&adminRoles.indexOf(membership.role)>=0}
  async function loadGroups(){
@@ -254,10 +258,32 @@ render();
      document.querySelector('.heading p').textContent='Live records for your authorized institution.';
    }catch(e){toast('Could not refresh live data: '+e.message)}
  }
+ function showTeacherWorkspace(){
+   document.querySelector('.heading .eyebrow').textContent='TEACHER WORKSPACE';
+   document.getElementById('greeting').textContent='Your teaching day';
+   document.querySelector('.heading p').textContent='Your assigned classes, timetable, and attendance will appear here when teacher-scoped data access is verified.';
+   document.getElementById('add-class').style.display='none';
+   document.getElementById('manage-classes').style.display='none';
+   document.getElementById('class-list').innerHTML=emptyBox('Assigned classes are not connected for teacher accounts yet.');
+   document.querySelector('.schedule').innerHTML=emptyBox('Your timetable is not connected for teacher accounts yet.');
+   const tbody=document.querySelector('.attendance tbody');if(tbody)tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Teacher-scoped attendance is not connected yet.')+'</td></tr>';
+   document.querySelectorAll('.stats .stat strong').forEach(function(node){node.textContent='—'});
+   document.querySelectorAll('.stats .stat small').forEach(function(node){node.textContent='Not connected for this role'});
+   document.getElementById('health-groups').textContent='—';
+   document.getElementById('health-rooms').textContent='—';
+   document.getElementById('health-descriptions').textContent='—';
+   document.getElementById('health-caption').textContent='Institution setup indicators are reserved for administrators.';
+ }
  async function startSession(user){
    currentUser=user;clearError();
-   try{await loadMembership();gate.classList.remove('open');addLiveStatus();await refreshData()}
-   catch(e){resetToEmpty();if((e.message||'').includes('not linked to an active school or university'))openOnboarding.style.display='block';showGate(e.message||'Could not load your institution membership.')}
+   try{
+     await loadMembership();
+     const role=membership.role||'member';
+     if(adminRoles.indexOf(role)<0&&teacherRoles.indexOf(role)<0)throw new Error('This workspace is not yet available for your institution role; no academic data was opened.');
+     gate.classList.remove('open');addLiveStatus();
+     if(teacherRoles.indexOf(role)>=0){showTeacherWorkspace();return;}
+     await refreshData();
+   }catch(e){resetToEmpty();if((e.message||'').includes('not linked to an active school or university'))openOnboarding.style.display='block';showGate(e.message||'Could not load your institution membership.')}
  }
  form.addEventListener('submit',async function(e){
    e.preventDefault();clearError();setLoading(true);

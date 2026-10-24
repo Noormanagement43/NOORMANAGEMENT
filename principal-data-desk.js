@@ -39,12 +39,12 @@
       '#pd-data-desk .pdd-tabs,#pd-data-desk .pdd-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:12px 0}' +
       '#pd-data-desk .pdd-toolbar input,#pd-data-desk .pdd-toolbar select{min-height:38px;max-width:100%;border:1px solid var(--p-line,#f0dfe6);border-radius:10px;padding:8px 10px;background:var(--p-card,#fff);color:inherit}' +
       '#pd-data-desk .pdd-toolbar input[type=search]{flex:1;min-width:180px}#pd-data-desk .pdd-status{min-height:20px;margin:7px 0 10px;font-size:11px}#pd-data-desk .pdd-status[data-kind=error]{color:#b42335}' +
-      '#pd-data-desk .pdd-status[data-kind=success]{color:#18794e}#pd-data-desk .pdd-table-wrap{overflow:auto;border:1px solid var(--p-line,#f0dfe6);border-radius:12px}' +
+      '#pd-data-desk .pdd-status[data-kind=success]{color:#18794e}#pd-data-desk .pdd-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}#pd-data-desk .pdd-summary[hidden]{display:none!important}#pd-data-desk .pdd-summary>div{padding:11px;border:1px solid var(--p-line,#f0dfe6);border-radius:12px;background:color-mix(in srgb,var(--p-card,#fff) 92%,var(--p-berry,#642b47))}#pd-data-desk .pdd-summary small{display:block;color:var(--p-muted,#897680);font-size:10px}#pd-data-desk .pdd-summary strong{display:block;margin-top:4px;font:800 22px Manrope,system-ui,sans-serif}#pd-data-desk .pdd-summary .pdd-present{color:#18794e}#pd-data-desk .pdd-summary .pdd-absent{color:#b42335}#pd-data-desk .pdd-summary .pdd-late{color:#996315}#pd-data-desk .pdd-summary .pdd-leave{color:#6b4db8}#pd-data-desk .pdd-table-wrap{overflow:auto;border:1px solid var(--p-line,#f0dfe6);border-radius:12px}' +
       '#pd-data-desk table{border-collapse:collapse;width:100%;min-width:540px}#pd-data-desk th,#pd-data-desk td{padding:11px 10px;border-bottom:1px solid var(--p-line,#f0dfe6);font-size:11px;text-align:left;vertical-align:top}' +
       '#pd-data-desk th{background:color-mix(in srgb,var(--p-card,#fff) 94%,var(--p-berry,#642b47));font-size:9px;text-transform:uppercase;letter-spacing:.45px;color:var(--p-muted,#897680)}#pd-data-desk tr:last-child td{border-bottom:0}' +
       '#pd-data-desk .pdd-empty{padding:22px;text-align:center;color:var(--p-muted,#897680)}#pd-data-desk .pdd-paging{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}' +
       '#pd-data-desk .pdd-paging span,#pd-data-desk .pdd-note{font-size:10px;color:var(--p-muted,#897680)}#pd-data-desk .pdd-pill{display:inline-flex;padding:3px 7px;border-radius:20px;background:#f4edf1;color:#642b47;font-size:10px;text-transform:capitalize}' +
-      '@media(max-width:560px){#pd-data-desk{padding:13px}#pd-data-desk .pdd-toolbar input[type=search]{min-width:100%}}@media(prefers-reduced-motion:reduce){#pd-data-desk *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}';
+      '@media(max-width:560px){#pd-data-desk{padding:13px}#pd-data-desk .pdd-toolbar input[type=search]{min-width:100%}#pd-data-desk .pdd-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(prefers-reduced-motion:reduce){#pd-data-desk *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}';
     document.head.appendChild(css);
   }
 
@@ -61,7 +61,7 @@
       panel.innerHTML = '<header class="pdd-head"><div><h2 id="pdd-title">Institutional Records</h2><p>Live, school-scoped data. No demo records are inserted. Directory and attendance views are read-only.</p></div><div class="pdd-toolbar"><button class="pdd-btn" type="button" data-pdd-refresh>Refresh</button><button class="pdd-btn primary" type="button" data-pdd-manage>Open management</button></div></header>' +
         '<nav class="pdd-tabs" aria-label="Institutional records views"><button type="button" class="pdd-btn" data-pdd-mode="students" aria-pressed="true">Students</button><button type="button" class="pdd-btn" data-pdd-mode="staff" aria-pressed="false">Teachers &amp; Staff</button><button type="button" class="pdd-btn" data-pdd-mode="classes" aria-pressed="false">Classes &amp; Sections</button><button type="button" class="pdd-btn" data-pdd-mode="attendance" aria-pressed="false">Attendance Register</button></nav>' +
         '<form class="pdd-toolbar" id="pdd-filter-form"><input type="search" id="pdd-search" maxlength="120" autocomplete="off" placeholder="Search by name" aria-label="Search records"><input type="date" id="pdd-date" aria-label="Attendance date" hidden><select id="pdd-attendance-status" aria-label="Attendance status" hidden><option value="all">All statuses</option><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="leave">Leave</option></select><button class="pdd-btn primary" type="submit">Apply filters</button></form>' +
-        '<p class="pdd-status" id="pdd-status" role="status" aria-live="polite">Choose a records view to load live data.</p><div class="pdd-table-wrap"><table><thead id="pdd-thead"></thead><tbody id="pdd-tbody"><tr><td class="pdd-empty" colspan="5">No records loaded yet.</td></tr></tbody></table></div>' +
+        '<p class="pdd-status" id="pdd-status" role="status" aria-live="polite">Choose a records view to load live data.</p><div id="pdd-summary" class="pdd-summary" hidden aria-label="Attendance totals by status"><div><small>Present</small><strong id="pdd-count-present" class="pdd-present">—</strong></div><div><small>Absent</small><strong id="pdd-count-absent" class="pdd-absent">—</strong></div><div><small>Late</small><strong id="pdd-count-late" class="pdd-late">—</strong></div><div><small>Leave</small><strong id="pdd-count-leave" class="pdd-leave">—</strong></div></div><div class="pdd-table-wrap"><table><thead id="pdd-thead"></thead><tbody id="pdd-tbody"><tr><td class="pdd-empty" colspan="5">No records loaded yet.</td></tr></tbody></table></div>' +
         '<div class="pdd-paging"><span id="pdd-page-label">—</span><div><button type="button" class="pdd-btn" data-pdd-page="-1" disabled>Previous</button> <button type="button" class="pdd-btn" data-pdd-page="1" disabled>Next</button></div></div>' +
         '<p class="pdd-note">Row-Level Security remains the security boundary. A denied query is shown as an error; this panel never bypasses database permissions.</p>';
       h.appendChild(panel);
@@ -164,8 +164,18 @@
     const attendance = mode === 'attendance';
     panel.querySelector('#pdd-date').hidden = !attendance;
     panel.querySelector('#pdd-attendance-status').hidden = !attendance;
+    panel.querySelector('#pdd-summary').hidden = !attendance;
     panel.querySelector('#pdd-search').placeholder = attendance ? 'Search student name' : mode === 'classes' ? 'Search class name' : 'Search by name';
     panel.querySelectorAll('[data-pdd-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.pddMode === mode)));
+  }
+
+  function renderAttendanceSummary(summary) {
+    const panel = host()?.querySelector('#pd-data-desk');
+    if (!panel) return;
+    for (const status of ['present', 'absent', 'late', 'leave']) {
+      const value = panel.querySelector('#pdd-count-' + status);
+      if (value) value.textContent = summary && Number.isFinite(Number(summary[status])) ? Number(summary[status]).toLocaleString() : '—';
+    }
   }
 
   function onClick(event) {
@@ -239,16 +249,23 @@
       .eq('attendance_date', day).eq('status', 'submitted').order('id'), 5000);
     if (sessionsResult.error) throw sessionsResult.error;
     const sessions = sessionsResult.data || [], sessionIds = sessions.map(item => item.id).filter(Boolean);
-    if (!sessionIds.length) return {rows:[], total:0, note:sessionsResult.truncated ? 'Session list exceeded the safe limit.' : 'No attendance sessions have been submitted for this date.'};
+    if (!sessionIds.length) return {rows:[], total:0, summary:{present:0,absent:0,late:0,leave:0}, note:sessionsResult.truncated ? 'Session list exceeded the safe limit.' : 'No attendance sessions have been submitted for this date.'};
 
+    const statusCounts = await Promise.all(['present','absent','late','leave'].map(async status => {
+      const counted = await app().db.from('attendance_records').select('id', {count:'exact',head:true})
+        .eq('school_id', sid).in('session_id', sessionIds).eq('status', status);
+      if (counted.error) throw counted.error;
+      return [status, counted.count || 0];
+    }));
+    const summary = Object.fromEntries(statusCounts);
     let studentIds = null;
     if (term) {
       const matchingStudents = await fetchAll(() => app().db.from('profiles').select('id')
         .eq('school_id', sid).eq('role', 'student').ilike('full_name', '%' + term + '%').order('id'), 5000);
       if (matchingStudents.error) throw matchingStudents.error;
       studentIds = matchingStudents.data.map(student => student.id);
-      if (!studentIds.length) return {rows:[], total:0};
-      if (matchingStudents.truncated) return {rows:[], total:0, note:'The name search matched more than the safe query limit. Add more characters and retry.'};
+      if (!studentIds.length) return {rows:[], total:0, summary};
+      if (matchingStudents.truncated) return {rows:[], total:0, summary, note:'The name search matched more than the safe query limit. Add more characters and retry.'};
     }
 
     let query = app().db.from('attendance_records').select('id,session_id,student_id,status,marked_at,updated_at', {count:'exact'})
@@ -283,7 +300,7 @@
       return {student:profile.full_name || 'Student name unavailable', className:classById.get(session.class_id) || 'Class unavailable',
         sectionName:sectionById.get(session.section_id) || 'Section unavailable', status:record.status || 'unmarked',
         markedAt:record.marked_at || record.updated_at || ''};
-    }), total:result.count || 0};
+    }), total:result.count || 0, summary};
   }
 
   async function resolveClassLabels(sid, classIds, sectionIds) {
@@ -351,6 +368,7 @@
         attendanceStatus = panel.querySelector('#pdd-attendance-status').value || 'all';
         result = await selectAttendance(sid, date, attendanceStatus, search, page);
         if (app().user?.id !== uid || schoolId() !== sid || !allowed() || panel.dataset.identity !== key) return;
+        renderAttendanceSummary(result.summary || {present:0,absent:0,late:0,leave:0});
         buildTable(['Student','Class','Section','Status','Marked at']);
         if (result.rows.length) result.rows.forEach(item => addRow([item.student, item.className, item.sectionName, {pill:true,text:item.status}, formattedDate(item.markedAt)]));
         else emptyRows(result.note || 'No attendance records match these filters.', 5);
@@ -359,6 +377,7 @@
         updatePager(result.total);
       }
     } catch (error) {
+      renderAttendanceSummary(null);
       buildTable(['Records']); emptyRows(explainError(error), 1);
       setStatus(explainError(error), 'error'); updatePager(0);
     } finally {

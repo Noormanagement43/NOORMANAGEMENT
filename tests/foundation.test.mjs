@@ -65,3 +65,14 @@ test("teacher accounts receive a safe workspace without administrator data loadi
 test("ambiguous multiple active institution memberships pause access", () => {
   assert.match(html, /if\(activeMemberships\.length>1\) throw new Error\('Your account belongs to more than one institution/);
 });
+
+
+test("student accounts receive a safe learning-space state without administrator data loading", () => {
+  assert.match(html, /const studentRoles=\[['"]student['"],['"]university_student['"]\]/);
+  assert.match(html, /if\(studentRoles\.indexOf\(role\)>=0\)\{showStudentWorkspace\(\);return;\}/);
+  const studentWorkspace = html.match(/function showStudentWorkspace\(\)\{([\s\S]*?)\n \}/);
+  assert.ok(studentWorkspace, "expected student workspace renderer");
+  assert.doesNotMatch(studentWorkspace[1], /from\(['"]academic_groups['"]\)|functions\.invoke/);
+  assert.match(studentWorkspace[1], /Your enrolled classes are not connected for student accounts yet/);
+  assert.match(studentWorkspace[1], /health\.style\.display='none'/);
+});

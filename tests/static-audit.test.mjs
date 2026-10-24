@@ -58,7 +58,7 @@ test('all inline JavaScript blocks parse without syntax errors', async () => {
     let scriptIndex = 0;
     for (const match of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
       scriptIndex += 1;
-      if (/\\bsrc\\s*=/.test(match[1]) || !match[2].trim()) continue;
+      if (/\bsrc\s*=/.test(match[1]) || !match[2].trim()) continue;
       assert.doesNotThrow(() => new Script(match[2], { filename: file + '#script-' + scriptIndex }), file + ' inline script ' + scriptIndex);
     }
   }
@@ -66,18 +66,18 @@ test('all inline JavaScript blocks parse without syntax errors', async () => {
 
 test('the legacy auth URL redirects to the integrated secure sign-in flow', async () => {
   const auth = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
-  assert.match(auth, /http-equiv="refresh" content="0;url=\\.\\/index\\.html"/);
-  assert.match(auth, /location\\.replace\\(['"]\\.\\/index\\.html['"]\\)/);
+  assert.match(auth, /http-equiv="refresh" content="0;url=\.\/index\.html"/);
+  assert.match(auth, /location\.replace\(['"]\.\/index\.html['"]\)/);
   assert.doesNotMatch(auth, /Authentication is not connected yet|No sign-in was attempted/);
 });
 
 test('unverified users cannot see preview data behind the auth gate', () => {
-  assert.match(html, /\\.app\\{visibility:hidden\\}/);
-  assert.match(html, /adminRoles\\.indexOf\\(membership\\.role\\)<0/);
-  assert.match(html, /activeMemberships\\.length>1/);
-  assert.match(html, /gate\\.classList\\.remove\\('open'\\);document\\.querySelector\\('\\.app'\\)\\.style\\.visibility='visible'/);
+  assert.match(html, /\.app\{visibility:hidden\}/);
+  assert.match(html, /adminRoles\.indexOf\(membership\.role\)<0/);
+  assert.match(html, /activeMemberships\.length>1/);
+  assert.match(html, /gate\.classList\.remove\('open'\);document\.querySelector\('\.app'\)\.style\.visibility='visible'/);
   assert.match(html, /resetPasswordForEmail/);
-  assert.match(html, /client\\.auth\\.resend/);
+  assert.match(html, /client\.auth\.resend/);
 });
 
 test('timetable reads upcoming sessions within the authenticated institution', () => {

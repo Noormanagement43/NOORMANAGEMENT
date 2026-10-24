@@ -6,6 +6,7 @@
 
 - Project ref: `ayrryemawwplguaauxij` (project name: `Noormanagement43's Project`; region: `ap-southeast-1`; PostgreSQL 17.11).
 - Applied migrations reported by Supabase: `20261022115103_noor_project_foundation`, `20261022121128_teacher_timetable_and_attendance`, `20261022121802_editable_class_management`, `20261022134552_index_foreign_keys_for_scale`.
+- The repository contains `supabase/migrations/20261024040000_register_institution_for_current_user.sql`; the three earlier applied migration sources were not found at their expected filenames in the default branch during this pass. Do not reconstruct or replay those migrations from guesses.
 - The project has no Supabase development branches available for a safe staging mutation.
 - The inspected public tables all report RLS enabled. This is a positive baseline, but RLS being enabled does not itself prove every policy is correct.
 

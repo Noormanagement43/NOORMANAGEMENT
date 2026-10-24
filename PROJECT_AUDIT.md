@@ -51,7 +51,7 @@ Legend: COMPLETE AND VERIFIED = evidence confirms the item; PARTIAL = some imple
 - Read the registration RPC definition and active Edge Function source/configuration.
 - Ran Supabase security and performance advisors. Security warnings: exposed SECURITY DEFINER registration RPC and leaked-password protection disabled. Performance advisor reported unused indexes; with empty tables and no real workload, do not drop them just to silence the advisory.
 - Confirmed the database has no institution or academic records for realistic workflow testing.
-- Updated role-aware frontend behavior and documentation; a JavaScript syntax parse and a live browser workflow test must still be run before calling this release-ready.
+- Updated role-aware frontend behavior and documentation. Parsed both inline JavaScript blocks from the committed index.html with the JavaScript Function parser after catching and fixing a duplicate const declaration. This is a syntax check only, not a live browser workflow test.
 
 ## Remaining blockers / release criteria
 

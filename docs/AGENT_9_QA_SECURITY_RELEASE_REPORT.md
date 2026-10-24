@@ -38,10 +38,10 @@ The repository does not use a conventional `src/` application layout. During the
 - **Evidence:** Agent 1 added a root `package.json`, a Node built-in test suite, a static inline-JavaScript syntax validator, and a separate GitHub Actions validation workflow. There is no framework build, lockfile, browser E2E suite, or runtime test harness.
 - **Reproduction:** Attempt to locate package scripts and run the documented lint, type-check, unit, E2E and production build commands.
 - **Expected:** Reproducible static checks in CI, with separate browser and backend security testing.
-- **Actual:** `npm run check` and `npm test` are now defined without third-party dependencies. They have not yet been confirmed green in a GitHub Actions run; framework lint/type-check/build and browser E2E are not applicable to the current static-only setup and remain absent.
+- **Actual:** `npm run check` and `npm test` are now defined without third-party dependencies. The `Validate NOOR foundation` GitHub Actions run completed successfully on the PR head (run 40080643681): both `npm run check` and `npm test` passed. Framework lint/type-check/build and browser E2E are not applicable to the current static-only setup and remain absent.
 - **Impact:** Regressions cannot be caught by a reproducible automated pipeline.
 - **Recommended fix:** Confirm the new validation workflow passes, then add browser smoke/E2E tests and staging security tests. If the app has a separate source repo/branch, link that source and review it too.
-- **Status:** PARTIALLY ADDRESSED — CI result pending; runtime tests still open.
+- **Status:** PARTIALLY ADDRESSED — static CI passed; runtime tests still open.
 
 ### QA-004 — Medium: Only a limited dashboard journey is implemented in the reviewed frontend
 - **Module:** Creator, Principal, Teacher, Student, auth and academic workflows
@@ -91,7 +91,7 @@ The repository does not use a conventional `src/` application layout. During the
 | Gemini / Brevo | NOT FOUND | No integration source identified |
 | Responsive CSS | PARTIAL / static only | Breakpoints present; no real device/browser testing |
 | Keyboard / screen reader | NOT TESTED | Browser tooling unavailable |
-| Static syntax / foundation tests | ADDED, CI PENDING | `npm run check`, `npm test`; no local runtime result claimed |
+| Static syntax / foundation tests | PASS | GitHub Actions run 40080643681: syntax check and foundation tests succeeded |
 | Production deployment | NOT PERFORMED | Explicitly not authorized |
 
 ## Commands and checks actually executed
@@ -102,7 +102,7 @@ The repository does not use a conventional `src/` application layout. During the
 4. Initial root `package.json` fetch — **NOT FOUND (404)**; Agent 1 subsequently added `package.json` plus dependency-free checks on the working branch.
 5. Fetch conventional paths `src/App.tsx`, `src/main.tsx`, `vite.config.ts`, `vite.config.js`, `supabase/migrations`-related search terms — **NOT FOUND / no matching code search results**.
 6. GitHub code searches for policy/RPC/dashboard function/Gemini/Brevo terms — **no matching results returned**. This is not proof that remote Supabase resources do not exist.
-7. Browser, SQL, E2E and security penetration tests — **NOT RUN**. The newly added Node checks are configured in GitHub Actions, but their workflow result has not yet been confirmed.
+7. GitHub Actions run 40080643681 — **PASS** for inline JavaScript syntax and foundation tests. Browser, SQL, E2E and security penetration tests — **NOT RUN**.
 
 ## Release / recovery instructions
 

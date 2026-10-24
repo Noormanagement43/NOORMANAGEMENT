@@ -37,13 +37,24 @@ test('institution registration validates auth and does not grant anonymous execu
   assert.match(registrationMigration, /set search_path = ''/i);
   assert.match(registrationMigration, /if v_user_id is null then/i);
   assert.match(registrationMigration, /v_type not in \('school', 'university'\)/i);
+  assert.match(registrationMigration, /revoke all on function public\.register_institution_for_current_user\(text, text, text\) from public/i);
   assert.match(registrationMigration, /revoke all on function public\.register_institution_for_current_user\(text, text, text\) from anon/i);
   assert.match(registrationMigration, /grant execute on function public\.register_institution_for_current_user\(text, text, text\) to authenticated/i);
+});
+
+test('institution registration cannot self-assign Creator/platform privileges', () => {
+  assert.match(registrationMigration, /role, status, invited_by, joined_at/);
+  assert.match(registrationMigration, /'principal', 'active'/);
+  assert.doesNotMatch(registrationMigration, /insert\s+into\s+public\.platform_roles/i);
+  assert.match(registrationMigration, /m\.user_id = v_user_id and m\.status = 'active'/);
+  assert.match(registrationMigration, /v_slug !~ '\^\[a-z0-9\]\+\(-\[a-z0-9\]\+\)\*\$'|v_slug !~/);
+  assert.match(registrationMigration, /length\(v_slug\) > 80/i);
 });
 
 test('dashboard invokes the protected server-side metrics function', () => {
   assert.match(html, /functions\.invoke\('principal-dashboard-data'/);
   assert.match(html, /emailRedirectTo:'https:\/\/noormanagement43\.github\.io\/NOORMANAGEMENT\//);
+  assert.doesNotMatch(html, /principal-dashboard-preview/);
 });
 
 test('legacy auth URL forwards to the single active auth gate', () => {

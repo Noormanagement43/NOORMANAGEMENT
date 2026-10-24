@@ -9,7 +9,7 @@
 
 The repository's application entry point is a single `index.html` file containing styling, a teacher-oriented dashboard, client-side interactions, and Supabase browser-client calls. The dashboard uses the NOOR burgundy/ivory palette and responsive CSS. The page now presents empty/loading states rather than pre-populated sample student, attendance, timetable, and KPI values.
 
-The repository does **not** contain a `package.json` at the root or the conventional `src/`, `supabase/migrations/`, or test layout at the inspected paths. Code search did not return migration, RLS-policy, Edge Function, Gemini, or Brevo source files. This does not prove those resources do not exist outside this repository; it means they cannot be independently verified from the reviewed code.
+The repository does not use a conventional `src/` application layout. During the initial Agent 9 pass, root `package.json` and test scripts were absent. Agent 1 work has since added a dependency-free Node test harness and static syntax check. Migration/policy/function searches still did not return backend source at the inspected paths. This does not prove those resources do not exist outside this repository; it means they cannot be independently verified from the reviewed code.
 
 ## Findings
 
@@ -33,15 +33,15 @@ The repository does **not** contain a `package.json` at the root or the conventi
 - **Recommended fix:** Commit migrations and function source (without secrets), inspect deployed definitions in a verified non-production project, then run RLS and RPC negative tests.
 - **Status:** OPEN — Blocker for production approval.
 
-### QA-003 — High: Application build and automated tests cannot be run from the repository as currently structured
+### QA-003 — Medium: Automated validation is newly added but remains unverified in CI
 - **Module:** Build / CI / test automation
-- **Evidence:** Root `package.json` returned NOT_FOUND; no test configuration or package manager lockfile was identified at the inspected paths.
+- **Evidence:** Agent 1 added a root `package.json`, a Node built-in test suite, a static inline-JavaScript syntax validator, and a separate GitHub Actions validation workflow. There is no framework build, lockfile, browser E2E suite, or runtime test harness.
 - **Reproduction:** Attempt to locate package scripts and run the documented lint, type-check, unit, E2E and production build commands.
-- **Expected:** Reproducible dependency installation and automated checks.
-- **Actual:** No defined project scripts or lockfile are available at the root; no lint/type-check/test/build command can be responsibly inferred.
+- **Expected:** Reproducible static checks in CI, with separate browser and backend security testing.
+- **Actual:** `npm run check` and `npm test` are now defined without third-party dependencies. They have not yet been confirmed green in a GitHub Actions run; framework lint/type-check/build and browser E2E are not applicable to the current static-only setup and remain absent.
 - **Impact:** Regressions cannot be caught by a reproducible automated pipeline.
-- **Recommended fix:** If this is intentionally a static HTML app, add documented HTML/JS validation and browser smoke tests. If the app has a separate source repo/branch, link that source and establish pinned dependencies and CI.
-- **Status:** OPEN.
+- **Recommended fix:** Confirm the new validation workflow passes, then add browser smoke/E2E tests and staging security tests. If the app has a separate source repo/branch, link that source and review it too.
+- **Status:** PARTIALLY ADDRESSED — CI result pending; runtime tests still open.
 
 ### QA-004 — Medium: Only a limited dashboard journey is implemented in the reviewed frontend
 - **Module:** Creator, Principal, Teacher, Student, auth and academic workflows
@@ -91,7 +91,7 @@ The repository does **not** contain a `package.json` at the root or the conventi
 | Gemini / Brevo | NOT FOUND | No integration source identified |
 | Responsive CSS | PARTIAL / static only | Breakpoints present; no real device/browser testing |
 | Keyboard / screen reader | NOT TESTED | Browser tooling unavailable |
-| Lint / type-check / unit / E2E / build | BLOCKED | No root package.json or scripts |
+| Static syntax / foundation tests | ADDED, CI PENDING | `npm run check`, `npm test`; no local runtime result claimed |
 | Production deployment | NOT PERFORMED | Explicitly not authorized |
 
 ## Commands and checks actually executed
@@ -99,10 +99,10 @@ The repository does **not** contain a `package.json` at the root or the conventi
 1. GitHub repository lookup for `Noormanagement43/NOORMANAGEMENT` — **PASS**; default branch reported as `main`.
 2. Fetch `README.md` — **PASS**; README describes project as work in progress.
 3. Fetch `index.html` — **PASS**; static HTML/CSS/JavaScript inspected.
-4. Fetch root `package.json` — **NOT FOUND (404)**.
+4. Initial root `package.json` fetch — **NOT FOUND (404)**; Agent 1 subsequently added `package.json` plus dependency-free checks on the working branch.
 5. Fetch conventional paths `src/App.tsx`, `src/main.tsx`, `vite.config.ts`, `vite.config.js`, `supabase/migrations`-related search terms — **NOT FOUND / no matching code search results**.
 6. GitHub code searches for policy/RPC/dashboard function/Gemini/Brevo terms — **no matching results returned**. This is not proof that remote Supabase resources do not exist.
-7. Browser, Node/npm, SQL, E2E and security penetration tests — **NOT RUN**; no such execution environment was available through the repository connector.
+7. Browser, SQL, E2E and security penetration tests — **NOT RUN**. The newly added Node checks are configured in GitHub Actions, but their workflow result has not yet been confirmed.
 
 ## Release / recovery instructions
 
@@ -110,7 +110,7 @@ The repository does **not** contain a `package.json` at the root or the conventi
 2. Confirm that the intended app source is in this repository and branch; if a separate repository contains the full app, link it and repeat this review there.
 3. Obtain a positively identified development/staging Supabase project before any schema or data changes.
 4. Review migrations, RLS, grants, RPCs and Edge Functions in source control; test cross-tenant reads and writes with separate institution identities.
-5. Add automated checks and run them in CI; document exact commands and preserve logs.
+5. Confirm the new static validation workflow passes; then add browser E2E and RLS isolation tests and preserve CI logs.
 6. Complete and verify all role-specific journeys and live academic workflows.
 7. Configure Gemini/Brevo only in a staging secret store; do not commit keys or send real emails during QA.
 8. Capture staging screenshots and accessibility results across mobile, tablet and desktop.

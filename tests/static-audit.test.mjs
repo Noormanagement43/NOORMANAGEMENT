@@ -80,6 +80,16 @@ test('unverified users cannot see preview data behind the auth gate', () => {
   assert.match(html, /client\.auth\.resend/);
 });
 
+test('non-admin refresh does not call principal-only metrics and admin labels are defined', () => {
+  const start = html.indexOf('async function refreshData(){');
+  const end = html.indexOf('async function startSession(user){', start);
+  assert.ok(start >= 0 && end > start, 'refreshData function exists');
+  const refresh = html.slice(start, end);
+  assert.match(refresh, /if\(!canEdit\(\)\)\{[\s\S]*?return;\s*\}\s*const dashboard=await client\.functions\.invoke\('principal-dashboard-data'/);
+  assert.match(refresh, /const nonAdminLabels=document\.querySelectorAll\('\.stats \.stat small'\)/);
+  assert.doesNotMatch(refresh, /\blabels\[\d\]/);
+});
+
 test('timetable reads upcoming sessions within the authenticated institution', () => {
   assert.match(html, /from\('class_sessions'\)/);
   assert.match(html, /from\('class_sessions'\)[\s\S]{0,300}eq\('institution_id',membership\.institution_id\)/);

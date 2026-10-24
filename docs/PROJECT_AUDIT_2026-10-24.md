@@ -27,18 +27,22 @@ Status meanings: **COMPLETE AND VERIFIED** = narrow item has direct evidence; **
 1. Removed sample student names, hard-coded timetable rows, attendance rows and sample dashboard metrics from `index.html`. The unauthenticated page now begins with explicit empty/loading states rather than fabricated live-looking records.
 2. Removed the client-side role-preview selector. The topbar role label and greeting now come from the authenticated institution membership returned by Supabase.
 3. Kept existing Supabase-backed class/section management; the UI checks the institution role before showing edit controls and filters reads/writes by the active institution ID. Database RLS remains the authoritative security boundary.
-4. Added `tests/static-audit.test.mjs` to guard empty non-demo defaults, membership-derived role display, publishable-key-only frontend configuration, institution-scoped class CRUD, registration RPC validation/grants, the metrics function call, the legacy auth redirect, and institution-scoped timetable loading.
-5. Added `.github/workflows/quality.yml` to run the static tests on pushes and pull requests. It does not deploy.
-6. Added this audit report. The existing registration migration is retained at `supabase/migrations/20261024040000_register_institution_for_current_user.sql`.
+4. Fixed a role-specific refresh bug: non-admin memberships now return before the principal-only metrics function is invoked; admin metric label updates now use the declared label collection rather than an undefined variable. Added a regression test for this path.
+5. Corrected over-escaped regular expressions in the static regression tests so the inline-script, auth-gate and redirect checks actually inspect the HTML.
+6. Added `tests/static-audit.test.mjs` to guard empty non-demo defaults, membership-derived role display, publishable-key-only frontend configuration, institution-scoped class CRUD, registration RPC validation/grants, the metrics function call, the legacy auth redirect, and institution-scoped timetable loading.
+7. Added `.github/workflows/quality.yml` to run the static tests on pushes and pull requests. It does not deploy.
+8. Added this audit report. The registration migration is retained at `supabase/migrations/20261024040000_register_institution_for_current_user.sql`.
 
 ## Test and environment evidence
 
 ### Checks performed during this audit
 
-- Fetched current source from GitHub and evaluated static assertions against the updated `index.html`: sample data absent; role-preview selector absent; no service-role/secret key pattern; institution-scoped academic-group query present; institution registration RPC present; role label derived from membership.
+- Fetched current source for index.html, principal.html, auth.html, the static test file and registration migration. Evaluated the static assertions against current source: 10 existing checks passed, including empty non-demo defaults, membership-derived role display, frontend key safety, tenant-scoped class CRUD, RPC grants/validation, protected metrics invocation, auth redirect, inline JavaScript parsing, auth gate/password recovery, and institution-scoped timetable time-window queries.
+- Parsed both inline JavaScript blocks in index.html, and inline scripts in principal.html and auth.html, using the JavaScript Function parser. This validates syntax only; it is not a browser or runtime test.
+- Added a further static regression test for the non-admin early return and declared admin metrics labels. The Node test runner itself has not been executed in this environment.
 - Supabase project status: `ACTIVE_HEALTHY`.
 - Read-only row-count query returned: **2 auth users, 0 institution memberships, 0 institutions, 0 academic groups, 0 class sessions, 0 attendance records, 0 platform roles**.
-- Inspected public schema: academic tables reviewed had RLS enabled.
+- Inspected public schema: 14 public tables were present and the read-only check returned 0 public tables without RLS.
 - Supabase Security Advisor returned two warnings: authenticated callers can execute the SECURITY DEFINER registration RPC; leaked-password protection is disabled.
 - `principal-dashboard-data` is ACTIVE with JWT verification enabled. `principal-dashboard-preview` is ACTIVE with JWT verification disabled and is a static demo endpoint; do not use it as a live-data source.
 - The GitHub Pages workflow previously failed during Pages setup with `Resource not accessible by integration`. The public site has not been verified live.

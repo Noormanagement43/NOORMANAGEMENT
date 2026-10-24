@@ -205,6 +205,28 @@ render();
  async function refreshData(){
    try{
      await loadGroups();
+     const labels=document.querySelectorAll('.stats .stat small');
+     const statValues=document.querySelectorAll('.stats .stat strong');
+     const statTitles=document.querySelectorAll('.stats .stat .stat-top');
+     if(!canEdit()){
+       if(statValues[0])statValues[0].textContent=String(liveGroups.reduce(function(n,c){return n+c.students},0));
+       if(statValues[1])statValues[1].textContent=String(liveGroups.length).padStart(2,'0');
+       if(statValues[2])statValues[2].textContent='—';
+       if(statValues[3])statValues[3].textContent='—';
+       if(labels[0])labels[0].textContent='Student enrollments across visible groups';
+       if(labels[1])labels[1].textContent='Visible classes and sections';
+       if(labels[2])labels[2].textContent='Not connected for this role';
+       if(labels[3])labels[3].textContent='Not connected for this role';
+       if(statTitles[0])statTitles[0].childNodes[0].textContent='Visible-group enrollments ';
+       if(statTitles[1])statTitles[1].childNodes[0].textContent='Visible classes / sections ';
+       if(statTitles[2])statTitles[2].childNodes[0].textContent='Attendance rate ';
+       if(statTitles[3])statTitles[3].childNodes[0].textContent='Attendance marked ';
+       document.querySelector('.heading .eyebrow').textContent='LIVE · '+(membership.institutions&&membership.institutions.institution_type==='university'?'UNIVERSITY':'SCHOOL')+' WORKSPACE';
+       document.querySelector('.heading p').textContent='Showing records available to your signed-in institution role. Attendance and role-specific dashboards are not yet connected.';
+       document.querySelector('.schedule').innerHTML=emptyBox('Timetable integration is not yet connected.');
+       const tbody=document.querySelector('.attendance tbody');if(tbody)tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Attendance dashboard is not yet connected for this role.')+'</td></tr>';
+       return;
+     }
      const dashboard=await client.functions.invoke('principal-dashboard-data',{body:{institution_id:membership.institution_id}});
      if(dashboard.error) throw new Error(dashboard.error.message||'Secure dashboard metrics could not be loaded.');
      const data=dashboard.data||{};
@@ -232,7 +254,15 @@ render();
  }
  async function startSession(user){
    currentUser=user;clearError();
-   try{await loadMembership();gate.classList.remove('open');addLiveStatus();await refreshData()}
+   try{
+     await loadMembership();
+     const role=membership.role||'member';
+     const roleLabel=document.getElementById('role-label');if(roleLabel)roleLabel.textContent=role.replace(/_/g,' ').replace(/\b\w/g,function(ch){return ch.toUpperCase()});
+     const avatar=document.getElementById('avatar-label');if(avatar)avatar.textContent=role.charAt(0).toUpperCase();
+     const greetings={principal:'Welcome, Principal 👋',school_admin:'Welcome, School Admin 👋',university_admin:'Welcome, University Admin 👋',academic_admin:'Welcome, Academic Admin 👋',teacher:'Good morning, Teacher 👋',faculty:'Welcome, Faculty 👋',student:'Welcome to your learning space 👋',university_student:'Welcome to your learning space 👋',staff:'Welcome to your workspace 👋'};
+     document.getElementById('greeting').textContent=greetings[role]||'Welcome to NOOR 👋';
+     gate.classList.remove('open');addLiveStatus();await refreshData();
+   }
    catch(e){resetToEmpty();if((e.message||'').includes('not linked to an active school or university'))openOnboarding.style.display='block';showGate(e.message||'Could not load your institution membership.')}
  }
  form.addEventListener('submit',async function(e){

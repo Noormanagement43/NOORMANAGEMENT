@@ -47,7 +47,11 @@ test('attendance register filters institution, date, status, and uses the suppor
   assert.match(source, /\.eq\('school_id', sid\)\.in\('session_id', sessionIds\)/);
   for (const state of ['present', 'absent', 'late', 'leave']) {
     assert.match(source, new RegExp('value="' + state + '"'));
+    assert.match(source, new RegExp('id="pdd-count-' + state + '"'));
   }
+  assert.match(source, /const statusCounts = await Promise\.all/);
+  assert.match(source, /select\('id', \{count:'exact',head:true\}\)/);
+  assert.match(source, /\.eq\('school_id', sid\)\.in\('session_id', sessionIds\)\.eq\('status', status\)/);
 });
 
 test('dynamic database output is inserted as text, not executable HTML', () => {

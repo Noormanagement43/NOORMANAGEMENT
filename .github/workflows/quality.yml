@@ -33,10 +33,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check server-side integrations
-        run: deno check supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts
-      - name: Upload generated Deno lockfile for review
-        uses: actions/upload-artifact@v4
-        with:
-          name: noor-deno-lock
-          path: deno.lock
-          if-no-files-found: error
+        run: deno check --frozen supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts

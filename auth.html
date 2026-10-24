@@ -1,91 +1,26 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#641c35">
-<title>Sign in · NOOR</title>
-<style>
-:root{--wine:#641c35;--wine2:#842b49;--cream:#fbf8f3;--paper:#fff;--rose:#f4e7eb;--ink:#29242a;--muted:#827982;--line:#eadfe3;--danger:#a52d3b;--ok:#247a59}
-*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}.shell{min-height:100vh;display:grid;grid-template-columns:minmax(300px,.92fr) 1.08fr}.brand-panel{background:var(--wine);color:white;padding:clamp(28px,5vw,70px);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}.brand-panel:after{content:"";position:absolute;width:480px;height:480px;border:1px solid #ffffff22;border-radius:50%;right:-220px;bottom:-210px;box-shadow:0 0 0 55px #ffffff08,0 0 0 110px #ffffff05}.brand{display:flex;align-items:center;gap:12px;position:relative;z-index:1}.logo{width:46px;height:46px;border-radius:15px;background:white;color:var(--wine);display:grid;place-items:center;font-size:22px;font-weight:900}.brand strong{display:block;font-size:22px;letter-spacing:2px}.brand small{font-size:10px;letter-spacing:1.4px;color:#e6c9d3}.hero{max-width:480px;position:relative;z-index:1;margin:55px 0}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#e8c6d2;font-weight:800}.hero h1{font-size:clamp(35px,4.5vw,58px);line-height:1.08;letter-spacing:-1.7px;margin:17px 0}.hero p{font-size:15px;color:#f0dfe5;max-width:380px}.benefits{display:grid;gap:14px;margin-top:30px}.benefit{display:flex;gap:12px;align-items:center;color:#f5e9ed;font-size:13px}.check{width:25px;height:25px;border:1px solid #ffffff50;border-radius:8px;display:grid;place-items:center}.brand-foot{font-size:11px;color:#d7b5c1;position:relative;z-index:1}.form-panel{display:flex;align-items:center;justify-content:center;padding:28px 20px}.form-wrap{width:min(100%,440px)}.mobile-brand{display:none}.kicker{color:var(--wine2);text-transform:uppercase;letter-spacing:1.5px;font-size:10px;font-weight:800}.form-wrap h2{font-size:30px;letter-spacing:-.8px;margin:7px 0}.sub{color:var(--muted);margin:0 0 23px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;background:#f1e8eb;padding:5px;border-radius:12px;margin-bottom:21px}.tabs button{border:0;background:transparent;color:#796873;border-radius:8px;padding:10px 3px;font-size:11px;font-weight:750}.tabs button[aria-selected=true]{background:white;color:var(--wine);box-shadow:0 2px 8px #3c17200c}.field{display:grid;gap:6px;margin-bottom:14px}.field label{font-size:12px;font-weight:750}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;background:white;padding:12px 13px;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:var(--wine2);box-shadow:0 0 0 3px #842b4914}.field input[aria-invalid=true]{border-color:var(--danger)}.password-wrap{display:flex;position:relative}.password-wrap input{padding-right:65px}.toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--wine);font-size:11px;font-weight:800;padding:6px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:3px 0 17px;font-size:12px}.remember{display:flex;align-items:center;gap:7px;color:var(--muted)}.remember input{accent-color:var(--wine)}.link{border:0;background:transparent;color:var(--wine);font-size:12px;font-weight:800;padding:0}.primary{width:100%;border:0;background:var(--wine);color:white;border-radius:10px;padding:13px;font-weight:800;box-shadow:0 7px 16px #641c351c}.primary:hover{background:var(--wine2)}.primary:disabled{opacity:.6;cursor:wait}.divider{display:flex;align-items:center;gap:12px;color:#a0969c;font-size:11px;margin:19px 0}.divider:before,.divider:after{content:"";height:1px;background:var(--line);flex:1}.switch{text-align:center;color:var(--muted);font-size:12px;margin-top:19px}.notice{display:none;padding:11px 12px;border-radius:10px;margin:0 0 15px;font-size:12px}.notice.show{display:block}.notice.error{background:#fff0f0;color:#922b39;border:1px solid #f1d3d7}.notice.info{background:#f7edf0;color:var(--wine);border:1px solid #efdce2}.notice.success{background:#eaf6ef;color:#226847;border:1px solid #cde9d8}.fineprint{font-size:10px;color:#a0969c;text-align:center;margin-top:18px}.hidden{display:none!important}.upload-note{font-size:10px;color:var(--muted);margin-top:-7px;margin-bottom:13px}.field-hint{font-size:10px;color:var(--muted)}@media(max-width:780px){.shell{display:block}.brand-panel{display:none}.form-panel{min-height:100vh;align-items:flex-start;padding:22px 17px}.form-wrap{margin:auto}.mobile-brand{display:flex;align-items:center;gap:9px;margin-bottom:33px}.mobile-brand .logo{background:var(--wine);color:white;width:38px;height:38px}.mobile-brand strong{color:var(--wine);letter-spacing:1.5px}.mobile-brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.tabs button{font-size:10px}.form-wrap h2{font-size:27px}}@media(max-width:380px){.tabs{grid-template-columns:repeat(2,1fr)}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#641c35">
+  <meta http-equiv="refresh" content="0; url=./index.html">
+  <title>Continue to NOOR</title>
+  <style>
+    :root{color-scheme:light;--wine:#641c35;--cream:#fbf8f3}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--cream);color:#29242a;font:16px/1.5 system-ui,sans-serif}
+    main{max-width:32rem;margin:1.5rem;padding:2rem;background:#fff;border:1px solid #eee5e7;border-radius:1rem;text-align:center}
+    h1{color:var(--wine);letter-spacing:.15em}
+    a{display:inline-block;margin-top:1rem;padding:.8rem 1.2rem;border-radius:.65rem;background:var(--wine);color:#fff;text-decoration:none;font-weight:700}
+  </style>
 </head>
 <body>
-<div class="shell">
-<aside class="brand-panel">
-  <div class="brand"><div class="logo">N</div><div><strong>NOOR</strong><small>INTELLIGENT CAMPUS</small></div></div>
-  <div class="hero"><div class="eyebrow">One connected campus</div><h1>Learning grows<br>when we connect.</h1><p>A calmer, smarter workspace for students, educators, and school leaders.</p><div class="benefits"><div class="benefit"><span class="check">✓</span> Your learning and teaching, all in one place</div><div class="benefit"><span class="check">✓</span> Clear tools for every campus role</div><div class="benefit"><span class="check">✓</span> Designed for school and university communities</div></div></div>
-  <div class="brand-foot">NOOR · Intelligent School &amp; University Operating System</div>
-</aside>
-<main class="form-panel"><div class="form-wrap">
-  <div class="mobile-brand"><div class="logo">N</div><div><strong>NOOR</strong><small>INTELLIGENT CAMPUS</small></div></div>
-  <div class="kicker">Welcome to NOOR</div><h2 id="title">Sign in to your account</h2><p class="sub" id="subtitle">Enter your details to continue to your workspace.</p>
-  <div class="tabs" role="tablist" aria-label="Account journey">
-    <button type="button" role="tab" data-mode="login" aria-selected="true">Sign in</button><button type="button" role="tab" data-mode="student" aria-selected="false">Student</button><button type="button" role="tab" data-mode="school" aria-selected="false">Create school</button><button type="button" role="tab" data-mode="staff" aria-selected="false">Join staff</button>
-  </div>
-  <div id="message" class="notice" role="status" aria-live="polite"></div>
-  <form id="auth-form" novalidate>
-    <div class="field hidden" id="name-field"><label for="full-name">Full name</label><input id="full-name" name="fullName" autocomplete="name" maxlength="100" placeholder="Your full name"></div>
-    <div class="field" id="email-field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></div>
-    <div class="field hidden" id="school-field"><label for="school-name">School / institution name</label><input id="school-name" name="schoolName" maxlength="140" placeholder="e.g. Noor Public School"></div>
-    <div class="field hidden" id="code-field"><label for="invite-code">School invite code</label><input id="invite-code" name="inviteCode" autocomplete="off" maxlength="80" placeholder="Enter the code shared by your school"><span class="field-hint">Use an invite code provided by your school administrator.</span></div>
-    <div class="field hidden" id="student-id-field"><label for="student-id">Student ID (if provided)</label><input id="student-id" name="studentId" maxlength="80" placeholder="Your school-issued student ID"></div>
-    <div class="field" id="password-field"><label for="password">Password</label><div class="password-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="At least 8 characters"><button type="button" class="toggle" data-toggle="password" aria-label="Show password">Show</button></div></div>
-    <div class="field hidden" id="confirm-field"><label for="confirm-password">Confirm password</label><div class="password-wrap"><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Re-enter your password"><button type="button" class="toggle" data-toggle="confirm-password" aria-label="Show confirmation password">Show</button></div></div>
-    <div class="field hidden" id="role-field"><label for="workspace-role">What best describes your role?</label><select id="workspace-role" name="workspaceRole"><option value="teacher">Teacher</option><option value="staff">Other staff</option></select><span class="field-hint">Access is assigned by your institution after verification; this selection does not grant permissions.</span></div>
-    <div class="field hidden" id="photo-field"><label for="school-logo">School logo (optional)</label><input id="school-logo" name="schoolLogo" type="file" accept="image/png,image/jpeg,image/webp"><span class="upload-note">PNG, JPG, or WebP · up to 2 MB</span></div>
-    <div class="row" id="login-options"><label class="remember"><input type="checkbox" id="remember"> Keep me signed in</label><button class="link" type="button" id="forgot">Forgot password?</button></div>
-    <button class="primary" id="submit" type="submit">Sign in</button>
-  </form>
-  <button class="link hidden" type="button" id="resend-verification" style="margin-top:14px">Resend verification email</button>
-  <div class="switch" id="switch-copy">New to NOOR? <button class="link" type="button" data-switch="student">Create a student account</button></div>
-  <div class="fineprint">By continuing, you agree to follow your institution's acceptable-use and privacy policies.</div>
-</div></main>
-</div>
-<script>
-(()=> {
- const $=id=>document.getElementById(id);
- const fields={name:'name-field',school:'school-field',code:'code-field',studentId:'student-id-field',confirm:'confirm-field',role:'role-field',photo:'photo-field'};
- let mode='login';
- const labels={
- login:['Sign in to your account','Enter your details to continue to your workspace.','Sign in'],
- student:['Create your student account','Start with your details. Your school may need to verify your membership.','Create student account'],
- school:['Register your school','Set up a school request for review by the NOOR platform team.','Submit school request'],
- staff:['Join your school team','Use your school email and the invitation details provided by your administrator.','Request staff access']
- };
- function show(id,on){$(id).classList.toggle('hidden',!on)}
- function notice(text,type='info'){const el=$('message');el.textContent=text;el.className='notice show '+type}
- function clearNotice(){const el=$('message');el.textContent='';el.className='notice'}
- function setMode(next){
-  mode=next;clearNotice();$('resend-verification').classList.add('hidden');$('auth-form').reset();
-  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.mode===mode)));
-  $('title').textContent=labels[mode][0];$('subtitle').textContent=labels[mode][1];$('submit').textContent=labels[mode][2];
-  show(fields.name,mode!=='login');show(fields.school,mode==='school');show(fields.code,mode==='staff');show(fields.studentId,mode==='student');show(fields.confirm,mode!=='login');show(fields.role,mode==='staff');show(fields.photo,mode==='school');
-  show('login-options',mode==='login');$('password').autocomplete=mode==='login'?'current-password':'new-password';
-  $('switch-copy').innerHTML=mode==='login'?'New to NOOR? <button class="link" type="button" data-switch="student">Create a student account</button>':mode==='student'?'Already have an account? <button class="link" type="button" data-switch="login">Sign in</button>':mode==='school'?'Already registered? <button class="link" type="button" data-switch="login">Sign in</button>':'Already invited and registered? <button class="link" type="button" data-switch="login">Sign in</button>';
- }
- document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
- document.addEventListener('click',e=>{const b=e.target.closest('[data-switch]');if(b)setMode(b.dataset.switch)});
- document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const input=$(b.dataset.toggle);const reveal=input.type==='password';input.type=reveal?'text':'password';b.textContent=reveal?'Hide':'Show';b.setAttribute('aria-label',(reveal?'Hide':'Show')+' '+(input.id==='password'?'password':'confirmation password') )}));
- $('forgot').addEventListener('click',()=>{clearNotice();if(!$('email').value.trim()){notice('Enter your email address first. A password reset request can be sent once authentication is connected.','info');$('email').focus();return}notice('Password reset is not connected yet. No email has been sent. Supabase Auth integration is required to enable this action.','info')});
- $('resend-verification').addEventListener('click',()=>notice('Verification email cannot be resent yet because Supabase Auth is not connected. No email was sent.','info'));
- $('school-logo').addEventListener('change',()=>{const f=$('school-logo').files[0];if(f&&(f.size>2*1024*1024||!['image/png','image/jpeg','image/webp'].includes(f.type))){$('school-logo').value='';notice('Please choose a PNG, JPG, or WebP image smaller than 2 MB.','error')}});
- $('auth-form').addEventListener('submit',e=>{
-  e.preventDefault();clearNotice();
-  const email=$('email'),pass=$('password');
-  if(mode!=='login'&&!$('full-name').value.trim()){notice('Please enter your full name.','error');$('full-name').focus();return}
-  if(!email.value.trim()||!email.validity.valid){notice('Please enter a valid email address.','error');email.focus();return}
-  if(pass.value.length<8){notice('Password must be at least 8 characters.','error');pass.focus();return}
-  if(mode!=='login'&&pass.value!==$('confirm-password').value){notice('Passwords do not match. Please check them and try again.','error');$('confirm-password').focus();return}
-  if(mode==='school'&&!$('school-name').value.trim()){notice('Please enter your school or institution name.','error');$('school-name').focus();return}
-  if(mode==='staff'&&!$('invite-code').value.trim()){notice('Please enter the invitation code supplied by your school.','error');$('invite-code').focus();return}
-  // Intentionally no fake sign-in or account creation: server/Supabase Auth is not wired into this UI yet.
-  if(mode==='login')notice('Authentication is not connected yet. No sign-in was attempted and no credentials were sent. Connect Supabase Auth before enabling login.','info');
-  if(mode==='student'){notice('Student sign-up UI validated. Account was not created; connect Supabase Auth and institution-membership verification next.','info');$('resend-verification').classList.remove('hidden');}
-  if(mode==='school')notice('School request form validated. Nothing was submitted; connect a protected server-side registration workflow before use.','info');
-  if(mode==='staff')notice('Staff access form validated. No access was granted; verify the invitation and assign roles server-side before enabling this flow.','info');
- });
-})();
-</script>
+  <main>
+    <h1>NOOR</h1>
+    <p>Opening the secure NOOR sign-in and workspace…</p>
+    <p>If you are not redirected automatically, continue here.</p>
+    <a href="./index.html">Continue to NOOR</a>
+  </main>
+  <script>window.location.replace('./index.html' + window.location.search + window.location.hash);</script>
 </body>
 </html>

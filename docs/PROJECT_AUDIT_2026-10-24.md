@@ -57,12 +57,12 @@ Status meanings: **COMPLETE AND VERIFIED** = narrow item has direct evidence; **
 3. **Leaked-password protection:** disabled per Supabase Security Advisor; enable only through an authorized project-owner change.
 4. **Creator role:** no verified platform-owner membership/account or tests proving users cannot self-assign `platform_roles`. Do not treat any institution principal as the platform Creator.
 5. **Preview Edge Function:** `principal-dashboard-preview` has `verify_jwt=false` and returns static sample UI. It is not used by the active dashboard. Review and disable/remove it only after confirming no intended preview depends on it.
-6. **GitHub Pages:** Pages site setup fails because the integration lacks the required repository Pages permission/configuration. This repair did not attempt deployment.
+6. **GitHub Pages:** observed deployment run `40080635935` succeeded for older commit `1338880c`; it does not prove the current branch is live. The workflow is now manual-only (`workflow_dispatch`) so pushes do not auto-deploy. The latest code remains unconfirmed as deployed.
 7. **AI/email:** configure Gemini/Brevo only through server-side secret storage after approval. No credentials were available/used in this audit.
 
 ## Preview and deployment steps
 
 - Static test command with Node.js 20+: `node --test tests/*.test.mjs`.
 - Quality workflow: `.github/workflows/quality.yml`.
-- Existing Pages workflow: `.github/workflows/pages.yml`; it will not produce a live URL until GitHub Pages is enabled/configured and the workflow has sufficient permission.
+- Pages workflow: `.github/workflows/pages.yml` is manual-only. The most recent observed deployment succeeded on older commit `1338880c`; trigger a new deployment only after the release/security gate is approved and the owner chooses to publish.
 - Do not load real student data until Creator authorization, RLS tenant isolation and role-specific workflows have passed integration tests.

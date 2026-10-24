@@ -71,3 +71,24 @@ Status meanings: **COMPLETE AND VERIFIED** = narrow item has direct evidence; **
 - Quality workflow: `.github/workflows/quality.yml`.
 - Pages workflow: `.github/workflows/pages.yml` is manual-only. The most recent observed deployment succeeded on older commit `1338880c`; trigger a new deployment only after the release/security gate is approved and the owner chooses to publish.
 - Do not load real student data until Creator authorization, RLS tenant isolation and role-specific workflows have passed integration tests.
+
+
+## Incremental repair pass — PR #4
+
+This follow-up is based on the current `main` baseline and extends the existing static audit/quality workflow rather than introducing a duplicate test harness.
+
+- Added the Principal academic setup health panel and institution-scoped recent attendance reads while preserving the existing timetable integration.
+- Added safe Teacher and Student workspace entry states. Those roles return before the Principal data refresh; assigned classes, student records, attendance, assignments, and other role-specific data remain explicitly unavailable until role-scoped backend tests are complete.
+- Completed the password recovery callback/form and changed auth email redirects to use the current hosted route.
+- Added server-side Gemini and Brevo Edge Function source plus a committed Deno lockfile. These functions are **not deployed**; provider credentials, persistent rate limits, sender verification, and staging tests remain required.
+- Added a Deno `--frozen` type-check to the existing quality workflow and extended `tests/static-audit.test.mjs`.
+
+### Verification on the implementation commit
+
+- GitHub Actions run `40082096128` passed both the Node static regression suite and `deno check --frozen` for the two new Edge Functions.
+- No browser E2E, live Auth recovery, provider call, real email, or cross-tenant negative test is claimed.
+- Supabase was inspected read-only. The connected project could not be verified as staging; no schema, data, Auth setting, Edge Function, or secret was modified.
+- The public `principal-dashboard-preview` Edge Function is ACTIVE with JWT verification disabled, and leaked-password protection is disabled. These remain release blockers.
+- Supabase reports four applied migrations. The registration migration source is in the repository, but three earlier applied migration sources were not found at their expected filenames and must be reconciled without guessing or replaying migrations.
+
+**Release decision remains NO-GO for production** until the public demo function is retired/protected, leaked-password protection is addressed, migration history is reconciled, AI/email quotas and provider tests are in place, and cross-tenant role tests pass in verified staging.

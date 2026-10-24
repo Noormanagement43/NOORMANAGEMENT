@@ -35,7 +35,7 @@ Attendance corrections require a reason and confirmation. The endpoint appends a
 ## Verification status
 
 - Read-only inspection of the connected project schema, applied migrations, RLS policies, table constraints and security-advisor findings was performed.
-- A source-contract check across the changed index, module, Edge Function and workflow confirmed the expected integration points and security guard strings.
+- A source-contract check across the changed index, module, Edge Function and workflow passed 34/34 authored assertions; frontend and inline JavaScript syntax parsing also passed. These are local source checks, not the Node test runner or Deno type-check.
 - The new Node regression test file and Deno type-check were **not executed by a new GitHub Actions run in this session**. Existing successful Actions runs on earlier commits do not verify these latest changes.
 - No authenticated teacher credentials/test account were available for a browser E2E. Save-and-reload and Principal dashboard reflection are therefore **not claimed as runtime verified**.
 

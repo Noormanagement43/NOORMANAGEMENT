@@ -158,6 +158,7 @@ render();
    const avatarNode=document.getElementById('avatar-label');if(avatarNode)avatarNode.textContent='N';
    const statValues=document.querySelectorAll('.stats .stat strong'); if(statValues[2]) statValues[2].textContent='—'; if(statValues[3]) statValues[3].textContent='—';
    const statsSmall=document.querySelectorAll('.stats .stat small'); if(statsSmall[0]) statsSmall[0].textContent='Live institution memberships'; if(statsSmall[1]) statsSmall[1].textContent='Active class and section records'; if(statsSmall[2]) statsSmall[2].textContent='Based on accessible marked records'; if(statsSmall[3]) statsSmall[3].textContent='Accessible attendance records';
+   ['health-groups','health-rooms','health-descriptions'].forEach(function(id){const node=document.getElementById(id);if(node)node.textContent='—'});const healthCaption=document.getElementById('health-caption');if(healthCaption)healthCaption.textContent='Sign in to load institution-scoped setup indicators.';
  }
  function addLiveStatus(){
    let bar=document.getElementById('noor-live-status');

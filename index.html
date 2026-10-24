@@ -252,7 +252,7 @@ render();
      if(mode==='signin'){
        const r=await client.auth.signInWithPassword({email:email,password:password});if(r.error)throw r.error;await startSession(r.data.user);
      }else{
-       const r=await client.auth.signUp({email:email,password:password});if(r.error)throw r.error;
+       const r=await client.auth.signUp({email:email,password:password,options:{emailRedirectTo:'https://noormanagement43.github.io/NOORMANAGEMENT/'}});if(r.error)throw r.error;
        if(r.data.session){await startSession(r.data.user)}else{error('Account created. Confirm your email, then sign in.')}
      }
    }catch(e){error(e.message||'Authentication failed.')}

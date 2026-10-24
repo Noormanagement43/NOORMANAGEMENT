@@ -208,7 +208,7 @@ render();
  async function refreshData(){
    try{
      await loadGroups();
-     const labels=document.querySelectorAll('.stats .stat small');
+     const nonAdminLabels=document.querySelectorAll('.stats .stat small');
      const statValues=document.querySelectorAll('.stats .stat strong');
      const statTitles=document.querySelectorAll('.stats .stat .stat-top');
      if(!canEdit()){
@@ -216,10 +216,10 @@ render();
        if(statValues[1])statValues[1].textContent=String(liveGroups.length).padStart(2,'0');
        if(statValues[2])statValues[2].textContent='—';
        if(statValues[3])statValues[3].textContent='—';
-       if(labels[0])labels[0].textContent='Student enrollments across visible groups';
-       if(labels[1])labels[1].textContent='Visible classes and sections';
-       if(labels[2])labels[2].textContent='Not connected for this role';
-       if(labels[3])labels[3].textContent='Not connected for this role';
+       if(nonAdminLabels[0])nonAdminLabels[0].textContent='Student enrollments across visible groups';
+       if(nonAdminLabels[1])nonAdminLabels[1].textContent='Visible classes and sections';
+       if(nonAdminLabels[2])nonAdminLabels[2].textContent='Not connected for this role';
+       if(nonAdminLabels[3])nonAdminLabels[3].textContent='Not connected for this role';
        if(statTitles[0])statTitles[0].childNodes[0].textContent='Visible-group enrollments ';
        if(statTitles[1])statTitles[1].childNodes[0].textContent='Visible classes / sections ';
        if(statTitles[2])statTitles[2].childNodes[0].textContent='Attendance rate ';

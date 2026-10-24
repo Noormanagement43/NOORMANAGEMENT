@@ -34,6 +34,6 @@ This is **not** a claim that authenticated production data flows or cross-tenant
 ## Checks
 
 - Static test coverage is added in `tests/principal-data-desk.test.mjs`; the repository's existing `quality.yml` runs `node --test tests/*.test.mjs` on pull requests.
-- CI is required before treating this branch as verified. If the static suite passes, that only validates source-level contracts; it does not establish live RLS authorization or browser behavior.
+- GitHub Actions run **40117427604 (run #86)** completed successfully on the latest branch head, including the full existing Node static regression suite. This is source-level verification only; it does not establish live RLS authorization or browser behavior.
 - Still required in a verified staging environment: authenticated principal browser flows, correct project config, positive/negative tenant-isolation tests, Teacher attendance write → Principal attendance read, CRUD persistence and relationship validation, responsive browser checks, and deployment/security review.
 - No Supabase schema/data, Auth settings, Edge Function deployments, or secrets were changed as part of this branch.

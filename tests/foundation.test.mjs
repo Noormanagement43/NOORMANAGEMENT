@@ -76,3 +76,19 @@ test("student accounts receive a safe learning-space state without administrator
   assert.match(studentWorkspace[1], /Your enrolled classes are not connected for student accounts yet/);
   assert.match(studentWorkspace[1], /health\.style\.display='none'/);
 });
+
+
+test("auth recovery controls are accessible and use the configured Supabase client", () => {
+  assert.match(html, /id=["']noor-toggle-password["'][^>]*aria-label=["']Show password["']/);
+  assert.match(html, /id=["']noor-forgot-password["']/);
+  assert.match(html, /id=["']noor-resend-verification["']/);
+  assert.match(html, /client\.auth\.resetPasswordForEmail/);
+  assert.match(html, /client\.auth\.resend\(\{type:['"]signup['"]/);
+  assert.match(html, /If this email is registered, password reset instructions have been requested/);
+  assert.match(html, /If this account needs verification, a verification email has been requested/);
+});
+
+test("authentication email redirects follow the current hosted route", () => {
+  assert.match(html, /emailRedirectTo:window\.location\.origin\+window\.location\.pathname/);
+  assert.match(html, /redirectTo:window\.location\.origin\+window\.location\.pathname/);
+});

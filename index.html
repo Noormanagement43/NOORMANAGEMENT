@@ -129,6 +129,7 @@ render();
  let mode='signin', currentUser=null, membership=null, liveGroups=[];
  const adminRoles=['principal','school_admin','university_admin','academic_admin'];
  const teacherRoles=['teacher','faculty'];
+ const studentRoles=['student','university_student'];
  function error(message){errorBox.textContent=message;errorBox.style.display='block'}
  function clearError(){errorBox.textContent='';errorBox.style.display='none'}
  function setLoading(on){submit.disabled=on;submit.textContent=on?'Please wait…':(mode==='signin'?'Sign in':'Create account')}
@@ -155,8 +156,8 @@ render();
    const roleNode=document.getElementById('role-label');if(roleNode)roleNode.textContent=roleLabel;
    const avatarNode=document.getElementById('avatar-label');if(avatarNode)avatarNode.textContent=(currentUser.email||'N').charAt(0).toUpperCase();
    const greeting=document.getElementById('greeting');if(greeting)greeting.textContent='Welcome, '+roleLabel+' 👋';
-   const workspace=document.querySelector('.side-bottom');if(workspace)workspace.innerHTML='<strong>'+escapeText(inst&&inst.name||'NOOR Campus')+'</strong><span class="workspace-label">'+(teacherRoles.indexOf(membership.role)>=0?'Teacher workspace':'Institution administration')+'</span><br>Secure sign-in · Institution-scoped access';
-   const badgeLabel=teacherRoles.indexOf(membership.role)>=0?'ACCOUNT ACTIVE':'LIVE DATA';
+   const workspace=document.querySelector('.side-bottom');if(workspace)workspace.innerHTML='<strong>'+escapeText(inst&&inst.name||'NOOR Campus')+'</strong><span class="workspace-label">'+(teacherRoles.indexOf(membership.role)>=0?'Teacher workspace':studentRoles.indexOf(membership.role)>=0?'Student workspace':'Institution administration')+'</span><br>Secure sign-in · Institution-scoped access';
+   const badgeLabel=adminRoles.indexOf(membership.role)>=0?'LIVE DATA':'ACCOUNT ACTIVE';
    bar.innerHTML='<span class="badge">'+badgeLabel+'</span><span>'+escapeText(currentUser.email||'Signed in')+'</span><span>·</span><span>'+escapeText(inst&&inst.name||'Institution workspace')+'</span><button id="noor-signout" type="button">Sign out</button>';
    document.getElementById('noor-signout').onclick=async function(){await client.auth.signOut();location.reload()};
  }
@@ -258,6 +259,21 @@ render();
      document.querySelector('.heading p').textContent='Live records for your authorized institution.';
    }catch(e){toast('Could not refresh live data: '+e.message)}
  }
+ function showStudentWorkspace(){
+   document.querySelector('.heading .eyebrow').textContent='STUDENT LEARNING SPACE';
+   document.getElementById('greeting').textContent='Your learning space';
+   document.querySelector('.heading p').textContent='Your classes, assignments, timetable, and attendance will appear here when student-scoped data access is verified.';
+   document.getElementById('add-class').style.display='none';
+   document.getElementById('manage-classes').style.display='none';
+   document.getElementById('class-list').innerHTML=emptyBox('Your enrolled classes are not connected for student accounts yet.');
+   document.querySelector('.schedule').innerHTML=emptyBox('Your timetable is not connected for student accounts yet.');
+   const tbody=document.querySelector('.attendance tbody');if(tbody)tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Student attendance records are not connected yet.')+'</td></tr>';
+   document.querySelectorAll('.stats .stat strong').forEach(function(node){node.textContent='—'});
+   document.querySelectorAll('.stats .stat small').forEach(function(node){node.textContent='Not connected for this role'});
+   const health=document.querySelector('.health-panel');if(health)health.style.display='none';
+   const studentsNav=document.querySelector('[data-view="Students"]');if(studentsNav)studentsNav.style.display='none';
+   const settingsNav=document.querySelector('[data-view="Settings"]');if(settingsNav)settingsNav.style.display='none';
+ }
  function showTeacherWorkspace(){
    document.querySelector('.heading .eyebrow').textContent='TEACHER WORKSPACE';
    document.getElementById('greeting').textContent='Your teaching day';
@@ -279,9 +295,10 @@ render();
    try{
      await loadMembership();
      const role=membership.role||'member';
-     if(adminRoles.indexOf(role)<0&&teacherRoles.indexOf(role)<0)throw new Error('This workspace is not yet available for your institution role; no academic data was opened.');
+     if(adminRoles.indexOf(role)<0&&teacherRoles.indexOf(role)<0&&studentRoles.indexOf(role)<0)throw new Error('This workspace is not yet available for your institution role; no academic data was opened.');
      gate.classList.remove('open');addLiveStatus();
      if(teacherRoles.indexOf(role)>=0){showTeacherWorkspace();return;}
+     if(studentRoles.indexOf(role)>=0){showStudentWorkspace();return;}
      await refreshData();
    }catch(e){resetToEmpty();if((e.message||'').includes('not linked to an active school or university'))openOnboarding.style.display='block';showGate(e.message||'Could not load your institution membership.')}
  }

@@ -56,7 +56,7 @@ test('all inline JavaScript blocks parse without syntax errors', async () => {
   for (const file of ['index.html', 'principal.html', 'auth.html']) {
     const source = await readFile(new URL('../' + file, import.meta.url), 'utf8');
     let scriptIndex = 0;
-    for (const match of source.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)) {
+    for (const match of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
       scriptIndex += 1;
       if (/\\bsrc\\s*=/.test(match[1]) || !match[2].trim()) continue;
       assert.doesNotThrow(() => new Script(match[2], { filename: file + '#script-' + scriptIndex }), file + ' inline script ' + scriptIndex);

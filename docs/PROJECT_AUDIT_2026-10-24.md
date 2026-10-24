@@ -37,7 +37,7 @@ Status meanings: **COMPLETE AND VERIFIED** = narrow item has direct evidence; **
 
 ### Checks performed during this audit
 
-- Fetched current source for index.html, principal.html, auth.html, the static test file and registration migration. Evaluated the static assertions against current source: 10 existing checks passed, including empty non-demo defaults, membership-derived role display, frontend key safety, tenant-scoped class CRUD, RPC grants/validation, protected metrics invocation, auth redirect, inline JavaScript parsing, auth gate/password recovery, and institution-scoped timetable time-window queries.
+- Fetched current source for index.html, principal.html, auth.html, the static test file and registration migration. Evaluated 11 source-level assertions against current source; all 11 passed, including empty non-demo defaults, membership-derived role display, frontend key safety, tenant-scoped class CRUD, RPC grants/validation, protected metrics invocation, auth redirect, inline JavaScript parsing, auth gate/password recovery, institution-scoped timetable time-window queries, and the non-admin early return before the principal-only metrics endpoint.
 - Parsed both inline JavaScript blocks in index.html, and inline scripts in principal.html and auth.html, using the JavaScript Function parser. This validates syntax only; it is not a browser or runtime test.
 - Added a further static regression test for the non-admin early return and declared admin metrics labels. The Node test runner itself has not been executed in this environment.
 - Supabase project status: `ACTIVE_HEALTHY`.

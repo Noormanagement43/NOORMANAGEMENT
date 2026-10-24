@@ -33,4 +33,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check server-side integrations
-        run: deno check --frozen supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts
+        run: deno check --frozen supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts supabase/functions/teacher-academic-data/index.ts

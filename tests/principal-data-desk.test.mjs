@@ -69,5 +69,5 @@ test('loading, empty, permission, network, and generic error states are explicit
 test('data desk does not introduce database mutations or privileged credentials', () => {
   assert.doesNotMatch(source, /\.insert\(|\.upsert\(|\.update\(|\.delete\(/);
   assert.doesNotMatch(source, /service_role|sb_secret_|SUPABASE_SERVICE_ROLE_KEY|AIza[0-9A-Za-z_-]{20,}/);
-  assert.match(source, /RLS remains the security boundary/);
+  assert.match(source, /Row-Level Security remains the security boundary/);
 });

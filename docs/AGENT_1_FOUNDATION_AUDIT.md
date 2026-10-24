@@ -38,4 +38,4 @@ npm run check
 npm test
 ```
 
-The same checks are configured in GitHub Actions. A green static-check workflow must be followed by staging browser tests and RLS isolation tests; it is not a release approval.
+The same checks are configured in GitHub Actions. The `Validate NOOR foundation` workflow passed on the PR head (run 40080643681), including both syntax validation and foundation tests. This is static verification only; it must be followed by staging browser tests and RLS isolation tests and is not a release approval.

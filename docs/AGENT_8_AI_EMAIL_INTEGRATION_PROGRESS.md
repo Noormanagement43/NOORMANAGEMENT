@@ -30,7 +30,7 @@ Do not place these values in `index.html`, repository files, or client-visible e
 
 ## Before deployment
 
-- Generate and commit the Deno dependency lockfile using the approved Supabase/Deno toolchain.
+- A Deno lockfile is committed and the frozen Deno type-check passed in GitHub Actions run 40082096128; keep the lockfile in sync when dependencies change.
 - Add persistent per-user/institution rate limits and request quotas before enabling AI or email.
 - Verify sender domain, transactional email consent/recipient semantics, retry/idempotency, and audit requirements.
 - Add provider-mocked tests and run staging tests with test-only accounts and a non-production sender.

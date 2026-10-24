@@ -36,7 +36,7 @@ Then open `http://localhost:8000/index.html` in a browser. Authentication/email 
 
 Workflow: `.github/workflows/pages.yml`.
 
-Deployment is currently **blocked / not verified**: the previous Pages setup attempt failed with `Resource not accessible by integration`. A repository owner must enable/configure GitHub Pages or grant the workflow integration the required Pages administration permission. No production deployment is performed automatically by the quality workflow.
+The latest observed Pages deployment (run `40080635935`) completed successfully, but it published commit `1338880c`, which is older than the current `main` branch. The Pages workflow is now **manual-only** (`workflow_dispatch`) to avoid deploying each code change automatically. Do not run it until the release gate is approved; the current branch has not been confirmed as the deployed version.
 
 ## Security and release notes
 

@@ -161,9 +161,17 @@ render();
  function canEdit(){return !!membership&&adminRoles.indexOf(membership.role)>=0}
  window.noorApp={client:client,getCurrentUser:function(){return currentUser},getMembership:function(){return membership},canEdit:canEdit,toast:toast,refreshData:refreshData};
  async function loadGroups(){
-   const result=await client.from('academic_groups').select('id,name,code,group_type,description,room_label,capacity,is_active,academic_group_memberships(group_role,status)').eq('institution_id',membership.institution_id).eq('is_active',true).order('name');
+   let query=client.from('academic_groups').select('id,name,code,group_type,description,room_label,capacity,is_active,academic_group_memberships(group_role,status)').eq('institution_id',membership.institution_id).eq('is_active',true).order('name').limit(200);
+   if(!canEdit()){
+     const linked=await client.from('academic_group_memberships').select('group_id').eq('membership_id',membership.id).eq('status','active').limit(200);
+     if(linked.error) throw linked.error;
+     const ids=[...new Set((linked.data||[]).map(function(x){return x.group_id}))];
+     if(!ids.length){liveGroups=[];renderLiveGroups();return}
+     query=query.in('id',ids);
+   }
+   const result=await query;
    if(result.error) throw result.error;
-   liveGroups=(result.data||[]).map(function(g){const members=g.academic_group_memberships||[];return {id:g.id,name:g.name,subject:g.description||'',room:g.room_label||'Room not assigned',students:members.filter(function(m){return m.group_role==='student'&&m.status==='active'}).length,capacity:g.capacity,type:g.group_type,status:'Active',code:g.code||''}});
+   liveGroups=(result.data||[]).map(function(g){const members=g.academic_group_memberships||[];return {id:g.id,name:g.name,subject:g.description||'',room:g.room_label||'Room not assigned',students:canEdit()?members.filter(function(m){return m.group_role==='student'&&m.status==='active'}).length:members.filter(function(m){return m.group_role==='student'&&m.status==='active'&&membership.role==='student'}).length,capacity:g.capacity,type:g.group_type,status:'Active',code:g.code||''}});
    renderLiveGroups();
  }
  function renderLiveGroups(){

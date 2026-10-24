@@ -236,7 +236,7 @@ render();
  document.getElementById('add-class').onclick=function(){openLiveModal(null)};
  document.getElementById('manage-classes').onclick=function(){openLiveModal(null)};
  document.getElementById('class-form').addEventListener('submit',async function(e){
-   e.preventDefault();
+   e.preventDefault();e.stopImmediatePropagation();
    if(!currentUser||!membership){toast('Sign in first to save records.');return}
    if(!canEdit()){toast('Your institution role does not allow class management.');return}
    const id=document.getElementById('class-id').value;

@@ -17,7 +17,7 @@
 - No attendance marking/editing, timetable CRUD, assignment, notice, result, leave, or report mutation workflows were added.
 - No database schema or policy changes were made. The connected Supabase project was not positively identified as staging, so it was treated as potentially production.
 - The existing RLS policy definitions appear tenant/role-scoped in read-only inspection, but cross-tenant and role tests remain required.
-- The newest source/tests have not yet had a confirmed CI run. Browser and live Supabase execution are not claimed.
+- The current quality workflow passed on this PR head (run 40082096128), including the Node static regression suite and frozen Deno type-check. Browser and live Supabase execution are not claimed.
 
 ## Required verification
 

@@ -21,4 +21,4 @@
 
 ## Verification
 
-The Agent 1 static CI passed on the earlier PR head (run 40080643681). The new Agent 2 panel tests were added afterward and must pass in the next CI run. No browser/E2E or live Supabase tests are claimed.
+The current quality workflow passed on this PR head (run 40082096128), including the Node static regression suite and frozen Deno type-check. No browser/E2E or live Supabase tests are claimed.

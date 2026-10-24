@@ -19,4 +19,4 @@
 
 ## Verification
 
-The current source was checked for role routing, hidden administrator controls, and absence of academic-group/Edge Function fetches in the student renderer. The latest automated workflow result for this exact student change has not yet been confirmed. No browser/E2E or live backend tests are claimed.
+The current source was checked for role routing, hidden administrator controls, and absence of academic-group/Edge Function fetches in the student renderer. The current quality workflow passed on this PR head (run 40082096128), including the Node static regression suite and frozen Deno type-check. No browser/E2E or live backend tests are claimed.

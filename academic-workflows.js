@@ -111,10 +111,18 @@
     const m = currentMembership();
     const [sessions, groups] = await Promise.all([getSessions(), getGroups()]);
     const groupMap = new Map(groups.map(g => [g.id,g.name]));
+    const teacherResult = manager() ? await client.from('institution_memberships').select('id,user_id,invited_email,role').eq('institution_id',m.institution_id).eq('status','active').in('role',['teacher','faculty']).limit(200) : {data:[],error:null};
+    if (teacherResult.error) throw teacherResult.error;
+    const teacherUserIds = [...new Set((teacherResult.data||[]).map(t=>t.user_id).filter(Boolean))];
+    const teacherProfiles = teacherUserIds.length ? await client.from('profiles').select('id,full_name').in('id',teacherUserIds).limit(200) : {data:[],error:null};
+    if (teacherProfiles.error) throw teacherProfiles.error;
+    const teacherNames = new Map((teacherProfiles.data||[]).map(p=>[p.id,p.full_name]));
+    const teacherOptions = (teacherResult.data||[]).map(t=>'<option value="'+esc(t.id)+'">'+esc(teacherNames.get(t.user_id)||t.invited_email||('Teacher '+t.id.slice(0,8)))+'</option>').join('');
     const formHtml = manager() ? `
       <form id="wf-session-form" class="wf-toolbar">
         <div class="wf-field"><label for="wf-session-title">Lesson / session title</label><input id="wf-session-title" maxlength="140" required placeholder="e.g. Mathematics — Chapter 3"></div>
         <div class="wf-field"><label for="wf-session-group">Class / section</label><select id="wf-session-group" required><option value="">Choose group</option>${groups.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('')}</select></div>
+        <div class="wf-field"><label for="wf-session-teacher">Assigned teacher / faculty</label><select id="wf-session-teacher"><option value="">Unassigned</option>${teacherOptions}</select></div>
         <div class="wf-field"><label for="wf-session-room">Room</label><input id="wf-session-room" maxlength="80" placeholder="Room 12"></div>
         <div class="wf-field"><label for="wf-session-start">Starts</label><input id="wf-session-start" type="datetime-local" required></div>
         <div class="wf-field"><label for="wf-session-end">Ends</label><input id="wf-session-end" type="datetime-local" required></div>
@@ -132,7 +140,8 @@
       if (!title || !groupId || Number.isNaN(+starts) || Number.isNaN(+ends) || ends <= starts) return setMessage('error','Enter a title, class, and valid end time after the start time.');
       const group = groups.find(g=>g.id===groupId);
       if (!group) return setMessage('error','Choose a class from this institution.');
-      const result = await client.from('class_sessions').insert({institution_id:m.institution_id,academic_group_id:groupId,title,room_label:document.getElementById('wf-session-room').value.trim()||null,starts_at:starts.toISOString(),ends_at:ends.toISOString(),session_status:'scheduled',created_by:currentUser().id}).select('id').maybeSingle();
+      const teacherId = document.getElementById('wf-session-teacher').value || null;
+      const result = await client.from('class_sessions').insert({institution_id:m.institution_id,academic_group_id:groupId,teacher_membership_id:teacherId,title,room_label:document.getElementById('wf-session-room').value.trim()||null,starts_at:starts.toISOString(),ends_at:ends.toISOString(),session_status:'scheduled',created_by:currentUser().id}).select('id').maybeSingle();
       if (result.error) return setMessage('error','Session was not saved: '+result.error.message);
       setMessage('success','Timetable session saved.');
       await renderTimetable(content);

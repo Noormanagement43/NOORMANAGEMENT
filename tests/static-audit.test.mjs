@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const authPage = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
 const registrationMigration = await readFile(new URL('../supabase/migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
 
 test('dashboard starts with empty, non-demo metrics and attendance', () => {
@@ -43,4 +44,9 @@ test('institution registration validates auth and does not grant anonymous execu
 test('dashboard invokes the protected server-side metrics function', () => {
   assert.match(html, /functions\.invoke\('principal-dashboard-data'/);
   assert.match(html, /emailRedirectTo:'https:\/\/noormanagement43\.github\.io\/NOORMANAGEMENT\//);
+});
+
+test('legacy auth URL forwards to the single active auth gate', () => {
+  assert.match(authPage, /window\.location\.replace\('\.\/index\.html'/);
+  assert.doesNotMatch(authPage, /Authentication is not connected yet|Nothing was submitted/);
 });

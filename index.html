@@ -50,7 +50,7 @@
     <article class="panel"><div class="panel-head"><div><h2>My classes</h2><p>Manage your classes and subjects</p></div><button class="text-btn" id="manage-classes">Manage all ↗</button></div><div class="class-list" id="class-list"></div></article>
     <article class="panel"><div class="panel-head"><div><h2>Today's timetable</h2><p>Your upcoming lessons</p></div><button class="text-btn" data-nav="Timetable">View all</button></div><div class="schedule"><div class="live-empty">Sign in to load scheduled sessions from your institution.</div></div><div class="notice"><span>✦</span><div><strong>A little reminder</strong><p>Review pending assignments before the end of the day.</p></div></div></article>
   </section>
-  <section class="panel lower"><div class="panel-head"><div><h2>Class attendance</h2><p>Live attendance records available to your account</p></div><button class="text-btn" data-nav="Attendance">Open attendance ↗</button></div><div class="table-wrap"><table class="attendance"><thead><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Status</th></tr></thead><tbody><tr><td colspan="4"><div class="live-empty">Sign in to view authorized attendance records.</div></td></tr></tbody></table></div></section>
+  <section class="panel lower"><div class="panel-head"><div><h2>Class attendance</h2><p>Live attendance records available to your account</p></div><button class="text-btn" data-nav="Attendance">Open attendance ↗</button></div><div class="table-wrap"><table class="attendance"><thead><tr><th>Session</th><th>Class / section</th><th>Attendance</th><th>Marked at</th></tr></thead><tbody><tr><td colspan="4"><div class="live-empty">Sign in to view authorized attendance records.</div></td></tr></tbody></table></div></section>
   <div class="footer">NOOR · Intelligent School &amp; University Operating System · Frontend preview</div>
 </main>
 </div>
@@ -90,7 +90,7 @@ render();
 #noor-live-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-12px 0 18px;font-size:12px;color:#827982}
 #noor-live-status .badge{border-radius:99px;background:#e6f4ed;color:#247a59;padding:5px 9px;font-weight:800}
 #noor-signout{border:1px solid #eee5e7;background:#fff;color:#641c35;border-radius:9px;padding:7px 10px}
-.live-empty{padding:18px;text-align:center;color:#827982;border:1px dashed #eadfe3;border-radius:12px;font-size:12px}
+.live-empty{padding:18px;text-align:center;color:#827982;border:1px dashed #eadfe3;border-radius:12px;font-size:12px}.status.absent{color:#9c2636}.status.leave{color:#827982}
 </style>
 <div id="noor-auth-gate" class="open" role="dialog" aria-modal="true" aria-labelledby="noor-auth-title">
  <form class="noor-auth-card" id="noor-auth-form">
@@ -238,7 +238,67 @@ render();
    document.getElementById('modal-backdrop').classList.add('open');
    document.getElementById('class-name').focus();
  }
- async function refreshData(){
+ async function formatInstitutionDate(value){
+   if(!value)return '—';
+   try{return new Intl.DateTimeFormat('en-IN',{timeZone:(membership&&membership.institutions&&membership.institutions.timezone)||'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}).format(new Date(value))}
+   catch{return new Date(value).toLocaleString()}
+ }
+ async function loadSchedule(){
+   const schedule=document.querySelector('.schedule');
+   try{
+     const result=await client.from('class_sessions').select('id,title,room_label,starts_at,ends_at,session_status,academic_group_id,course_id').eq('institution_id',membership.institution_id).eq('session_status','scheduled').gte('starts_at',new Date().toISOString()).order('starts_at',{ascending:true}).limit(5);
+     if(result.error)throw result.error;
+     const sessions=result.data||[];
+     schedule.innerHTML='';
+     if(!sessions.length){schedule.innerHTML=emptyBox('No upcoming sessions are scheduled for this institution.');return}
+     const groupIds=[...new Set(sessions.map(function(x){return x.academic_group_id}).filter(Boolean))];
+     const courseIds=[...new Set(sessions.map(function(x){return x.course_id}).filter(Boolean))];
+     const [groupsResult,coursesResult]=await Promise.all([
+       groupIds.length?client.from('academic_groups').select('id,name').eq('institution_id',membership.institution_id).in('id',groupIds):Promise.resolve({data:[],error:null}),
+       courseIds.length?client.from('courses').select('id,title').eq('institution_id',membership.institution_id).in('id',courseIds):Promise.resolve({data:[],error:null})
+     ]);
+     if(groupsResult.error||coursesResult.error)throw groupsResult.error||coursesResult.error;
+     const groups=new Map((groupsResult.data||[]).map(function(x){return [x.id,x.name]}));
+     const courses=new Map((coursesResult.data||[]).map(function(x){return [x.id,x.title]}));
+     sessions.forEach(function(session){
+       const row=document.createElement('div');row.className='event';
+       const time=document.createElement('time');time.textContent=formatInstitutionDate(session.starts_at);
+       const line=document.createElement('div');line.className='event-line';
+       const info=document.createElement('div');
+       const title=document.createElement('strong');title.textContent=session.title||courses.get(session.course_id)||'Scheduled session';
+       const details=document.createElement('small');details.textContent=[groups.get(session.academic_group_id),courses.get(session.course_id),session.room_label||'Room not assigned',session.ends_at?'Ends '+formatInstitutionDate(session.ends_at):''].filter(Boolean).join(' · ');
+       info.append(title,details);row.append(time,line,info);schedule.appendChild(row);
+     });
+   }catch(e){schedule.innerHTML=emptyBox('Timetable records could not be loaded. Verify institution access policies.')}
+ }
+ async function loadRecentAttendance(){
+   const tbody=document.querySelector('.attendance tbody');
+   try{
+     const result=await client.from('attendance_records').select('id,attendance_status,marked_at,session_id').eq('institution_id',membership.institution_id).order('marked_at',{ascending:false}).limit(10);
+     if(result.error)throw result.error;
+     const records=result.data||[];
+     tbody.innerHTML='';
+     if(!records.length){tbody.innerHTML='<tr><td colspan="4">'+emptyBox('No attendance has been marked yet for this institution.')+'</td></tr>';return}
+     const sessionIds=[...new Set(records.map(function(x){return x.session_id}).filter(Boolean))];
+     const sessionsResult=sessionIds.length?await client.from('class_sessions').select('id,title,academic_group_id').eq('institution_id',membership.institution_id).in('id',sessionIds):{data:[],error:null};
+     if(sessionsResult.error)throw sessionsResult.error;
+     const sessions=new Map((sessionsResult.data||[]).map(function(x){return [x.id,x]}));
+     const groupIds=[...new Set((sessionsResult.data||[]).map(function(x){return x.academic_group_id}).filter(Boolean))];
+     const groupsResult=groupIds.length?await client.from('academic_groups').select('id,name').eq('institution_id',membership.institution_id).in('id',groupIds):{data:[],error:null};
+     if(groupsResult.error)throw groupsResult.error;
+     const groups=new Map((groupsResult.data||[]).map(function(x){return [x.id,x.name]}));
+     records.forEach(function(record){
+       const session=sessions.get(record.session_id)||{};
+       const tr=document.createElement('tr');
+       const sessionCell=document.createElement('td');sessionCell.textContent=session.title||'Session record';
+       const groupCell=document.createElement('td');groupCell.textContent=groups.get(session.academic_group_id)||'Class not assigned';
+       const statusCell=document.createElement('td');const status=document.createElement('span');status.className='status '+record.attendance_status;status.textContent=String(record.attendance_status||'unknown').replace(/^\w/,function(ch){return ch.toUpperCase()});statusCell.appendChild(status);
+       const timeCell=document.createElement('td');timeCell.textContent=formatInstitutionDate(record.marked_at);
+       tr.append(sessionCell,groupCell,statusCell,timeCell);tbody.appendChild(tr);
+     });
+   }catch(e){tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Attendance records could not be loaded. Verify institution access policies.')+'</td></tr>'}
+ }
+ function refreshData(){
    try{
      await loadGroups();
      const dashboard=await client.functions.invoke('principal-dashboard-data',{body:{institution_id:membership.institution_id}});
@@ -264,6 +324,7 @@ render();
      document.querySelector('.stats .stat:nth-child(4) .stat-top').childNodes[0].textContent='Attendance marked today ';
      document.querySelector('.heading .eyebrow').textContent='LIVE · '+(membership.institutions&&membership.institutions.institution_type==='university'?'UNIVERSITY':'SCHOOL')+' OVERVIEW';
      document.querySelector('.heading p').textContent='Live records for your authorized institution.';
+     await Promise.all([loadSchedule(),loadRecentAttendance()]);
    }catch(e){toast('Could not refresh live data: '+e.message)}
  }
  function showStudentWorkspace(){

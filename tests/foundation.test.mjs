@@ -36,3 +36,18 @@ test("academic group reads and writes include institution scope in the frontend 
 test("browser bundle does not contain a Supabase service-role key", () => {
   assert.doesNotMatch(html, /SUPABASE_SERVICE_ROLE_KEY|service_role\s*[:=]/i);
 });
+
+
+test("principal overview includes academic setup health indicators", () => {
+  assert.match(html, /id=["']health-title["']/);
+  assert.match(html, /id=["']health-groups["']/);
+  assert.match(html, /id=["']health-rooms["']/);
+  assert.match(html, /id=["']health-descriptions["']/);
+});
+
+test("setup health values are derived from institution-scoped live groups", () => {
+  assert.match(html, /function renderInstitutionHealth\(\)[\s\S]{0,800}liveGroups\.length/);
+  assert.match(html, /liveGroups\.filter\(function\(group\)\{return group\.room/);
+  assert.match(html, /liveGroups\.filter\(function\(group\)\{return !!\(group\.subject/);
+  assert.match(html, /No active academic groups are available yet/);
+});

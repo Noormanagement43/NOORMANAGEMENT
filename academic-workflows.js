@@ -92,7 +92,8 @@
     if (!content) return;
     content.innerHTML = empty('Loading live records…');
     try {
-      if (view === 'My Classes') return await renderClasses(content);\n      if (view === 'Timetable') return await renderTimetable(content);
+      if (view === 'My Classes') return await renderClasses(content);
+      if (view === 'Timetable') return await renderTimetable(content);
       if (view === 'Attendance') return await renderAttendance(content);
       if (view === 'Students') return await renderDirectory(content);
       if (view === 'Settings') return await renderAcademicYears(content);
@@ -247,7 +248,8 @@
   document.querySelectorAll('[data-nav]').forEach(button => {
     button.addEventListener('click', () => show(button.dataset.nav));
   });
-  window.addEventListener('noor:session-ready', () => { if(activeView!=='Dashboard') show(activeView); });\n  if (currentUser()) window.dispatchEvent(new CustomEvent('noor:session-ready'));
+  window.addEventListener('noor:session-ready', () => { if(activeView!=='Dashboard') show(activeView); });
+  if (currentUser()) window.dispatchEvent(new CustomEvent('noor:session-ready'));
   // Existing auth layer initializes before this module. Render a safe signed-out state until session is ready.
   document.addEventListener('DOMContentLoaded', () => {});
   window.noorAcademicWorkflows = { show, reload: () => loadView(activeView) };

@@ -6,7 +6,7 @@ Date: 2026-10-24
 - Added `principal-data-desk.js` as an additive view inside the existing Principal Studio; no framework rewrite or existing dashboard replacement.
 - Added live directory views for active students and teachers/staff, searchable by name and paginated in 25-row pages.
 - Added an institution-school-scoped class and section list.
-- Added an attendance register with date, status, student-name search, and paginated attendance rows. Supported statuses: Present, Absent, Late, Leave.
+- Added an attendance register with date, status, student-name search, and paginated attendance rows, plus database-counted Present, Absent, Late, and Leave totals for the selected date.
 - Included permission/network/general error states, empty states, accessible labels, keyboard focus, responsive layout, safe text rendering, and a manual refresh.
 - Directory and attendance tables are read-only. Existing authorized management screens remain the mutation path; this avoids duplicating/weakening existing authorization rules.
 - Added static regression tests for script wiring, principal gating, query scoping, pagination, attendance filters, errors, safe rendering, and absence of mutation methods/privileged keys.

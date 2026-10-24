@@ -136,18 +136,22 @@ Deno.serve(async (req: Request) => {
   const timezone = typeof institution.timezone === "string" && institution.timezone ? institution.timezone : "UTC";
 
   try {
-    const [assignedResult, homeRoomResult] = await Promise.all([
+    const [assignedResult, homeRoomResult, sessionGroupResult] = await Promise.all([
       admin.from("academic_group_memberships").select("group_id")
         .eq("institution_id", institutionId).eq("membership_id", membershipId)
         .eq("status", "active").in("group_role", ["teacher", "faculty"]).limit(500),
       admin.from("academic_groups").select("id")
         .eq("institution_id", institutionId).eq("homeroom_teacher_membership_id", membershipId)
         .eq("is_active", true).limit(500),
+      admin.from("class_sessions").select("academic_group_id")
+        .eq("institution_id", institutionId).eq("teacher_membership_id", membershipId)
+        .neq("session_status", "cancelled").limit(1000),
     ]);
-    if (assignedResult.error || homeRoomResult.error) throw new Error("Assigned classes could not be verified.");
+    if (assignedResult.error || homeRoomResult.error || sessionGroupResult.error) throw new Error("Assigned classes could not be verified.");
     const groupIds = [...new Set([
       ...(assignedResult.data ?? []).map((row) => row.group_id),
       ...(homeRoomResult.data ?? []).map((row) => row.id),
+      ...(sessionGroupResult.data ?? []).map((row) => row.academic_group_id).filter(Boolean),
     ])];
     const groupsResult = groupIds.length
       ? await admin.from("academic_groups")

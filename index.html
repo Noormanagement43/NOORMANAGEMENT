@@ -259,7 +259,6 @@ render();
        if(statTitles[3])statTitles[3].childNodes[0].textContent='Attendance marked ';
        document.querySelector('.heading .eyebrow').textContent='LIVE · '+(membership.institutions&&membership.institutions.institution_type==='university'?'UNIVERSITY':'SCHOOL')+' WORKSPACE';
        document.querySelector('.heading p').textContent='Showing records available to your signed-in institution role. Attendance and role-specific dashboards are not yet connected.';
-       document.querySelector('.schedule').innerHTML=emptyBox('Timetable integration is not yet connected.');
        const tbody=document.querySelector('.attendance tbody');if(tbody)tbody.innerHTML='<tr><td colspan="4">'+emptyBox('Attendance dashboard is not yet connected for this role.')+'</td></tr>';
        return;
      }

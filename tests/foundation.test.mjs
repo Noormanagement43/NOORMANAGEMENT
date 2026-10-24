@@ -55,7 +55,7 @@ test("setup health values are derived from institution-scoped live groups", () =
 
 test("teacher accounts receive a safe workspace without administrator data loading", () => {
   assert.match(html, /const teacherRoles=\[['"]teacher['"],['"]faculty['"]\]/);
-  assert.match(html, /if\\(teacherRoles\\.indexOf\\(role\\)>=0\\)\\{showTeacherWorkspace\\(\\);return;\\}\\s*await refreshData\\(\\)/);
+  assert.match(html, /if\(teacherRoles\.indexOf\(role\)>=0\)\{showTeacherWorkspace\(\);return;\}\s*await refreshData\(\)/);
   const teacherWorkspace = html.match(/function showTeacherWorkspace\(\)\{([\s\S]*?)\n \}/);
   assert.ok(teacherWorkspace, "expected teacher workspace renderer");
   assert.doesNotMatch(teacherWorkspace[1], /from\(['"]academic_groups['"]\)|functions\.invoke/);

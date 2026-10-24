@@ -7,10 +7,11 @@
 - Added a password visibility toggle with an accessible label and `aria-pressed` state.
 - Added password reset using Supabase Auth `resetPasswordForEmail`.
 - Added signup verification resend using Supabase Auth `resend`.
+- Added the `PASSWORD_RECOVERY` event path, matching-password checks, and `updateUser({ password })` submission so the reset link can complete in the app.
 - Used generic success responses for reset/resend to avoid revealing whether an email is registered.
 - Built redirect targets from the current hosted route rather than hard-coding one deployment URL.
 - Kept the existing sign-in/sign-up mode and password autocomplete behavior; the forgot-password control is hidden during account creation.
-- Added static tests for the recovery controls and redirect construction.
+- Added static tests for recovery controls, redirect construction, and the password update flow.
 
 ## Limits and security
 

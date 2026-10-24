@@ -215,16 +215,27 @@ render();
  async function refreshData(){
    try{
      await loadGroups();
-     const ids=liveGroups.map(function(g){return g.id});
-     const attendance=await client.from('attendance_records').select('attendance_status').eq('institution_id',membership.institution_id);
-     if(!attendance.error){
-       const rows=attendance.data||[], present=rows.filter(function(r){return r.attendance_status==='present'}).length, denominator=rows.filter(function(r){return ['present','absent','late'].includes(r.attendance_status)}).length;
-       const stats=document.querySelectorAll('.stats .stat strong');if(stats[2])stats[2].textContent=denominator?Math.round(present/denominator*1000)/10+'%':'—';if(stats[3])stats[3].textContent=String(rows.length);
-     }
-     document.querySelector('.stats .stat:nth-child(1) .stat-top').childNodes[0].textContent='Students in visible groups ';
+     const dashboard=await client.functions.invoke('principal-dashboard-data',{body:{institution_id:membership.institution_id}});
+     if(dashboard.error) throw new Error(dashboard.error.message||'Secure dashboard metrics could not be loaded.');
+     const data=dashboard.data||{};
+     if(data.error) throw new Error(data.error);
+     const metrics=data.metrics||{}, attendance=metrics.attendance||{};
+     document.getElementById('student-count').textContent=String(metrics.students==null?'—':metrics.students);
+     document.getElementById('class-count').textContent=String(metrics.active_classes==null?liveGroups.length:metrics.active_classes).padStart(2,'0');
+     const stats=document.querySelectorAll('.stats .stat strong');
+     if(stats[0])stats[0].textContent=String(metrics.students==null?'—':metrics.students);
+     if(stats[1])stats[1].textContent=String(metrics.active_classes==null?'—':metrics.active_classes).padStart(2,'0');
+     if(stats[2])stats[2].textContent=attendance.rate==null?'—':attendance.rate+'%';
+     if(stats[3])stats[3].textContent=String(attendance.marked==null?'—':attendance.marked);
+     const labels=document.querySelectorAll('.stats .stat small');
+     if(labels[0])labels[0].textContent='Active student memberships';
+     if(labels[1])labels[1].textContent='Active classes and sections';
+     if(labels[2])labels[2].textContent='Today · '+(data.timezone||'institution time');
+     if(labels[3])labels[3].textContent='Attendance marked today';
+     document.querySelector('.stats .stat:nth-child(1) .stat-top').childNodes[0].textContent='Students ';
      document.querySelector('.stats .stat:nth-child(2) .stat-top').childNodes[0].textContent='Active classes / sections ';
-     document.querySelector('.stats .stat:nth-child(3) .stat-top').childNodes[0].textContent='Attendance rate ';
-     document.querySelector('.stats .stat:nth-child(4) .stat-top').childNodes[0].textContent='Attendance records ';
+     document.querySelector('.stats .stat:nth-child(3) .stat-top').childNodes[0].textContent='Today attendance rate ';
+     document.querySelector('.stats .stat:nth-child(4) .stat-top').childNodes[0].textContent='Attendance marked today ';
      document.querySelector('.heading .eyebrow').textContent='LIVE · '+(membership.institutions&&membership.institutions.institution_type==='university'?'UNIVERSITY':'SCHOOL')+' OVERVIEW';
      document.querySelector('.heading p').textContent='Live records for your authorized institution.';
    }catch(e){toast('Could not refresh live data: '+e.message)}

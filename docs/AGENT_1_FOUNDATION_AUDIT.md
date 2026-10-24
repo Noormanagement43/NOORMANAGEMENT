@@ -23,7 +23,7 @@
 
 These checks validate source syntax and guard against accidental frontend regressions; they do **not** prove authorization. Browser filters such as `institution_id` are not a substitute for PostgreSQL RLS and server-side authorization. The following remain unverified or incomplete:
 
-1. Migration files and policy definitions could not be independently opened at the expected path in this review. Confirm the actual migration inventory and applied migration state in a verified staging project before modifying schema.
+1. The repository contains the institution-registration migration, but the three earlier applied migration sources were not found at their reported filenames. Reconcile the exact migration inventory in a verified staging project before modifying schema.
 2. Cross-tenant RLS tests, role authorization tests, and real-user browser flows have not been run here.
 3. The app remains a single-file JavaScript application; there is no TypeScript build, component library, formatter, or browser E2E suite yet.
 4. The Principal dashboard has some live data wiring, but Teacher/Student/Creator workflows and other academic modules are not verified complete.
@@ -43,4 +43,4 @@ Type-check server-side functions with Deno 2:
 deno check supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts
 ```
 
-The same checks are configured in GitHub Actions. The `Validate NOOR foundation` workflow passed on the PR head (run 40080643681), including both syntax validation and foundation tests. This is static verification only; it must be followed by staging browser tests and RLS isolation tests and is not a release approval.
+The existing `NOOR static quality checks` workflow runs the expanded Node suite on pull requests and now includes Deno type-checking for the server-side functions. The prior run from the earlier branch is not evidence for this updated branch. This is static verification only; staging browser tests and RLS isolation tests are still required.

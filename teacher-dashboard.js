@@ -494,7 +494,9 @@
         showToast('Attendance save and reload verified.', 'success');
       }
     } catch (error) {
-      setAttMessage(error.message || 'Attendance was not confirmed. Reload records before retrying.', 'error');
+      // A server/network error can happen after some rows were committed. Re-read before leaving the page.
+      await loadRoster();
+      setAttMessage((error.message || 'Attendance was not confirmed.') + ' The roster was reloaded because the write outcome may be partial; review the saved state before retrying.', 'error');
     } finally {
       state.busy = false;
       const nextButton = $('#td-save-attendance');

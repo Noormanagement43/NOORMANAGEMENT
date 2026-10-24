@@ -92,7 +92,7 @@
     if (!content) return;
     content.innerHTML = empty('Loading live records…');
     try {
-      if (view === 'Timetable') return await renderTimetable(content);
+      if (view === 'My Classes') return await renderClasses(content);\n      if (view === 'Timetable') return await renderTimetable(content);
       if (view === 'Attendance') return await renderAttendance(content);
       if (view === 'Students') return await renderDirectory(content);
       if (view === 'Settings') return await renderAcademicYears(content);
@@ -100,6 +100,11 @@
     } catch (e) {
       content.innerHTML = '<div class="wf-error" role="alert">' + esc(e.message || 'Could not load records.') + '</div>';
     }
+  }
+  async function renderClasses(content) {
+    const groups = await getGroups();
+    const rows = groups.map(g=>'<tr><td>'+esc(g.name)+'</td><td>'+esc(g.code||'—')+'</td><td>'+esc(g.group_type||'class')+'</td><td>'+esc(g.room_label||'—')+'</td><td>'+esc(g.is_active?'Active':'Inactive')+'</td></tr>').join('');
+    content.innerHTML = '<p class="wf-subtitle">'+(manager()?'Class creation and editing are available from the Add a class button above.':'Only classes linked to your own institution membership are shown.')+'</p>' + (rows?'<div class="table-wrap"><table class="wf-table"><thead><tr><th>Class / section</th><th>Code</th><th>Type</th><th>Room</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>':empty('No classes or sections are linked to this account yet.'));
   }
   async function renderTimetable(content) {
     const m = currentMembership();
@@ -242,11 +247,7 @@
   document.querySelectorAll('[data-nav]').forEach(button => {
     button.addEventListener('click', () => show(button.dataset.nav));
   });
-  const addClass = document.getElementById('add-class');
-  if (addClass) addClass.addEventListener('click', () => show('My Classes'));
-  const manageClasses = document.getElementById('manage-classes');
-  if (manageClasses) manageClasses.addEventListener('click', () => show('My Classes'));
-  window.addEventListener('noor:session-ready', () => { if(activeView!=='Dashboard') show(activeView); });
+  window.addEventListener('noor:session-ready', () => { if(activeView!=='Dashboard') show(activeView); });\n  if (currentUser()) window.dispatchEvent(new CustomEvent('noor:session-ready'));
   // Existing auth layer initializes before this module. Render a safe signed-out state until session is ready.
   document.addEventListener('DOMContentLoaded', () => {});
   window.noorAcademicWorkflows = { show, reload: () => loadView(activeView) };

@@ -207,7 +207,7 @@
 
     const rows = data || [];
     totalInstitutions = Number(count || 0);
-    institutionCache = new Map(rows.map((row) => [row.id, row]));
+    rows.forEach((row) => institutionCache.set(row.id, row));
     body.innerHTML = rows.length ? rows.map(institutionRow).join('') : '<tr><td colspan="6" class="table-empty">No institutions matched these filters. Nothing has been added or changed.</td></tr>';
     $('resultCount').textContent = totalInstitutions.toLocaleString() + ' matching institution' + (totalInstitutions === 1 ? '' : 's');
     $('pageLabel').textContent = totalInstitutions ? 'Page ' + (currentPage + 1) + ' of ' + Math.max(1, Math.ceil(totalInstitutions / PAGE_SIZE)) : 'Page 1';
@@ -244,6 +244,7 @@
     $('refreshQueueButton').disabled = true;
     setSync('Syncing live data…');
     setNotice($('pageNotice'), '');
+    institutionCache = new Map();
     try {
       await Promise.all([loadMetrics(), loadInstitutions(), loadOnboarding()]);
       setSync('Live data updated', 'ok');

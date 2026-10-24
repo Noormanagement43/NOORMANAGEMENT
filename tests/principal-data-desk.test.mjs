@@ -35,7 +35,7 @@ test('class and section directory derives related rows from school-scoped classe
   assert.match(source, /\.eq\('school_id', sid\)\.eq\('is_active', true\)/);
   assert.match(source, /from\('sections'\)\.select\('id,name,class_id'\)/);
   assert.match(source, /\.in\('class_id', ids\)/);
-  assert.match(source, /No active classes\/groups match this search/);
+  assert.match(source, /No active classes or sections match this search/);
 });
 
 test('attendance register filters institution, date, status, and uses the supported attendance values', () => {

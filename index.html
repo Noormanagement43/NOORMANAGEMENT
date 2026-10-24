@@ -157,9 +157,9 @@ render();
    membership=activeMemberships[0]||null;
    if(!membership) throw new Error('Your account is signed in, but it is not linked to an active school or university yet. Ask your institution administrator to activate your membership.');
    if(activeMemberships.length>1) throw new Error('Your account belongs to more than one institution. Institution selection is not available yet, so access is paused to avoid loading the wrong campus.');
-   if(adminRoles.indexOf(membership.role)<0) throw new Error('This workspace is currently for institution administrators. Teacher and student portals are not implemented yet; no dashboard data was opened.');
  }
  function canEdit(){return !!membership&&adminRoles.indexOf(membership.role)>=0}
+ window.noorApp={client:client,getCurrentUser:function(){return currentUser},getMembership:function(){return membership},canEdit:canEdit,toast:toast,refreshData:refreshData};
  async function loadGroups(){
    const result=await client.from('academic_groups').select('id,name,code,group_type,description,room_label,capacity,is_active,academic_group_memberships(group_role,status)').eq('institution_id',membership.institution_id).eq('is_active',true).order('name');
    if(result.error) throw result.error;

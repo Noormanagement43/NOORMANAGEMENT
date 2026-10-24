@@ -42,6 +42,20 @@ Legend: COMPLETE AND VERIFIED = evidence confirms the item; PARTIAL = some imple
 4. Creator access. The inspected frontend has no Creator dashboard or creator-only route. Do not create a Creator account or grant platform privileges through public signup. Provision platform roles through a trusted owner-controlled process only.
 5. Deployment/environment. The GitHub Pages workflow exists, but deployment success and the current live site were not verified. The Supabase project must be confirmed as the intended development/staging target before any schema/data mutation.
 
+## Current verification update — 24 October 2026
+
+Since the initial audit snapshot below, the following work has been committed:
+
+- Fixed a duplicate `const labels` declaration in `index.html` `refreshData()`. After the fix, both non-empty inline scripts pass JavaScript syntax parsing.
+- Replaced the obsolete standalone `auth.html` form with a redirect to the integrated `index.html` authentication gate.
+- Removed the duplicate `.github/workflows/deploy-pages.yml`; `.github/workflows/pages.yml` is the single Pages deployment workflow.
+- Expanded `README.md` with the current feature status and security/release blockers.
+- Added static regression tests at `tests/static-audit.test.mjs`, run by `.github/workflows/quality.yml`.
+
+A prior Pages run (40061910701) completed both build and deploy jobs successfully. The newest run following these commits must still be checked before claiming the latest revision is deployed. Static tests are in progress as of the latest inspection; their final result should be verified from Actions.
+
+The database had 2 Auth users, 0 institutions and 0 active institution memberships at the time of inspection. Therefore, real multi-role dashboard and tenant-isolation tests still require authorized staging fixtures. The active `principal-dashboard-preview` function remains a blocker because it has `verify_jwt=false` and serves a hard-coded demo dashboard; it was not changed because the Supabase target was not positively verified as staging.
+
 ## Checks actually performed
 
 - Fetched and reviewed the current index.html, README.md, and Pages workflow from main.

@@ -58,7 +58,10 @@
 
   function ensureRoot() {
     installStyles();
-    if (state.root && state.root.isConnected) return state.root;
+    if (state.root && state.root.isConnected) {
+      state.root.hidden = false;
+      return state.root;
+    }
     const heading = document.querySelector('.heading');
     if (!heading) return null;
     const root = document.createElement('section');
@@ -397,6 +400,7 @@
       return;
     }
     const area = $('#td-att-roster');
+    state.attendance = null;
     area.innerHTML = emptyBox('Loading enrolled students and saved attendance…');
     try {
       setAttMessage('', 'info');
@@ -418,6 +422,7 @@
       });
       $('#td-save-attendance').addEventListener('click', saveAttendance);
     } catch (error) {
+      state.attendance = null;
       area.innerHTML = emptyBox(error.message || 'Student roster could not be loaded.');
       setAttMessage(error.message || 'Student roster could not be loaded.', 'error');
     }
@@ -461,6 +466,10 @@
       });
       const failures = Array.isArray(result.failures) ? result.failures : [];
       await loadRoster();
+      if (!Array.isArray(state.attendance)) {
+        setAttMessage('The write response was received, but saved records could not be reloaded. Do not assume attendance is verified; refresh and review the roster.', 'error');
+        return;
+      }
       const savedStatuses = new Map((state.attendance || []).map(record => [record.student_membership_id, record.attendance_status]));
       const verified = marks.filter(mark => savedStatuses.get(mark.student_membership_id) === mark.status).length;
       if (failures.length) {
@@ -515,15 +524,35 @@
     show(view);
   }, true);
 
+  function restoreNonTeacherShell() {
+    if (state.root) state.root.hidden = true;
+    ['.stats', '.health-panel', '.content-grid', '.lower'].forEach(selector => {
+      document.querySelectorAll(selector).forEach(node => { node.hidden = false; });
+    });
+    const addClass = $('#add-class', document);
+    const manageClasses = $('#manage-classes', document);
+    if (addClass) addClass.hidden = false;
+    if (manageClasses) manageClasses.hidden = false;
+    const eyebrow = $('.heading .eyebrow', document);
+    const title = $('.heading h1', document);
+    const intro = $('.heading p', document);
+    if (eyebrow) eyebrow.textContent = 'CAMPUS OVERVIEW';
+    if (title) title.textContent = 'Welcome to NOOR';
+    if (intro) intro.textContent = 'Live institution records for your authenticated account.';
+  }
   function onSessionReady() {
-    if (!currentContext()) return;
+    if (!currentContext()) {
+      restoreNonTeacherShell();
+      return;
+    }
     ensureRoot();
     show('Dashboard');
   }
   window.addEventListener('noor:session-ready', onSessionReady);
   window.addEventListener('noor:session-ended', () => {
-    if (state.root) state.root.hidden = true;
+    restoreNonTeacherShell();
     state.data = null;
+    state.currentAttendance = null;
   });
   window.NOOR_TEACHER_DASHBOARD = {
     open: show,

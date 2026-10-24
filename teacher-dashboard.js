@@ -60,6 +60,19 @@
     installStyles();
     if (state.root && state.root.isConnected) {
       state.root.hidden = false;
+      ['.stats', '.health-panel', '.content-grid', '.lower'].forEach(selector => {
+        document.querySelectorAll(selector).forEach(node => { node.hidden = true; });
+      });
+      const addClass = $('#add-class', document);
+      const manageClasses = $('#manage-classes', document);
+      if (addClass) addClass.hidden = true;
+      if (manageClasses) manageClasses.hidden = true;
+      const eyebrow = $('.heading .eyebrow', document);
+      const title = $('.heading h1', document);
+      const intro = $('.heading p', document);
+      if (eyebrow) eyebrow.textContent = 'NOOR · TEACHER WORKSPACE';
+      if (title) title.textContent = 'Teacher Dashboard';
+      if (intro) intro.textContent = 'Your assigned classes, timetable and attendance — loaded from your institution records.';
       return state.root;
     }
     const heading = document.querySelector('.heading');

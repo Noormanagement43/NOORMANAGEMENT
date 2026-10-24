@@ -13,10 +13,10 @@
 
 ## Changes made
 
-- Added a dependency-free `package.json` with `npm run check` and `npm test` scripts. No frontend framework migration or dependency installation is imposed.
-- Added `scripts/validate-static.mjs` to parse every non-empty inline JavaScript block without executing browser code.
-- Added Node built-in tests for document metadata, inline-script syntax, focus/reduced-motion accommodations, and frontend tenant-scope query patterns.
-- Added `.github/workflows/validate.yml` to run those checks on pull requests and pushes to `main`. This workflow does not deploy.
+- Reused the repository's existing `tests/static-audit.test.mjs` and `.github/workflows/quality.yml` rather than introducing a package manager or duplicate test harness. Extended the existing static tests and added a Deno type-check job for the new server-side function source.
+- Existing static-audit tests already parse inline JavaScript blocks without executing browser code.
+- Extended existing Node built-in tests for document metadata, inline-script syntax, focus/reduced-motion accommodations, role routing, tenant-scoped academic reads, auth recovery, and integration secret handling.
+- Extended `.github/workflows/quality.yml` to run the existing static suite and type-check the new Edge Function source. This workflow does not deploy.
 - Kept the existing static app and visual design intact rather than replacing the working application with a new framework.
 
 ## Important limits
@@ -31,11 +31,16 @@ These checks validate source syntax and guard against accidental frontend regres
 
 ## Verification plan
 
-Run locally with Node.js 22 or newer:
+Run locally with Node.js 20 or newer:
 
 ```sh
-npm run check
-npm test
+node --test tests/*.test.mjs
+```
+
+Type-check server-side functions with Deno 2:
+
+```sh
+deno check supabase/functions/ask-noor/index.ts supabase/functions/send-notice-email/index.ts
 ```
 
 The same checks are configured in GitHub Actions. The `Validate NOOR foundation` workflow passed on the PR head (run 40080643681), including both syntax validation and foundation tests. This is static verification only; it must be followed by staging browser tests and RLS isolation tests and is not a release approval.

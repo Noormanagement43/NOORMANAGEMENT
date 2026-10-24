@@ -9,7 +9,7 @@
 
 The repository's application entry point is a single `index.html` file containing styling, a teacher-oriented dashboard, client-side interactions, and Supabase browser-client calls. The dashboard uses the NOOR burgundy/ivory palette and responsive CSS. The page now presents empty/loading states rather than pre-populated sample student, attendance, timetable, and KPI values.
 
-The repository remains a single-file static frontend without a conventional `src/` application layout. Agent 1 added dependency-free Node checks; later work added role-aware empty-state shells, live institution-scoped timetable/attendance reads, auth recovery UX, and server-side Gemini/Brevo function source. The live Supabase project reports four applied migrations and RLS enabled on all inspected public tables, but migration SQL is not reviewable at the expected repository path and cross-tenant negative tests remain unrun.
+The repository remains a single-file static frontend without a conventional `src/` application layout. The repository already had `tests/static-audit.test.mjs`, `.github/workflows/quality.yml`, and the institution-registration migration. This PR extends the existing test suite/workflow, adds role-aware empty-state shells, institution-scoped attendance reads, password recovery completion, and server-side Gemini/Brevo function source. The live Supabase project reports four applied migrations and RLS enabled on all inspected public tables; the registration migration is in source, but three earlier applied migration sources were not found at their expected filenames. Cross-tenant negative tests remain unrun.
 
 ## Findings
 
@@ -25,19 +25,19 @@ The repository remains a single-file static frontend without a conventional `src
 
 ### QA-002 — High: Applied migration history is not backed by reviewable migration source in this repository
 - **Module:** Supabase schema, migrations, RLS, institution registration
-- **Evidence:** Supabase reports four applied migrations (`noor_project_foundation`, `teacher_timetable_and_attendance`, `editable_class_management`, `index_foreign_keys_for_scale`). The expected SQL source files were not found at the inspected repository paths. Read-only policy inspection was possible directly against the connected project.
+- **Evidence:** Supabase reports four applied migrations (`noor_project_foundation`, `teacher_timetable_and_attendance`, `editable_class_management`, `index_foreign_keys_for_scale`). The registration RPC migration exists in source and explicitly revokes `public`/`anon` execution and grants `authenticated` execution. Three earlier applied migration sources were not found at their expected filenames. Read-only policy inspection was possible directly against the connected project.
 - **Expected:** Every applied migration and privileged function is version-controlled and can be reproduced in staging.
 - **Actual:** Live policy definitions are inspectable, but the matching migration SQL and a verified staging environment are not available in this repository review.
 - **Impact:** Schema drift and future migration safety cannot be independently reviewed or reproduced.
 - **Recommended fix:** Recover/commit the exact applied migration source without replaying it against the current project; verify migration history and schema drift in staging before any schema changes.
 - **Status:** OPEN — Blocker for production approval.
 
-### QA-003 — Medium: Static validation exists; latest changes still need a fresh full CI run
+### QA-003 — Medium: Expanded static validation and Deno type-check require current CI confirmation
 - **Module:** Build / CI / test automation
-- **Evidence:** Agent 1 added a root `package.json`, Node built-in tests, and a static inline-JavaScript syntax validator. A Deno type-check job was added for new Edge Function source. An earlier GitHub Actions run passed Node syntax/foundation checks before the newest auth/data/function additions.
+- **Evidence:** The repository already had `tests/static-audit.test.mjs` and `.github/workflows/quality.yml`; this PR extends that suite and adds a Deno type-check job for the new Edge Function source. An earlier GitHub Actions run passed a previous branch, not the current expanded suite.
 - **Reproduction:** Attempt to locate package scripts and run the documented lint, type-check, unit, E2E and production build commands.
 - **Expected:** Reproducible static checks in CI, with separate browser and backend security testing.
-- **Actual:** `npm run check` and `npm test` are defined without third-party Node dependencies. A prior run passed both steps, but the current expanded test suite and Deno type-check have not yet been confirmed green on the latest PR head. No browser E2E suite exists.
+- **Actual:** The existing Node suite runs with `node --test tests/*.test.mjs`. The expanded current suite and Deno type-check have not yet been confirmed green on the latest PR head. No browser E2E suite exists.
 - **Impact:** Regressions cannot be caught by a reproducible automated pipeline.
 - **Recommended fix:** Confirm the new validation workflow passes, then add browser smoke/E2E tests and staging security tests. If the app has a separate source repo/branch, link that source and review it too.
 - **Status:** PARTIALLY ADDRESSED — earlier static CI passed; latest CI and runtime tests pending.
@@ -116,10 +116,10 @@ The repository remains a single-file static frontend without a conventional `src
 1. GitHub repository lookup for `Noormanagement43/NOORMANAGEMENT` — **PASS**; default branch reported as `main`.
 2. Fetch `README.md` — **PASS**; README describes project as work in progress.
 3. Fetch `index.html` — **PASS**; static HTML/CSS/JavaScript inspected.
-4. Initial root `package.json` fetch — **NOT FOUND (404)**; Agent 1 subsequently added `package.json` plus dependency-free checks on the working branch.
+4. Existing `tests/static-audit.test.mjs`, `.github/workflows/quality.yml`, and registration migration source were reviewed; the three earlier applied migration files were not found at their expected filenames.
 5. Fetch conventional paths `src/App.tsx`, `src/main.tsx`, `vite.config.ts`, `vite.config.js`, `supabase/migrations`-related search terms — **NOT FOUND / no matching code search results**.
 6. GitHub code searches for policy/RPC/dashboard function/Gemini/Brevo terms — **no matching results returned**. This is not proof that remote Supabase resources do not exist.
-7. GitHub Actions run 40080643681 — **PASS** for inline JavaScript syntax and foundation tests on an earlier PR head. Current expanded Node tests and Deno type-check — **PENDING**. Browser, SQL, E2E and security penetration tests — **NOT RUN**.
+7. GitHub Actions run 40080643681 — **PASS** for a previous branch only. Current expanded Node tests and Deno type-check — **PENDING** on this PR. Browser, SQL, E2E and security penetration tests — **NOT RUN**.
 
 ## Release / recovery instructions
 

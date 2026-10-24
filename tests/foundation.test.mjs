@@ -133,3 +133,13 @@ test("Brevo mail function requires an admin, institution-linked recipient, and s
   assert.match(emailFunctionSource, /textContent:\s*message/);
   assert.doesNotMatch(emailFunctionSource, /xkeysib-[A-Za-z0-9_-]{20,}/);
 });
+
+
+test("password recovery callback opens a confirmation form and updates only after matching passwords", () => {
+  assert.match(html, /id=["']noor-password-reset-form["']/);
+  assert.match(html, /event===['"]PASSWORD_RECOVERY['"]/);
+  assert.match(html, /client\.auth\.updateUser\(\{password:password\}\)/);
+  assert.match(html, /password!==resetPasswordConfirm\.value/);
+  assert.match(html, /Use at least 8 characters for your new password/);
+  assert.match(html, /Password updated\. Sign in with your new password/);
+});

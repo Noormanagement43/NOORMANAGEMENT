@@ -47,7 +47,7 @@ test('corrections require a reason and use optimistic concurrency protection', (
   assert.match(endpoint, /correction_reason/);
   assert.match(endpoint, /correction reason of at least five characters is required/);
   assert.match(endpoint, /updated_at", prior\.updated_at/);
-  assert.match(dashboard, /changing saved attendance requires a reason and confirmation/i);
+  assert.match(dashboard, /Changing a saved status or note requires a reason and confirmation/);
   assert.match(dashboard, /immutable audit table/i);
 });
 

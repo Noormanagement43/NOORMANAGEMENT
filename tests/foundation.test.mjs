@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const askNoorSource = await readFile(new URL("../supabase/functions/ask-noor/index.ts", import.meta.url), "utf8");
+const emailFunctionSource = await readFile(new URL("../supabase/functions/send-notice-email/index.ts", import.meta.url), "utf8");
 
 test("document declares language and responsive viewport", () => {
   assert.match(html, /<html\s+lang=["']en["']/i);
@@ -109,4 +111,25 @@ test("principal attendance reads are institution-scoped and render safe text", (
 test("teacher and student workspaces return before principal-only data refresh", () => {
   assert.match(html, /if\(teacherRoles\.indexOf\(role\)>=0\)\{showTeacherWorkspace\(\);return;\}/);
   assert.match(html, /if\(studentRoles\.indexOf\(role\)>=0\)\{showStudentWorkspace\(\);return;\}/);
+});
+
+
+test("Ask Noor keeps Gemini credentials server-side and verifies institution membership", () => {
+  assert.match(askNoorSource, /Deno\.env\.get\(["']GEMINI_API_KEY["']\)/);
+  assert.match(askNoorSource, /supabase\.auth\.getUser\(\)/);
+  assert.match(askNoorSource, /\.eq\(["']institution_id["'],\s*institutionId\)/);
+  assert.match(askNoorSource, /x-goog-api-key/);
+  assert.match(askNoorSource, /prompt\.length > 4000/);
+  assert.match(askNoorSource, /AbortController/);
+  assert.doesNotMatch(askNoorSource, /AIza[0-9A-Za-z_-]{20,}/);
+});
+
+test("Brevo mail function requires an admin, institution-linked recipient, and server secret", () => {
+  assert.match(emailFunctionSource, /Deno\.env\.get\(["']BREVO_API_KEY["']\)/);
+  assert.match(emailFunctionSource, /adminRoles\.has\(membership\.role\)/);
+  assert.match(emailFunctionSource, /\.eq\(["']institution_id["'],\s*institutionId\)/);
+  assert.match(emailFunctionSource, /\.eq\(["']invited_email["'],\s*recipientEmail\)/);
+  assert.match(emailFunctionSource, /https:\/\/api\.brevo\.com\/v3\/smtp\/email/);
+  assert.match(emailFunctionSource, /textContent:\s*message/);
+  assert.doesNotMatch(emailFunctionSource, /xkeysib-[A-Za-z0-9_-]{20,}/);
 });

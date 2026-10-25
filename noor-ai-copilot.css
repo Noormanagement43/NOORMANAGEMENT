@@ -1,0 +1,369 @@
+/* ==========================================================================
+   NOOR Management - AI Co-Pilot Floating Widget & Modal Styles
+   ========================================================================== */
+
+#noorAiFab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #71354f 0%, #4a1d33 100%);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 10px 25px rgba(74, 29, 51, 0.35), 0 4px 10px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', Manrope, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+#noorAiFab:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 30px rgba(74, 29, 51, 0.45), 0 6px 14px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #873d5d 0%, #57203b 100%);
+}
+
+#noorAiFab:active {
+  transform: translateY(0) scale(0.98);
+}
+
+#noorAiFab .fab-sparkle {
+  font-size: 16px;
+  animation: fabSparklePulse 2s infinite ease-in-out;
+}
+
+@keyframes fabSparklePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.25) rotate(15deg); }
+}
+
+#noorAiFab .fab-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Modal Overlay */
+#noorAiModalOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(23, 10, 16, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: noorFadeIn 0.2s ease-out;
+}
+
+#noorAiModalOverlay.active {
+  display: flex;
+}
+
+@keyframes noorFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Window */
+.noor-ai-modal {
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(45, 14, 30, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #ebd7e2;
+  font-family: 'Plus Jakarta Sans', Manrope, -apple-system, sans-serif;
+  animation: noorSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes noorSlideUp {
+  from { transform: translateY(20px) scale(0.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Modal Header */
+.noor-ai-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fdf8fa 0%, #f7edf2 100%);
+  border-bottom: 1px solid #ebd7e2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.noor-ai-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.noor-ai-header-title h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+  color: #4a1d33;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.noor-ai-header-title p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #7d5770;
+}
+
+.noor-ai-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #7d5770;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.noor-ai-close-btn:hover {
+  background: #ecd3e0;
+  color: #4a1d33;
+}
+
+/* Navigation Tabs */
+.noor-ai-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f1e2ea;
+  overflow-x: auto;
+}
+
+.noor-ai-tab {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #735968;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.noor-ai-tab:hover {
+  background: #fdf2f7;
+  color: #5c223c;
+}
+
+.noor-ai-tab.active {
+  background: #faeaf2;
+  color: #642740;
+  box-shadow: inset 0 0 0 1px #e6c5d6;
+}
+
+/* Modal Body */
+.noor-ai-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  background: #faf7f8;
+}
+
+.noor-ai-tab-panel {
+  display: none;
+}
+
+.noor-ai-tab-panel.active {
+  display: block;
+}
+
+/* Chat Styles */
+.noor-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 380px;
+}
+
+.noor-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.noor-chat-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.noor-chat-bubble.assistant {
+  align-self: flex-start;
+  background: #ffffff;
+  color: #2b111e;
+  border: 1px solid #ebd7e2;
+  border-top-left-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.noor-chat-bubble.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #71354f 0%, #5a233c 100%);
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+
+.noor-chat-bubble.thinking {
+  align-self: flex-start;
+  background: #fdf3f8;
+  color: #8c5372;
+  border: 1px dashed #e4c4d5;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* Quick prompt chips */
+.noor-chips-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.noor-chip-btn {
+  background: #ffffff;
+  border: 1px solid #ebd7e2;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 650;
+  color: #5c223c;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.noor-chip-btn:hover {
+  background: #faeaf2;
+  border-color: #d8afc4;
+}
+
+/* Chat Input Bar */
+.noor-chat-input-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #ebd7e2;
+  border-radius: 14px;
+  margin-top: 8px;
+}
+
+.noor-chat-input-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #2b111e;
+  background: transparent;
+}
+
+.noor-icon-btn {
+  background: #f6eaf1;
+  border: 1px solid #e8cbdb;
+  color: #5c223c;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.15s;
+}
+
+.noor-icon-btn:hover {
+  background: #eed5e3;
+}
+
+.noor-icon-btn.recording {
+  background: #ef4444;
+  color: #fff;
+  border-color: #dc2626;
+  animation: noorPulse 1s infinite;
+}
+
+@keyframes noorPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.noor-send-btn {
+  background: #71354f;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0 16px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.noor-send-btn:hover {
+  background: #5a233c;
+}
+
+/* Insights & Cartoon Panels */
+.noor-ai-card {
+  background: #ffffff;
+  border: 1px solid #ebd7e2;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.noor-ai-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #4a1d33;
+}
+
+.noor-ai-card p {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #7d5770;
+  line-height: 1.5;
+}

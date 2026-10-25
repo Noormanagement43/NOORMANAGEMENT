@@ -3,8 +3,16 @@
 const A=()=>window.NOOR_AI_APP||{};
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=(q,r=document)=>r?.querySelector(q);
-const zone='Asia/Kolkata',months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const dateParts=d=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),g=k=>p.find(x=>x.type===k).value;return g('year')+'-'+g('month')+'-'+g('day')};
+const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function getSchoolTimezone(){
+ const app=A(),sch=app.school||window.currentSchool||{};
+ if(sch.timezone)return sch.timezone;
+ const addr=String(sch.address||sch.location||'').toLowerCase();
+ if(addr.includes('sangareddy')||addr.includes('hyderabad')||addr.includes('telangana')||addr.includes('india'))return 'Asia/Kolkata';
+ try{const detected=Intl.DateTimeFormat().resolvedOptions().timeZone;if(detected)return detected;}catch(e){}
+ return 'Asia/Kolkata';
+}
+const dateParts=d=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:getSchoolTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),g=k=>p.find(x=>x.type===k).value;return g('year')+'-'+g('month')+'-'+g('day')};
 const pad=x=>String(x).padStart(2,'0');
 const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],holidays:[],source:'',version:0,filter:'all'};
 const root=()=>document.getElementById('view-school-calendar');
@@ -15,7 +23,8 @@ const btn='type="button"';
 function open(){
  const app=A(),r=root();if(!r||!app.user?.id||!app.schoolId)return;
  if(st.school!==app.schoolId){st.school=app.schoolId;st.selected=now;st.year=Number(now.slice(0,4));st.month=Number(now.slice(5,7))-1}
- r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>NOOR · School Year Planner</small><h1>School Calendar</h1><p>Interactive school events, exams, meetings, and public holiday references.</p></div>'+
+ const tz=getSchoolTimezone();const addr=app.school?.address||'Sangareddy / Hyderabad, Telangana';
+ r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>NOOR · Institution Year Planner</small><h1>📅 School Calendar</h1><p>Interactive school & university events, exams, meetings, and localized holiday references.</p><div class="nsc-tz-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;font-size:11px;font-weight:700;color:#4338ca;margin-top:6px">📍 '+E(addr)+' · Timezone: '+E(tz)+'</div></div>'+
  '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
  '<section class="nsc-card"><div class="nsc-month"><button '+btn+' id="nscPrev" aria-label="Previous month">‹</button><h2 id="nscMonth"></h2><button '+btn+' id="nscNext" aria-label="Next month">›</button></div>'+
  '<div class="nsc-legend"><span style="color:#642740">● School events</span><span style="color:#256d50">● Meetings & exams</span><span style="color:#b27424">● India holiday references</span></div>'+
@@ -39,7 +48,7 @@ function open(){
    draw();
  });
  $('#nscReference',r).onclick=()=>{const el=$('#nscReferenceBox',r);el.hidden=!el.hidden;if(!el.hidden&&!el.firstChild){
-   const iframe=document.createElement('iframe');iframe.title='Google public Indian and Islamic holiday calendars';iframe.loading='lazy';iframe.src='https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&src=en.islamic%23holiday%40group.v.calendar.google.com&ctz=Asia%2FKolkata';
+   const iframe=document.createElement('iframe');iframe.title='Google public Indian and Islamic holiday calendars';iframe.loading='lazy';iframe.src='https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&src=en.islamic%23holiday%40group.v.calendar.google.com&ctz='+encodeURIComponent(getSchoolTimezone());
    iframe.style.cssText='display:block;width:100%;min-height:440px;height:65vh;border:0;border-radius:12px;margin-top:12px';el.appendChild(iframe);
  }};
  load();

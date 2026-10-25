@@ -3,6 +3,7 @@
 const APP=()=>window.NOOR_AI_APP||{},E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const nat=new Intl.Collator('en',{numeric:true,sensitivity:'base'});
+const initials=s=>String(s||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'S';
 let model=null,revision=0,working=false,offlineMode=false;
 const root=()=>document.getElementById('ntAttendanceEmbed');
 const $=q=>root()?.querySelector(q);
@@ -37,18 +38,31 @@ function table(){
  const box=$('#ntAttTable'),students=model.students;
  if(!students.length){box.innerHTML='<p class="nt-empty">No active students found for this class and section.</p>';stats();return}
  const mobile=window.matchMedia?.('(max-width:760px)').matches||document.getElementById('workspace')?.classList.contains('noor-teacher-handset');
- const options=x=>['present','absent','late'].map(status=>
- '<button type="button" class="nt-radio '+status+'" role="radio" aria-label="'+E(x.full_name)+' '+status+
- '" aria-checked="'+String(model.selection[x.id]===status)+'" data-student="'+E(x.id)+'" data-choice="'+status+'">'+
- (mobile?{present:'✓ Present',absent:'✕ Absent',late:'◷ Late'}[status]:'')+'</button>').join('');
+ const getStatusStyle=(sel, status)=>{
+  const active=sel===status;
+  if(status==='present')return active?'background:#16a34a;color:#fff;border-color:#15803d;box-shadow:0 2px 4px rgba(22,163,74,0.3)':'background:#f0fdf4;color:#166534;border-color:#bbf7d0';
+  if(status==='absent')return active?'background:#dc2626;color:#fff;border-color:#b91c1c;box-shadow:0 2px 4px rgba(220,38,38,0.3)':'background:#fef2f2;color:#991b1b;border-color:#fecaca';
+  if(status==='late')return active?'background:#d97706;color:#fff;border-color:#b45309;box-shadow:0 2px 4px rgba(217,119,6,0.3)':'background:#fffbeb;color:#92400e;border-color:#fde68a';
+  return '';
+ };
+ const renderAvatar=x=>'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#f3e8ff;border:1px solid #e9d5ff">'+
+  (x.avatar_url?'<img src="'+E(x.avatar_url)+'" alt="" style="width:100%;height:100%;object-fit:cover">':'<span style="font-weight:800;font-size:12px;color:#7e22ce">'+E(initials(x.full_name))+'</span>')+
+  '</div>';
+
  if(mobile){
-  box.innerHTML='<div class="nt-att-mobile-list">'+students.map(x=>
-   '<article class="nt-att-mobile-row" data-att-student="'+E(x.id)+'"><div class="nt-att-mobile-name"><b>'+E(x.full_name)+'</b><small>Roll No. '+E(x.roll_number||'Not assigned')+'</small></div>'+
-   '<div class="nt-att-mobile-options" role="group" aria-label="Mark attendance for '+E(x.full_name)+'">'+options(x)+'</div></article>').join('')+'</div>';
+  box.innerHTML='<div class="nt-att-scrollable-wrap" style="max-height:480px;overflow-y:auto;padding-right:4px"><div class="nt-att-mobile-list">'+students.map(x=>
+   '<article class="nt-att-mobile-row" data-att-student="'+E(x.id)+'" style="display:flex;flex-direction:column;gap:10px;padding:12px;background:#fff;border:1px solid #f1e4eb;border-radius:14px;margin-bottom:8px">'+
+   '<div style="display:flex;align-items:center;gap:10px">'+renderAvatar(x)+
+   '<div class="nt-att-mobile-name"><b>'+E(x.full_name)+'</b><small style="display:block;color:#8e7885;font-size:11px">Roll No. '+E(x.roll_number||'Not assigned')+'</small></div></div>'+
+   '<div class="nt-att-mobile-options" role="group" aria-label="Mark attendance for '+E(x.full_name)+'" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'+
+   ['present','absent','late'].map(status=>'<button type="button" class="nt-radio '+status+'" role="radio" aria-label="'+E(x.full_name)+' '+status+'" aria-checked="'+String(model.selection[x.id]===status)+'" data-student="'+E(x.id)+'" data-choice="'+status+'" style="padding:8px 4px;font-size:11px;font-weight:700;border-radius:8px;border:1px solid;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;'+getStatusStyle(model.selection[x.id],status)+'">'+{present:'✓ Present',absent:'✕ Absent',late:'◷ Late'}[status]+'</button>').join('')+
+   '</div></article>').join('')+'</div></div>';
  }else{
-  box.innerHTML='<table class="nt-att-table"><thead><tr><th>Student Name</th><th>Roll No.</th><th style="text-align:center">Present</th><th style="text-align:center">Absent</th><th style="text-align:center">Late</th></tr></thead><tbody>'+
-  students.map(x=>'<tr><td><b>'+E(x.full_name)+'</b></td><td>'+E(x.roll_number||'—')+'</td>'+
-  ['present','absent','late'].map(status=>'<td style="text-align:center"><button type="button" class="nt-radio '+status+'" role="radio" aria-label="'+E(x.full_name)+' '+status+'" aria-checked="'+String(model.selection[x.id]===status)+'" data-student="'+E(x.id)+'" data-choice="'+status+'"></button></td>').join('')+'</tr>').join('')+'</tbody></table>';
+  box.innerHTML='<div class="nt-att-scrollable-wrap" style="max-height:480px;overflow-y:auto;border:1px solid #ecdde5;border-radius:14px;background:#fff">'+
+  '<table class="nt-att-table" style="width:100%;border-collapse:collapse"><thead style="position:sticky;top:0;background:#fdf8fa;z-index:3;border-bottom:2px solid #ecdde5"><tr><th style="padding:12px 14px">Student & Photo</th><th style="padding:12px 14px">Roll No.</th><th style="text-align:center;padding:12px">Present</th><th style="text-align:center;padding:12px">Absent</th><th style="text-align:center;padding:12px">Late</th></tr></thead><tbody>'+
+  students.map(x=>'<tr style="border-bottom:1px solid #f6edf1"><td style="padding:10px 14px"><div style="display:flex;align-items:center;gap:10px">'+renderAvatar(x)+'<div><b style="font-size:13px;color:#3b1e2e">'+E(x.full_name)+'</b></div></div></td>'+
+  '<td style="padding:10px 14px"><b style="font-size:12px;color:#784e64">'+E(x.roll_number||'—')+'</b></td>'+
+  ['present','absent','late'].map(status=>'<td style="text-align:center;padding:10px"><button type="button" class="nt-radio '+status+'" role="radio" aria-label="'+E(x.full_name)+' '+status+'" aria-checked="'+String(model.selection[x.id]===status)+'" data-student="'+E(x.id)+'" data-choice="'+status+'" style="min-width:76px;padding:6px 10px;font-size:11px;font-weight:700;border-radius:8px;border:1px solid;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;'+getStatusStyle(model.selection[x.id],status)+'">'+{present:'✓ Present',absent:'✕ Absent',late:'◷ Late'}[status]+'</button></td>').join('')+'</tr>').join('')+'</tbody></table></div>';
  }
  stats();
 }
@@ -64,7 +78,18 @@ async function mount(){
  $('#ntAttDate').onchange=loadRoster;$('#ntAttClass').onchange=()=>{sectionOptions();loadRoster()};$('#ntAttSection').onchange=loadRoster;
  $('#ntAttTable').addEventListener('click',ev=>{const b=ev.target.closest('[data-student][data-choice]');if(!b||!model.students.some(x=>x.id===b.dataset.student))return;
  model.selection[b.dataset.student]=b.dataset.choice;
- const row=b.closest('tr')||b.closest('.nt-att-mobile-row');row?.querySelectorAll('[data-choice]').forEach(x=>x.setAttribute('aria-checked',String(x.dataset.choice===b.dataset.choice)));stats();
+ const row=b.closest('tr')||b.closest('.nt-att-mobile-row');
+ if(row){
+  row.querySelectorAll('[data-choice]').forEach(x=>{
+   const active=x.dataset.choice===b.dataset.choice;
+   x.setAttribute('aria-checked',String(active));
+   const status=x.dataset.choice;
+   if(status==='present'){x.style.background=active?'#16a34a':'#f0fdf4';x.style.color=active?'#fff':'#166534';x.style.borderColor=active?'#15803d':'#bbf7d0';x.style.boxShadow=active?'0 2px 4px rgba(22,163,74,0.3)':'none';}
+   else if(status==='absent'){x.style.background=active?'#dc2626':'#fef2f2';x.style.color=active?'#fff':'#991b1b';x.style.borderColor=active?'#b91c1c':'#fecaca';x.style.boxShadow=active?'0 2px 4px rgba(220,38,38,0.3)':'none';}
+   else if(status==='late'){x.style.background=active?'#d97706':'#fffbeb';x.style.color=active?'#fff':'#92400e';x.style.borderColor=active?'#b45309':'#fde68a';x.style.boxShadow=active?'0 2px 4px rgba(217,119,6,0.3)':'none';}
+  });
+ }
+ stats();
  });
  $('#ntAttMarkAll').onclick=()=>{for(const x of model.students)model.selection[x.id]='present';table();say('Everyone marked Present. Check before saving.')};
  $('#ntAttSave').onclick=save;$('#ntAttSync').onclick=syncPending;refreshPending();
@@ -99,14 +124,25 @@ async function loadRoster(){
  if((!all||m.sections.some(x=>x.class_id===classId))&&!sectionId){say('Choose your assigned section.',true);return}
  if(date>day()){say('Attendance cannot be marked for a future date.',true);return}
  $('#ntAttTable').innerHTML='<p class="nt-muted">Reading enrolled student records…</p>';
- let q=a.db.from('profiles').select('id,full_name,roll_number').eq('school_id',a.schoolId).eq('role','student').eq('status','active').eq('class_id',classId).limit(1000);
+ let q=a.db.from('profiles').select('id,full_name,roll_number,avatar_path').eq('school_id',a.schoolId).eq('role','student').eq('status','active').eq('class_id',classId).limit(1000);
  q=sectionId?q.eq('section_id',sectionId):q.is('section_id',null);
  let ses=a.db.from('attendance_sessions').select('id,status').eq('school_id',a.schoolId).eq('class_id',classId).eq('attendance_date',date);
  ses=sectionId?ses.eq('section_id',sectionId):ses.is('section_id',null);
  const [users,sessions]=await Promise.all([q,ses.limit(1)]);
  if(instance!==revision||!root())return;
  if(users.error||sessions.error){$('#ntAttTable').textContent=(users.error||sessions.error).message;return}
- m.students=(users.data||[]).sort((x,y)=>nat.compare(x.roll_number||'zzzz',y.roll_number||'zzzz')||nat.compare(x.full_name,y.full_name));
+ const rawStudents=(users.data||[]).sort((x,y)=>nat.compare(x.roll_number||'zzzz',y.roll_number||'zzzz')||nat.compare(x.full_name,y.full_name));
+ const studentsWithAvatars=await Promise.all(rawStudents.map(async s=>{
+  let avatar_url=null;
+  if(s.avatar_path){
+   try{
+    const {data:signData}=await a.db.storage.from('student-photos').createSignedUrl(s.avatar_path,3600);
+    if(signData?.signedUrl)avatar_url=signData.signedUrl;
+   }catch(e){}
+  }
+  return {...s,avatar_url};
+ }));
+ m.students=studentsWithAvatars;
  m.selection={};m.session=sessions.data?.[0]||null;
  if(m.session){
  const records=await a.db.from('attendance_records').select('student_id,status').eq('school_id',a.schoolId).eq('session_id',m.session.id).limit(1000);

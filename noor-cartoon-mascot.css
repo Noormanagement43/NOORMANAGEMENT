@@ -1,0 +1,206 @@
+/* ==========================================================================
+   NOOR Interactive Cartoon Mascot ("نور Noorani") Styles & Lip-Sync Animations
+   ========================================================================== */
+
+#noorMascotContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
+  font-family: 'Plus Jakarta Sans', Manrope, -apple-system, sans-serif;
+}
+
+#noorMascotContainer * {
+  pointer-events: auto;
+}
+
+/* Speech Bubble */
+.noor-mascot-speech-bubble {
+  max-width: 290px;
+  background: #ffffff;
+  color: #2b111e;
+  border: 2px solid #ecd3e0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 25px rgba(80, 28, 53, 0.2);
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  position: relative;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: none;
+}
+
+.noor-mascot-speech-bubble.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.noor-mascot-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 36px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-right: 2px solid #ecd3e0;
+  border-bottom: 2px solid #ecd3e0;
+  transform: rotate(45deg);
+}
+
+.noor-mascot-location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 750;
+  color: #71354f;
+  background: #fdf2f8;
+  padding: 2px 7px;
+  border-radius: 8px;
+  border: 1px solid #ebd4e0;
+  margin-bottom: 6px;
+}
+
+/* Character Card */
+.noor-mascot-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ffffff 0%, #fdf8fa 100%);
+  border: 2px solid #ebd7e2;
+  border-radius: 999px;
+  padding: 6px 14px 6px 8px;
+  box-shadow: 0 8px 24px rgba(74, 29, 51, 0.18);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.noor-mascot-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: #a54b73;
+  box-shadow: 0 12px 30px rgba(74, 29, 51, 0.28);
+}
+
+/* Mascot SVG Avatar */
+.noor-mascot-avatar-svg {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 4px 8px rgba(74, 29, 51, 0.15));
+  transition: transform 0.2s ease;
+}
+
+.noor-mascot-card:hover .noor-mascot-avatar-svg {
+  transform: rotate(6deg) scale(1.05);
+}
+
+/* Animations */
+@keyframes mascotBlink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+.mascot-eye {
+  transform-origin: center;
+  animation: mascotBlink 3.8s infinite ease-in-out;
+}
+
+@keyframes mascotWave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-18deg); }
+  75% { transform: rotate(14deg); }
+}
+
+.mascot-hand-waving {
+  transform-origin: 22px 64px;
+  animation: mascotWave 1s infinite ease-in-out;
+}
+
+@keyframes mascotBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.mascot-speaking-bob {
+  animation: mascotBob 0.3s infinite ease-in-out;
+}
+
+/* Mascot Labels */
+.noor-mascot-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.noor-mascot-name {
+  font-size: 13px;
+  font-weight: 850;
+  color: #4a1d33;
+}
+
+.noor-mascot-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: #925875;
+}
+
+/* Audio Wave Visualizer while speaking */
+.noor-audio-visualizer {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+  margin-top: 4px;
+}
+
+.noor-audio-visualizer.active {
+  display: flex;
+}
+
+.noor-audio-bar {
+  width: 3px;
+  height: 100%;
+  background: #be185d;
+  border-radius: 2px;
+  animation: audioBarAnim 0.5s infinite ease-in-out alternate;
+}
+
+.noor-audio-bar:nth-child(2) { animation-delay: 0.15s; }
+.noor-audio-bar:nth-child(3) { animation-delay: 0.3s; }
+.noor-audio-bar:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes audioBarAnim {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+/* Action Chips inside Mascot Bubble */
+.noor-bubble-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.noor-bubble-btn {
+  background: #fdf2f8;
+  border: 1px solid #f9a8d4;
+  color: #9d174d;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.noor-bubble-btn:hover {
+  background: #fce7f3;
+}

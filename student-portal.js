@@ -14,7 +14,7 @@ const box=(title,description,content,action='')=>'<section class="sp-card"><div 
 const item=(title,small,extra='')=>'<div class="sp-item sp-row sp-between"><div><div class="sp-item-title">'+E(title)+'</div><div class="sp-muted">'+E(small)+'</div></div>'+extra+'</div>';
 const status=(el,msg,err=false)=>{const x=document.querySelector(el);if(x){x.className='sp-status'+(err?' error':'');x.textContent=msg;x.hidden=false;}};
 let data={},errors=[],calMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1),mode='month',dateFocus=isoDay(new Date()),period='90',focusSubject='all',noteQuery='',noteTab='notes',loading=false,activeStudent='',channel=null;
-const mine=()=>p()?.role==='student'&&p()?.status==='active'&&sid()&&u()&&db();
+const mine=()=>p()?.role==='student'&&sid()&&u()&&db();
 function view(id){let v=document.getElementById('view-'+id);if(!v){v=document.createElement('section');v.className='view';v.id='view-'+id;document.querySelector('#workspace .content')?.append(v)}return v}
 function renderShell(id,title,subtitle,content){view(id).innerHTML='<div class="sp-root"><header class="sp-head"><div><span class="sp-kicker">NOOR · MY LEARNING CENTRE</span><h1>'+E(title)+'</h1><p class="sp-muted">'+E(subtitle||'')+'</p></div><button type="button" class="sp-action secondary" data-sp-refresh>↻ Refresh</button></header>'+content+'</div>'}
 async function readAll(){
@@ -228,7 +228,7 @@ function connectLive(){
 async function render(){if(!mine())return;document.body.classList.add('noor-student-mode');root().innerHTML='<div class="sp-root">'+empty('Loading your private school records…')+'</div>';loading=true;try{await readAll();overview();connectLive()}catch(e){root().innerHTML='<div class="sp-root">'+empty('Student portal could not load: '+(e.message||e))+'</div>'}finally{loading=false}}
 async function refresh(silent=false){if(loading||!mine())return;loading=true;try{await readAll();const id=document.querySelector('#workspace .view.active')?.id?.replace('view-','');if(id==='overview')overview();else await run(id);if(!silent)app().toast?.('Student data refreshed.','success')}catch(e){app().toast?.(e.message||'Refresh failed','error')}finally{loading=false}}
 const eventArea=()=>document.getElementById('workspace');
-eventArea()?.addEventListener('click',async ev=>{
+document.addEventListener('click',async ev=>{
  if(!mine())return;const t=ev.target.closest('[data-sp-nav],[data-sp-month],[data-sp-cal-mode],[data-sp-day],[data-sp-note-tab],[data-sp-goal],[data-sp-delete-goal],[data-sp-delete-portfolio],[data-sp-refresh]');if(!t)return;
  try{
  if(t.hasAttribute('data-sp-nav'))return app().openView(t.dataset.spNav);
@@ -242,9 +242,9 @@ eventArea()?.addEventListener('click',async ev=>{
  if(t.hasAttribute('data-sp-delete-portfolio')){if(!confirm('Remove this portfolio entry?'))return;const r=await db().from('noor_student_portfolio').delete().eq('id',t.dataset.spDeletePortfolio).eq('student_id',u().id);if(r.error)throw r.error;return await refresh();}
  }catch(e){app().toast?.(e.message||String(e),'error')}
 });
-eventArea()?.addEventListener('change',e=>{if(!mine())return;const t=e.target;if(t.id==='spPeriod'){period=t.value;progress();}if(t.id==='spSubject'){focusSubject=t.value;progress();}if(t.id==='spLearningSubject'){focusSubject=t.value;learning();}if(t.id==='spFocusDate'){dateFocus=t.value;calendar();}});
-eventArea()?.addEventListener('input',e=>{if(mine()&&e.target.id==='spNoteSearch')noteQuery=e.target.value;});
-eventArea()?.addEventListener('submit',async e=>{
+document.addEventListener('change',e=>{if(!mine())return;const t=e.target;if(t.id==='spPeriod'){period=t.value;progress();}if(t.id==='spSubject'){focusSubject=t.value;progress();}if(t.id==='spLearningSubject'){focusSubject=t.value;learning();}if(t.id==='spFocusDate'){dateFocus=t.value;calendar();}});
+document.addEventListener('input',e=>{if(mine()&&e.target.id==='spNoteSearch')noteQuery=e.target.value;});
+document.addEventListener('submit',async e=>{
  if(!mine())return;const f=e.target;if(!(f.matches('[data-sp-submit]')||['spGoalForm','spQuestionForm','spPortfolioForm','spProfileForm'].includes(f.id)))return;
  e.preventDefault();const button=f.querySelector('[type=submit]');if(button)button.disabled=true;
  try{

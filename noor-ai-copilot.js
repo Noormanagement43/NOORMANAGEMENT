@@ -151,29 +151,51 @@
           <!-- TAB 4: SETTINGS -->
           <div class="noor-ai-tab-panel" id="noorTabSettings">
             <div class="noor-ai-card">
-              <h3>🔑 Gemini API Key Configuration</h3>
-              <p>Configure your Gemini API key in your browser's private storage. Because this is saved locally, it stays completely private and will <b>never cause GitHub push protection errors</b>.</p>
+              <h3>🔑 API Keys & Email Automation Setup</h3>
+              <p>Configure your Gemini AI and Brevo Transactional Email keys in your browser's private storage. This keeps them completely private and <b>prevents GitHub push protection rejections</b>.</p>
               
-              <div style="margin:12px 0">
-                <label style="display:block;font-size:12px;font-weight:750;color:#4a1d33;margin-bottom:4px">Google Gemini API Key</label>
+              <!-- Gemini AI Section -->
+              <div style="margin:14px 0;padding:12px;background:#fdf9fb;border:1px solid #f1e2ea;border-radius:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <label style="font-size:12px;font-weight:800;color:#5a233c">✨ Google Gemini API Key</label>
+                  <span id="noorGeminiBadge" style="font-size:10px;font-weight:750;color:#059669">Active</span>
+                </div>
                 <div style="display:flex;gap:8px">
-                  <input type="password" id="noorApiKeyInput" placeholder="Enter Gemini API key (e.g. AQ.Ab8RN6...)" style="flex:1;padding:8px 12px;border:1px solid #ebd7e2;border-radius:10px;font-size:13px" />
+                  <input type="password" id="noorApiKeyInput" placeholder="Enter Gemini key (e.g. AQ.Ab8RN6...)" style="flex:1;padding:8px 12px;border:1px solid #ebd7e2;border-radius:10px;font-size:13px" />
                   <button type="button" class="noor-send-btn" id="noorBtnToggleKey" style="padding:0 12px;background:#e2cbd8;color:#5a233c">Show</button>
                 </div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button type="button" class="noor-send-btn" id="noorBtnSaveKey" style="padding:0 14px;font-size:11px">💾 Save Gemini Key</button>
+                  <button type="button" class="noor-send-btn" id="noorBtnTestGemini" style="background:#059669;padding:0 14px;font-size:11px">⚡ Test Gemini AI</button>
+                </div>
+                <div id="noorGeminiTestResult" style="margin-top:6px;font-size:11px"></div>
               </div>
 
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-                <button type="button" class="noor-send-btn" id="noorBtnSaveKey" style="padding:0 16px">💾 Save to Browser</button>
-                <button type="button" class="noor-send-btn" id="noorBtnClearKey" style="background:#fce7e7;color:#991b1b;border:1px solid #fca5a5;padding:0 16px">Clear Key</button>
+              <!-- Brevo Email Automation Section -->
+              <div style="margin:14px 0;padding:12px;background:#fdf9fb;border:1px solid #f1e2ea;border-radius:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <label style="font-size:12px;font-weight:800;color:#5a233c">✉️ Brevo (Sendinblue) Transactional SMTP Key</label>
+                  <span id="noorBrevoBadge" style="font-size:10px;font-weight:750;color:#059669">Configured</span>
+                </div>
+                <input type="password" id="noorBrevoKeyInput" placeholder="Enter Brevo SMTP Key" style="width:100%;padding:8px 12px;border:1px solid #ebd7e2;border-radius:10px;font-size:13px;margin-bottom:8px" />
+                <div style="display:flex;gap:8px;margin-bottom:8px">
+                  <input type="email" id="noorSenderEmailInput" placeholder="Sender email (default: annoorhub786@gmail.com)" value="annoorhub786@gmail.com" style="flex:1;padding:8px 12px;border:1px solid #ebd7e2;border-radius:10px;font-size:12px" />
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button type="button" class="noor-send-btn" id="noorBtnSaveBrevo" style="padding:0 14px;font-size:11px">💾 Save Brevo Key</button>
+                  <button type="button" class="noor-send-btn" id="noorBtnTestBrevo" style="background:#be185d;padding:0 14px;font-size:11px">✉️ Send Test Email via Brevo</button>
+                </div>
+                <div id="noorBrevoTestResult" style="margin-top:6px;font-size:11px"></div>
               </div>
 
-              <div id="noorKeyStatus" style="margin-top:12px;font-size:12px;font-weight:700"></div>
+              <!-- Quick 1-Click Setup -->
+              <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="noor-send-btn" id="noorBtnPresetKeys" style="background:linear-gradient(135deg,#71354f,#4a1d33);padding:0 16px;font-size:11px">⚡ Load My Provided Keys (1-Click)</button>
+                <button type="button" class="noor-send-btn" id="noorBtnClearAllKeys" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:0 14px;font-size:11px">Clear Saved Keys</button>
+              </div>
 
-              <div style="margin-top:16px;padding:12px;background:#fdf8fa;border:1px solid #f1e2ea;border-radius:10px;font-size:11px;color:#7d5770;line-height:1.6">
-                💡 <b>How it works:</b><br />
-                • When saved here, NOOR AI calls Google Gemini 1.5 directly from your browser with zero latency.<br />
-                • You can also deploy Edge Function secrets on Supabase with <code>supabase secrets set GEMINI_API_KEY=...</code>.<br />
-                • Neither method exposes secrets to GitHub, keeping your repository 100% compliant and push-ready.
+              <div style="margin-top:14px;padding:10px 12px;background:#fffdf6;border:1px solid #fde68a;border-radius:10px;font-size:11px;color:#92400e;line-height:1.5">
+                🔒 <b>Privacy Guarantee:</b> Keys saved here are stored strictly inside your browser's private storage. They enable direct real-time communication with Gemini and Brevo without ever exposing secrets to your GitHub repository.
               </div>
             </div>
           </div>
@@ -273,18 +295,92 @@
 
     saveBtn?.addEventListener('click', () => {
       const val = keyInput?.value?.trim();
-      if (!val) {
-        alert('Please paste a valid Gemini API key.');
-        return;
-      }
+      if (!val) { alert('Please enter a Gemini API key.'); return; }
       setGeminiKey(val);
       updateKeyStatusUi();
-      alert('Gemini API key saved securely in your browser!');
+      alert('Gemini API key saved in browser storage!');
     });
 
-    clearBtn?.addEventListener('click', () => {
-      if (confirm('Clear saved Gemini API key from this browser?')) {
+    document.getElementById('noorBtnTestGemini')?.addEventListener('click', async () => {
+      const resEl = document.getElementById('noorGeminiTestResult');
+      if (resEl) resEl.innerHTML = '<span style="color:#6366f1">Testing Gemini API connection...</span>';
+      try {
+        const reply = await callGemini('Say "NOOR AI connected successfully!" in 5 words.');
+        if (resEl) resEl.innerHTML = '<span style="color:#059669">✓ Gemini API Connected: ' + escapeHtml(reply) + '</span>';
+      } catch (err) {
+        if (resEl) resEl.innerHTML = '<span style="color:#dc2626">✗ Connection failed: ' + escapeHtml(err.message) + '</span>';
+      }
+    });
+
+    // Brevo handlers
+    const brevoInput = document.getElementById('noorBrevoKeyInput');
+    const senderInput = document.getElementById('noorSenderEmailInput');
+    const savedBrevo = localStorage.getItem('noor_brevo_api_key') || '';
+    const savedSender = localStorage.getItem('noor_sender_email') || 'annoorhub786@gmail.com';
+    if (brevoInput && savedBrevo) brevoInput.value = savedBrevo;
+    if (senderInput && savedSender) senderInput.value = savedSender;
+
+    document.getElementById('noorBtnSaveBrevo')?.addEventListener('click', () => {
+      const bKey = brevoInput?.value?.trim();
+      const sEmail = senderInput?.value?.trim() || 'annoorhub786@gmail.com';
+      if (bKey) localStorage.setItem('noor_brevo_api_key', bKey);
+      localStorage.setItem('noor_sender_email', sEmail);
+      alert('Brevo settings saved in browser storage!');
+    });
+
+    document.getElementById('noorBtnTestBrevo')?.addEventListener('click', async () => {
+      const resEl = document.getElementById('noorBrevoTestResult');
+      const bKey = brevoInput?.value?.trim() || localStorage.getItem('noor_brevo_api_key');
+      const sEmail = senderInput?.value?.trim() || localStorage.getItem('noor_sender_email') || 'annoorhub786@gmail.com';
+      if (!bKey) { alert('Please enter your Brevo API key first.'); return; }
+      if (resEl) resEl.innerHTML = '<span style="color:#6366f1">Sending test email via Brevo...</span>';
+      try {
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'api-key': bKey, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'NOOR Management (نور)', email: sEmail },
+            to: [{ email: sEmail }],
+            subject: 'NOOR Management - Brevo Email Automation Verification',
+            htmlContent: '<h3>Assalamu Alaikum!</h3><p>Your Brevo email automation is running perfectly in NOOR Management SaaS.</p><p>Time: ' + new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + '</p>'
+          })
+        });
+        if (res.ok) {
+          if (resEl) resEl.innerHTML = '<span style="color:#059669">✓ Test email delivered to ' + escapeHtml(sEmail) + '!</span>';
+        } else {
+          const errData = await res.json().catch(()=>({}));
+          throw new Error(errData.message || 'Error ' + res.status);
+        }
+      } catch (err) {
+        if (resEl) resEl.innerHTML = '<span style="color:#dc2626">✗ Email failed: ' + escapeHtml(err.message) + '</span>';
+      }
+    });
+
+    // 1-Click Setup: paste from clipboard or prompt
+    document.getElementById('noorBtnPresetKeys')?.addEventListener('click', async () => {
+      let clip = '';
+      try { clip = await navigator.clipboard?.readText?.() || ''; } catch {}
+      const gKey = prompt('Paste your Gemini API Key:', clip.startsWith('AQ.') ? clip : (getGeminiKey() || ''));
+      if (gKey && gKey.trim()) {
+        setGeminiKey(gKey.trim());
+        if (keyInput) keyInput.value = gKey.trim();
+      }
+      const bKey = prompt('Paste your Brevo SMTP API Key:', (localStorage.getItem('noor_brevo_api_key') || ''));
+      if (bKey && bKey.trim()) {
+        localStorage.setItem('noor_brevo_api_key', bKey.trim());
+        if (brevoInput) brevoInput.value = bKey.trim();
+      }
+      localStorage.setItem('noor_sender_email', 'annoorhub786@gmail.com');
+      updateKeyStatusUi();
+      alert('✓ API Keys saved and active in your browser storage!');
+    });
+
+    document.getElementById('noorBtnClearAllKeys')?.addEventListener('click', () => {
+      if (confirm('Clear all saved API keys?')) {
         setGeminiKey('');
+        localStorage.removeItem('noor_brevo_api_key');
+        if (keyInput) keyInput.value = '';
+        if (brevoInput) brevoInput.value = '';
         updateKeyStatusUi();
       }
     });

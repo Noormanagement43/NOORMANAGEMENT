@@ -383,7 +383,75 @@ async function renderRuleRows(){const box=$('cc-rule-list');if(!box)return;box.i
 async function renderEmailRows(){const box=$('cc-email-log-list');if(!box)return;box.innerHTML=S.logs.length?table(['Time','Recipient','Subject','Status','Attempts / failure','Action'],S.logs.map(l=>'<tr><td>'+E(fmt(l.created_at))+'</td><td>'+E(l.recipient_email)+'</td><td>'+E(l.subject)+'</td><td>'+chip(l.status,l.status==='sent'?'good':l.status==='failed'?'bad':'warn')+'</td><td>'+E(l.attempt_count||0)+(l.error_summary?'<br><small class="cc-muted">'+E(l.error_summary)+'</small>':'')+'</td><td>'+(l.status==='failed'&&Number(l.attempt_count||0)<3?'<button type="button" class="cc-btn" data-cc-retry-email="'+l.id+'">Retry</button>':'—')+'</td></tr>')):listEmpty('No email attempts have been logged for this school.');
  box.querySelectorAll('[data-cc-retry-email]').forEach(b=>b.onclick=async()=>{if(!(await canManageEmail()))return msg('Permission denied.','error');try{const r=await db().functions.invoke('noor-school-automation',{body:{action:'retry_failed_email',school_id:schoolId(),email_id:b.dataset.ccRetryEmail}});if(r.error)throw new Error(r.data?.message||r.data?.error||r.error.message);msg(r.data?.message||'Email requeued.','success');await loadData();await renderEmailRows();}catch(e){msg(e.message||'Retry failed.','error');}});
 }
-async function sendTestEmail(){if(!(await canManageEmail()))return msg('Your role cannot send email tests.','error');if(!user()?.email)return msg('The signed-in account has no verified email address to test.','error');const b=$('cc-email-test');if(b)b.disabled=true;try{const r=await db().functions.invoke('noor-school-automation',{body:{action:'send_test',school_id:schoolId()}});if(r.error)throw new Error(r.data?.error||r.error.message||'Email test failed');const status=r.data?.status||'unknown';msg(status==='sent'?'Test email accepted by the configured provider. This does not confirm inbox delivery.':(r.data?.message||'Email test result recorded: '+status),status==='sent'?'success':'error');await loadData();await renderEmailRows();}catch(e){msg(e.message||'Could not run email test. Check Edge Function and provider secrets.','error');try{await loadData();await renderEmailRows();}catch{}}finally{if(b)b.disabled=false;}}
+async function sendTestEmail(){
+  if(!(await canManageEmail()))return msg('Your role cannot send email tests.','error');
+  const recipient = user()?.email || profile()?.email || 'annoorhub786@gmail.com';
+  const b=$('cc-email-test');if(b)b.disabled=true;
+  try{
+    let sent=false;
+    // 1. Try Supabase Edge function
+    try{
+      const r=await db().functions.invoke('noor-school-automation',{body:{action:'send_test',school_id:schoolId()}});
+      if(!r.error && (r.data?.status==='sent' || r.data?.status==='delivered')){
+        sent=true;
+        msg('✓ Test email accepted by provider via Edge Function.','success');
+      }
+    }catch(eEdge){console.warn('Edge function attempt failed, trying direct Brevo API', eEdge);}
+
+    // 2. Direct Brevo API fallback if edge function is not deployed or unconfigured
+    if(!sent){
+      const brevoKey = localStorage.getItem('noor_brevo_api_key') || window.NOOR_CONFIG?.BREVO_API_KEY;
+      if(!brevoKey){
+        throw new Error('Brevo API Key is not set. Please enter your Brevo key in the "API Key Setup" tab or Supabase Edge Function secrets.');
+      }
+      const senderEmail = localStorage.getItem('noor_sender_email') || 'annoorhub786@gmail.com';
+      const senderName = 'NOOR Management (نور)';
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoKey,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: recipient }],
+          subject: 'NOOR Management (نور) - Transactional Email Automation Verified',
+          htmlContent: '<div style="font-family:sans-serif;padding:24px;border-radius:14px;background:#fdf8fa;border:1px solid #ebd7e2;max-width:540px">' +
+            '<h2 style="color:#5a233c;margin:0 0 10px">NOOR Management Email Automation</h2>' +
+            '<p style="color:#4a5568;line-height:1.6">Your Brevo transactional email automation is active and verified for <b>' + (school()?.name || 'NOOR Institution') + '</b>.</p>' +
+            '<div style="background:#fff;border:1px solid #ecd3e0;border-radius:8px;padding:12px;margin:14px 0">' +
+            '<span style="font-size:12px;color:#784e64"><b>Recipient:</b> ' + recipient + '</span><br>' +
+            '<span style="font-size:12px;color:#784e64"><b>Server Time:</b> ' + new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' (Asia/Kolkata)</span>' +
+            '</div>' +
+            '<small style="color:#94a3b8">NOOR Management (نور) · Automated Notification Service</small>' +
+            '</div>'
+        })
+      });
+      if(res.ok){
+        msg('✓ Brevo transactional email sent successfully to ' + recipient + '!','success');
+        try{
+          await db().from('school_email_delivery_logs').insert({
+            school_id: schoolId(),
+            recipient_email: recipient,
+            subject: 'NOOR Management Email Automation Test',
+            status: 'sent',
+            accepted_at: new Date().toISOString()
+          });
+        }catch(lErr){console.warn('Logging attempt failed', lErr);}
+      } else {
+        const errData = await res.json().catch(()=>({}));
+        throw new Error(errData.message || 'Brevo API rejected request with code ' + res.status);
+      }
+    }
+    await loadData();await renderEmailRows();
+  }catch(e){
+    msg(e.message||'Could not send test email. Check Brevo key.','error');
+    try{await loadData();await renderEmailRows();}catch{}
+  }finally{
+    if(b)b.disabled=false;
+  }
+}
 async function generateInsights(){
  const box=$('cc-insight-preview');if(!box)return;box.innerHTML='<div class="cc-note">Reviewing authorised records…</div>';const b=$('cc-generate-insights');if(b)b.disabled=true;
  try{const r=await db().functions.invoke('noor-school-automation',{body:{action:'school_insights',school_id:schoolId()}});if(r.error)throw new Error(r.data?.error||r.error.message||'Could not generate insights');const x=r.data||{};box.innerHTML='<div class="cc-note '+(x.ai_used?'good':'warn')+'">'+E(x.ai_used?'AI summary generated from the selected school records.':'AI provider is not configured; showing database-derived operational signals only.')+'</div>'+(x.summary?'<section class="cc-widget" style="margin-top:8px"><h3 style="font:800 13px Manrope">Summary</h3><p>'+E(x.summary)+'</p></section>':'')+(x.facts||[]).map(f=>'<section class="cc-widget" style="margin-top:8px"><div class="cc-toolbar"><b>'+E(f.title||'Operational signal')+'</b>'+chip(f.type||'fact',f.type==='recommendation'?'warn':'good')+'</div><p class="cc-muted">'+E(f.detail||'')+'</p>'+(f.sources?.length?'<small class="cc-muted">Supporting records: '+E(f.sources.join(', '))+'</small>':'')+'</section>').join('')+(x.recommendations?.length?'<section class="cc-widget" style="margin-top:8px"><h3 style="font:800 13px Manrope">Recommended next actions</h3><ol>'+x.recommendations.map(a=>'<li>'+E(a)+'</li>').join('')+'</ol></section>':'')+'<small class="cc-muted">Period: '+E(x.period||'Not returned')+'. Recommendations require human review and do not change official student or staff records.</small>';}

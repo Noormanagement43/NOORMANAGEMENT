@@ -36,8 +36,9 @@ const css=`
 function mount(){const content=document.querySelector('.content'),nav=$('mainNav');if(!content||!nav)return;
 if(!document.getElementById('view-principal-studio')){const v=document.createElement('section');v.id='view-principal-studio';v.className='view';content.appendChild(v);}
 /* Styling is supplied by principal-live.js. */
-if(nav.querySelector('[data-view="principal-studio"]'))return;
-const btn=document.createElement('button');btn.type='button';btn.dataset.view='principal-studio';btn.innerHTML='<span class="ico">✦</span><span>Principal Studio</span>';btn.style.display=principal()?'flex':'none';btn.addEventListener('click',()=>A().openView?.('principal-studio'));nav.appendChild(btn);
+// Duplicate sidebar nav button removed per UI refinement: Principal dashboard is accessed via Overview / Command Centre.
+const existingBtn=nav.querySelector('[data-view="principal-studio"]');
+if(existingBtn) existingBtn.remove();
 window.NOOR_PRINCIPAL_STUDIO={mount,render,allowed:principal};
 }
 function render(){const view=$('view-principal-studio');if(!view)return;if(!principal()){view.replaceChildren();return;}if(!window.NOOR_PRINCIPAL_LIVE){view.innerHTML='<div class="empty">Live dashboard not loaded; refresh Noor.</div>';return;}window.NOOR_PRINCIPAL_LIVE.render();}

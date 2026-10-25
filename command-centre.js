@@ -52,11 +52,12 @@ async function ensureNav(){
   }
   const ok=await permitted(), manager=profile()?.role==='manager', teacher=profile()?.role==='teacher';
   const leadership=['owner','principal'].includes(profile()?.role);
+  const hasCalendarNav=Boolean(nav.querySelector('[data-view="school-calendar"]:not([data-cc-nav="1"])'));
   const wanted=ok?[
    ...(!teacher&&(!manager||['manage_dashboard','view_academic_reports','manage_tasks'].some(k=>S.managerPerms.has(k)))?[['command-centre','⌘','School Command Centre']]:[]),
    ...(!leadership&&(!manager||S.managerPerms.has('manage_tasks')||teacher)?[['school-tasks','✓','Tasks & Deadlines']]:[]),
-   ...(!leadership&&(!manager||S.managerPerms.has('manage_meetings')||teacher)?[['school-calendar','▦','School Calendar']]:[]),
-   ...(!leadership&&!teacher&&(!manager||S.managerPerms.has('manage_email_automation'))?[['email-automation','✉','Email Automation']]:[])
+   ...(!hasCalendarNav&&!leadership&&(!manager||S.managerPerms.has('manage_meetings')||teacher)?[['school-calendar','▦','School Calendar']]:[]),
+   ...(leadership||(!teacher&&manager&&S.managerPerms.has('manage_email_automation'))?[['email-automation','✉','Email Automation']]:[])
   ]:[];
   const existing=new Map(Array.from(nav.querySelectorAll('[data-cc-nav="1"]')).map(n=>[n.dataset.view,n]));
   if(!wanted.length){existing.forEach(n=>n.remove());return;}
@@ -400,7 +401,7 @@ async function route(id){
  try{
   if(id==='command-centre')await renderDashboard();
   if(id==='school-tasks')await renderTasks();
-  if(id==='school-calendar')await renderCalendar();
+  if(id==='school-calendar'){if(window.NOOR_SCHOOL_CALENDAR?.open)window.NOOR_SCHOOL_CALENDAR.open();else await renderCalendar();}
   if(id==='email-automation')await renderEmail();
  }catch(e){console.error('Command Centre route failed',e);msg(e.message||'Section could not load.','error');}
  return true;

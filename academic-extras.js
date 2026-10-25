@@ -179,3 +179,4 @@
   return original(id);
  };
 })();
+window.NOOR_ACADEMIC_EXTRAS={renderAssessment,openAssessments:async()=>{await loadContext();if(role()==='student')return await renderStudentAssessmentResults();return renderAssessment();}};

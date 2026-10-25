@@ -92,10 +92,10 @@ async function render(){
  wrapper.innerHTML='<div class="noor-t4">'+
  '<div class="nt-head"><div><span class="nt-kicker">NOOR · School Management</span><h1>Teacher Dashboard</h1><div class="nt-muted">Manage classes, attendance, assignments and student progress.</div></div><div class="nt-row"><button class="nt-btn" data-link="teaching">✦ Smart Notes</button><button class="nt-btn primary" data-link="paper-generator">✎ Generate Paper</button></div></div>'+
  '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div><button class="nt-camera" id="ntChangePhoto" type="button" aria-label="Change profile photograph">◉</button></div>'+
- '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row"><span class="nt-pill">Teacher</span><button class="nt-btn" id="ntEditProfile">✎ Edit Profile</button></div></div>'+
+ '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span><button class="nt-btn" id="ntTogglePlanner" type="button">▤ Lesson Planner</button><button class="nt-btn" id="ntEditProfile" type="button">✎ Edit Profile</button></div></div>'+
  '<div class="nt-profile-grid">'+det('Employee ID:',details.employee_code,'▤')+det('Joining date:',formatDate(details.joined_on),'▣')+det('Date of birth:',formatDate(details.date_of_birth),'♧')+det('Qualification:',details.qualification,'◈')+
  det('Address:',details.address,'⌖')+det('Phone:',app.profile.mobile_number,'☎')+det('Email:',app.profile.email||app.user.email,'✉')+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+'</div></div>'+
- '<aside class="nt-quote"><p>Teaching is shaping brighter tomorrows.</p></aside></section>'+
+ '<aside class="nt-quote" id="ntTeacherQuote"><p id="ntTeacherQuoteText">“Teaching is shaping brighter tomorrows.”</p><div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" class="nt-btn small" id="ntRefreshTeacherQuote" style="font-size:9px;padding:3px 8px">↻ Refresh quote</button></div></aside></section>'+
  '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Teaching Periods</h2></div><button class="nt-btn" id="ntEditTimetable">✎ Edit Timetable</button></div>'+
  '<div class="nt-timeline">'+(approved.length?approved.map(x=>statusHTML(x,runByPeriod.get(x.id))).join(''):'<p class="nt-empty">No approved periods for today. Use Edit Timetable to request new periods.</p>')+'</div>'+
  '<div class="nt-review-requests">'+
@@ -177,6 +177,7 @@ async function render(){
  try{Promise.resolve(window.NOOR_TEACHER_PLANNERS?.mount?.()).catch(error=>{console.error('Teacher planners unavailable',error);const p=document.querySelector('#ntTeacherPlanners');if(p)p.textContent='Planning tools could not load. Refresh to retry.'})}catch(e){console.error(e)}
  try{Promise.resolve(window.NOOR_TEACHER_INTELLIGENCE?.mount?.(current)).catch(error=>{console.error('Teacher insights unavailable',error);const node=$('#ntTeacherIntelligence .nti-empty');if(node)node.textContent='Live insights temporarily unavailable; use the feature shortcuts above.'})}catch(error){console.error('Teacher insights module error',error)}
  setLive();
+ initTeacherQuotes();
  }catch(err){console.error('NOOR Teacher Dashboard:',err);if(root())root().innerHTML='<div class="noor-t4"><div class="nt-card"><h2>Teacher workspace unavailable</h2><p>'+esc(err?.message||'Please try again.')+'</p><button class="nt-btn primary" id="ntReload">Retry</button></div></div>';const retry=$('#ntReload');if(retry)retry.onclick=render}
  finally{rendering=false}
 }
@@ -190,6 +191,9 @@ function onClick(e){
  if(b.dataset.startPeriod){updateRun(b.dataset.startPeriod,'ongoing',b);return}
  if(b.dataset.completePeriod){updateRun(b.dataset.completePeriod,'done',b);return}
  if(b.id==='ntCheckIn'){checkIn(b);return}
+ if(b.id==='ntTogglePlanner'){const p=document.getElementById('ntTeacherPlanners');if(p)p.style.display=p.style.display==='none'?'block':'none';return}
+ if(b.id==='ntNewTaskBtn'){showNewTaskModal();return}
+ if(b.dataset.toggleTask){toggleTaskStatus(b.dataset.toggleTask,b);return}
 }
 async function updateRun(periodId,status,b){
  const app=get(),p=current?.periods.find(x=>x.id===periodId);
@@ -342,6 +346,88 @@ function setLive(){
  .on('postgres_changes',{event:'*',schema:'public',table:'noor_staff_attendance',filter:'teacher_id=eq.'+a.user.id},()=>{if(root()?.querySelector('.noor-t4'))render()})
  .subscribe(status=>{live=status==='SUBSCRIBED';const x=$('#ntLiveStatus');if(x)x.textContent=live?'Live sync connected — Principal can view saved class progress.':'School data securely saved. Live connection may be unavailable.'});
 }
+
+async function showNewTaskModal(){
+ const app=get(),db=app.db;
+ const nowD=new Date(Date.now()+86400000);nowD.setMinutes(nowD.getMinutes()-nowD.getTimezoneOffset());
+ const body='<label>Task Title *<input name="title" required maxlength="180" placeholder="e.g. Prepare Unit Test Papers"></label>'+
+   '<label>Task Description<textarea name="description" placeholder="Details or checklist for this task..."></textarea></label>'+
+   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+   '<label>Priority<select name="priority"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>'+
+   '<label>Task Type<select name="task_type"><option value="academic" selected>Academic</option><option value="assignment">Assignment</option><option value="administrative">Administrative</option><option value="meeting">Meeting</option></select></label>'+
+   '</div>'+
+   '<label>Due Date & Time *<input name="due_at" type="datetime-local" value="'+nowD.toISOString().slice(0,16)+'" required></label>';
+ modal('Set Task & Deadline',body,async form=>{
+   const title=String(form.elements.title?.value||'').trim();
+   const desc=String(form.elements.description?.value||'').trim();
+   const priority=String(form.elements.priority?.value||'normal');
+   const task_type=String(form.elements.task_type?.value||'academic');
+   const due_at=form.elements.due_at?.value?new Date(form.elements.due_at.value).toISOString():null;
+   if(!title)throw Error('Task title is required.');
+   const ins=await db.from('school_tasks').insert({
+     school_id:app.schoolId,
+     created_by:app.user.id,
+     title,
+     description:desc,
+     priority,
+     task_type,
+     due_at,
+     status:'pending'
+   }).select('id').single();
+   if(ins.error)throw ins.error;
+   await db.from('task_assignees').insert({
+     school_id:app.schoolId,
+     task_id:ins.data.id,
+     assignee_id:app.user.id,
+     status:'pending'
+   });
+   notify('Task & deadline saved to school database.','success');
+   render();
+ });
+}
+
+async function toggleTaskStatus(taskId, btn){
+ const app=get(),db=app.db;
+ btn.disabled=true;
+ try{
+   const currentRecord=await db.from('school_tasks').select('status').eq('school_id',app.schoolId).eq('id',taskId).single();
+   if(currentRecord.error)throw currentRecord.error;
+   const nextStatus=currentRecord.data.status==='completed'?'pending':'completed';
+   const up=await db.from('school_tasks').update({
+     status:nextStatus,
+     completed_at:nextStatus==='completed'?new Date().toISOString():null
+   }).eq('school_id',app.schoolId).eq('id',taskId);
+   if(up.error)throw up.error;
+   notify('Task marked as '+nextStatus+'.','success');
+   render();
+ }catch(e){notify('Could not update task: '+e.message,'error')}
+ finally{btn.disabled=false}
+}
+
+function initTeacherQuotes(){
+ setTimeout(async()=>{
+   if(window.NOOR_DAILY_QUOTES?.getDailyQuote){
+     try{
+       const q=await window.NOOR_DAILY_QUOTES.getDailyQuote('teacher');
+       const el=document.getElementById('ntTeacherQuoteText');
+       if(el&&q)el.textContent='“'+q.quote+'” — '+q.author;
+     }catch(e){console.warn('Teacher quote load',e);}
+   }
+   const refBtn=document.getElementById('ntRefreshTeacherQuote');
+   if(refBtn){
+     refBtn.onclick=async()=>{
+       refBtn.disabled=true;
+       try{
+         const q=await window.NOOR_DAILY_QUOTES.refreshQuote('teacher');
+         const el=document.getElementById('ntTeacherQuoteText');
+         if(el&&q)el.textContent='“'+q.quote+'” — '+q.author;
+       }catch(e){notify('Could not refresh quote: '+e.message,'error');}
+       finally{refBtn.disabled=false;}
+     };
+   }
+ },150);
+}
+
 window.NOOR_TEACHER_REFERENCE={render,renderCalendar,openPaper,openCalendar,getCurrent:()=>current};
 const watcher=new MutationObserver(()=>{
  const w=document.getElementById('workspace');

@@ -3,7 +3,7 @@
 const APP=()=>window.NOOR_AI_APP||{},E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const nat=new Intl.Collator('en',{numeric:true,sensitivity:'base'});
-let model=null,revision=0,working=false;
+let model=null,revision=0,working=false,offlineMode=false;
 const root=()=>document.getElementById('ntAttendanceEmbed');
 const $=q=>root()?.querySelector(q);
 const say=(s,bad=false)=>{const el=$('#ntAttStatus');if(el){el.textContent=s;el.style.color=bad?'#b93c4d':'#815a73'}};
@@ -55,7 +55,9 @@ function table(){
 async function mount(){
  const a=APP(),box=root();if(!box||a.profile?.role!=='teacher'||a.profile?.status!=='active'||!a.schoolId)return;
  const v=++revision;model={assignments:[],classes:[],sections:[],students:[],selection:{},session:null};
- box.innerHTML='<div class="nt-att-head"><div class="nt-att-controls"><label>Date<input id="ntAttDate" type="date" max="'+day()+'" value="'+day()+'"></label><label>Class<select id="ntAttClass"></select></label><label>Section<select id="ntAttSection"></select></label></div><div class="nt-att-summary" id="ntAttSummary"><span class="nt-att-chip unmarked">Loading…</span></div></div>'+
+ const teacherName=a.profile?.full_name||'Teacher';
+  box.innerHTML='<div class="nt-att-greeting" style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#fcf4f7,#f9eaf0);border:1px solid #ebd4de;border-radius:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div><h3 style="margin:0;font:800 15px Manrope;color:#5a233c">Hello Class Teacher, '+E(teacherName)+' 👋</h3><small style="color:#815a73">Mark student attendance or switch between Online and Offline storage.</small></div><div style="display:flex;gap:6px;align-items:center"><button type="button" class="nt-btn small" id="ntAttModeToggle" style="font-weight:700">'+(offlineMode?'◷ Mode: Offline (Device queue)':'⚡ Mode: Online (Direct sync)')+'</button><button type="button" class="nt-btn small" id="ntAttAddSectionBtn">+ Add Section</button></div></div>'+
+  '<div class="nt-att-head"><div class="nt-att-controls"><label>Date<input id="ntAttDate" type="date" max="'+day()+'" value="'+day()+'"></label><label>Class<select id="ntAttClass"></select></label><label>Section<select id="ntAttSection"></select></label></div><div class="nt-att-summary" id="ntAttSummary"><span class="nt-att-chip unmarked">Loading…</span></div></div>'+
  '<div class="nt-att-scroll" id="ntAttTable"><p class="nt-muted">Loading real class roster…</p></div>'+
  '<div class="nt-att-actions"><div><button class="nt-btn" type="button" id="ntAttMarkAll">✓ Mark all Present</button><span class="nt-muted" style="margin-left:8px">Review before saving.</span></div><button class="nt-btn primary" type="button" id="ntAttSave" disabled>Save Attendance →</button></div>'+
  '<div class="nt-offline-bar"><span>◷ Offline: draft stays on this device until synced.</span><button type="button" class="nt-btn" id="ntAttSync">Sync pending drafts</button></div><p class="nt-muted" id="ntAttOfflineStatus" role="status"></p>'+ '<p class="nt-muted" id="ntAttFooter"></p><p class="nt-muted" role="status" id="ntAttStatus"></p><div id="ntAttRisk"></div>';
@@ -66,6 +68,12 @@ async function mount(){
  });
  $('#ntAttMarkAll').onclick=()=>{for(const x of model.students)model.selection[x.id]='present';table();say('Everyone marked Present. Check before saving.')};
  $('#ntAttSave').onclick=save;$('#ntAttSync').onclick=syncPending;refreshPending();
+  $('#ntAttModeToggle').onclick=()=>{
+    offlineMode=!offlineMode;
+    $('#ntAttModeToggle').textContent=offlineMode?'◷ Mode: Offline (Device queue)':'⚡ Mode: Online (Direct sync)';
+    say(offlineMode?'Offline mode active: saves will stay on this device until you sync.':'Online mode active: saves will submit directly to school database.');
+  };
+  $('#ntAttAddSectionBtn').onclick=openAddSectionModal;
  const db=a.db;
  const assignment=await db.from('teacher_assignments').select('class_id,section_id').eq('school_id',a.schoolId).eq('teacher_id',a.user.id).eq('is_active',true).limit(200);
  if(v!==revision||!root())return;
@@ -156,5 +164,33 @@ async function checkAbsences(instance){
  for(const st of model.students){let count=0;for(const session of latest){if(mapping.get(session.id)?.get(st.id)==='absent')count++;else break}if(count>=3)concern.push({st,count})}
  box.innerHTML=concern.length?'<div class="nt-followup"><b>⚠ Attendance follow-up</b><div>'+concern.map(x=>E(x.st.full_name)+' (Roll '+E(x.st.roll_number||'—')+') · '+x.count+' consecutive absences').join('<br>')+'</div></div>':'';
 }
+
+async function openAddSectionModal(){
+  const a=APP(), currentClassId=$('#ntAttClass')?.value;
+  if(!currentClassId) return say('Select a class first before creating a section.', true);
+  const currentClassName = model?.classes?.find(c=>c.id===currentClassId)?.name || 'selected class';
+  const name=prompt('Enter new Section name for ' + currentClassName + ' (e.g. "Section A" or "Section B"):');
+  if(!name||!name.trim()) return;
+  say('Creating section "'+name.trim()+'"…');
+  try{
+    const res=await a.db.from('sections').insert({
+      school_id:a.schoolId,
+      class_id:currentClassId,
+      name:name.trim(),
+      is_active:true
+    }).select('id,class_id,name').single();
+    if(res.error) throw res.error;
+    if(!model.sections) model.sections=[];
+    model.sections.push(res.data);
+    sectionOptions();
+    if($('#ntAttSection')) $('#ntAttSection').value=res.data.id;
+    say('✓ Section "'+res.data.name+'" created successfully.');
+    a.toast?.('Section added.','success');
+    await loadRoster();
+  }catch(e){
+    say('Could not create section: '+(e.message||e), true);
+  }
+}
+
 window.NOOR_TEACHER_EMBED={mount};
 })();

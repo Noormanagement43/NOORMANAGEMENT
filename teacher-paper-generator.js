@@ -131,13 +131,25 @@ async function generate(){
  let total=0;for(const f of photos){if(!['image/jpeg','image/png','image/webp'].includes(f.type))throw Error('Use JPG, PNG or WebP photos.');if(f.size>4*1024*1024)throw Error('Each photo must be under 4 MB.');total+=f.size;}
  if(total>12*1024*1024)throw Error('Choose fewer or smaller photos.');
  const images=await Promise.all(photos.map(readFile));
- const req=await a().db.functions.invoke('noor-ai-academic-assistant',{body:{
+ const payload={
  action:'paper',school_id:a().schoolId,topic,rough_text:description,images,...context,subject_name:subjectName,
  paper_type:$('#ppType').value,language:$('#ppLang').value,difficulty:$('#ppDifficulty').value,
  question_count:Number($('#ppCount').value),marks_per_question:Number($('#ppMarks').value)
- }});
- if(req.error||req.data?.error)throw Error(req.data?.error||req.error?.message||'AI paper generation failed.');
- const o=req.data?.output;if(!o||!Array.isArray(o.questions)||!o.questions.length)throw Error('No questions generated. Try a clearer photo or description.');
+ };
+ let o=null;
+ try {
+   let req=await a().db.functions.invoke('noor-ai',{body:payload});
+   if(req.error||!req.data?.output){
+     req=await a().db.functions.invoke('noor-ai-academic-assistant',{body:payload});
+   }
+   if(req.data?.output&&Array.isArray(req.data.output.questions)&&req.data.output.questions.length){
+     o=req.data.output;
+   }
+ }catch(e){console.warn('Functions invoke error, checking fallback',e);}
+ if(!o){
+   o=await generatePaperDirect({topic,subject:subjectName,type:$('#ppType').value,language:$('#ppLang').value,difficulty:$('#ppDifficulty').value,count:Number($('#ppCount').value),marksPerQ:Number($('#ppMarks').value)});
+ }
+ if(!o||!Array.isArray(o.questions)||!o.questions.length)throw Error('No questions generated. Try a clearer photo or description.');
  output=o;draftId=null;display(o.title||TYPE[$('#ppType').value],paperText(o),answerText(o));$('#ppTotalMarks').value=String(Number($('#ppCount').value)*Number($('#ppMarks').value));
  status('✓ AI draft generated. Review and edit as needed.');a().toast?.('Paper generated.','success');
  }catch(err){status('Unable to generate: '+(err?.message||'Please retry.'))}

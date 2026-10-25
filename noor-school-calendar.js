@@ -47,7 +47,12 @@ function open(){
  r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>NOOR · Institution Year Planner</small><h1>📅 School Calendar</h1><p>Interactive school & university events, exams, meetings, and localized holiday references.</p><div class="nsc-tz-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;font-size:11px;font-weight:700;color:#4338ca;margin-top:6px">📍 '+E(addr)+' · Timezone: '+E(tz)+'</div></div>'+
  '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
  '<section class="nsc-card"><div class="nsc-month"><button '+btn+' id="nscPrev" aria-label="Previous month">‹</button><h2 id="nscMonth"></h2><button '+btn+' id="nscNext" aria-label="Next month">›</button></div>'+
- '<div class="nsc-legend"><span style="color:#642740">● School events</span><span style="color:#256d50">● Meetings & exams</span><span style="color:#b27424">● India holiday references</span></div>'+
+ '<div class="nsc-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;padding:8px 12px;background:#fdf8fa;border-radius:10px;border:1px solid #f1e2ea">'+
+  '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#be185d"><span style="width:10px;height:10px;border-radius:50%;background:#be185d"></span> 🏫 School Events</span>'+
+  '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#7c3aed"><span style="width:10px;height:10px;border-radius:50%;background:#7c3aed"></span> 📝 School Exams</span>'+
+  '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#059669"><span style="width:10px;height:10px;border-radius:50%;background:#059669"></span> 👥 Meetings</span>'+
+  '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#d97706"><span style="width:10px;height:10px;border-radius:50%;background:#d97706"></span> 🕌 🪔 Holidays & Festivals</span>'+
+'</div>'+
  '<div class="row" style="gap:6px;margin:10px 0" id="nscFilters">'+
  ['all','school','exam','meeting','holiday'].map(f=>'<button '+btn+' class="btn '+(st.filter===f?'soft':'light')+'" style="padding:5px 11px;font-size:10px" data-cal-filter="'+f+'">'+(f==='all'?'All Events':f[0].toUpperCase()+f.slice(1)+'s')+'</button>').join('')+
  '</div>'+
@@ -134,14 +139,22 @@ function draw(){
  const ev=st.events.filter(x=>dateParts(new Date(x.starts_at))===st.selected && (st.filter==='all'||st.filter===x.event_type)),
        hol=(st.filter==='all'||st.filter==='holiday')?st.holidays.filter(x=>x.date===st.selected):[];
 
+ const TAG_CONFIG = {
+   exam: { label: '📝 School Exam', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+   meeting: { label: '👥 Meeting', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+   school: { label: '🏫 School Event', color: '#be185d', bg: '#fdf2f8', border: '#fbcfe8' },
+   holiday: { label: '🎉 Holiday / Festival', color: '#d97706', bg: '#fffbeb', border: '#fde68a' }
+ };
+
  $('#nscDayEvents',r).innerHTML=ev.map(x=>{
    const canDelete=leader()||x.created_by===A().user?.id;
-   return '<div class="nsc-entry" style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #ead8e2;border-radius:12px;background:#fff;margin-bottom:8px">'+
-   '<div style="display:flex;gap:12px;align-items:center"><i></i><span><b>'+E(x.title)+'</b><small style="display:block;color:#786671">'+E(x.event_type)+' · '+E(new Date(x.starts_at).toLocaleTimeString('en-IN',{timeZone:zone,hour:'numeric',minute:'2-digit'}))+(x.description?' · '+E(x.description):'')+'</small></span></div>'+
+   const tag = TAG_CONFIG[x.event_type] || TAG_CONFIG.school;
+   return '<div class="nsc-entry" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid '+tag.border+';border-left:4px solid '+tag.color+';border-radius:12px;background:'+tag.bg+';margin-bottom:8px">'+
+   '<div style="display:flex;gap:12px;align-items:center"><div><div style="display:flex;align-items:center;gap:6px"><b style="color:#2d111d;font-size:13px">'+E(x.title)+'</b><span style="font-size:10px;font-weight:700;color:'+tag.color+';padding:2px 6px;border-radius:6px;background:#fff;border:1px solid '+tag.border+'">'+tag.label+'</span></div><small style="display:block;color:#786671;margin-top:3px">'+E(new Date(x.starts_at).toLocaleTimeString('en-IN',{timeZone:zone,hour:'numeric',minute:'2-digit'}))+(x.description?' · '+E(x.description):'')+'</small></div></div>'+
    (canDelete?'<button type="button" class="btn danger" style="padding:5px 9px;font-size:10px" data-del-event="'+x.id+'">Delete</button>':'')+
    '</div>';
  }).join('')+
- hol.map(x=>'<div class="nsc-entry festival" style="padding:12px;border:1px solid #efdfbc;border-radius:12px;background:#fffdf6;margin-bottom:8px"><i></i><span><b>'+E(x.title)+'</b><small style="display:block;color:#875f22">Public holiday reference · School holiday policy applies</small></span></div>').join('')||
+ hol.map(x=>'<div class="nsc-entry festival" style="padding:12px 14px;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:12px;background:#fffbeb;margin-bottom:8px"><div><div style="display:flex;align-items:center;gap:6px"><b style="color:#78350f;font-size:13px">'+E(x.title)+'</b><span style="font-size:10px;font-weight:700;color:#d97706;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid #fde68a">🎉 Holiday Reference</span></div><small style="display:block;color:#92400e;margin-top:3px">Regional Telangana & Public Festival Reference (Asia/Kolkata)</small></div></div>').join('')||
  '<p class="nsc-hint">No recorded events for this date.</p>';
 
  r.querySelectorAll('[data-del-event]').forEach(b=>b.onclick=async()=>{

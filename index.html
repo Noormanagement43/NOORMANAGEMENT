@@ -323,12 +323,51 @@ $('closeAddStudent')?.addEventListener('click',closeAddStudent);$('cancelAddStud
 $('addStudentForm')?.addEventListener('submit',async e=>{e.preventDefault();const schoolId=currentSchool?.id||currentProfile?.school_id;if(!schoolId)return toast('School workspace missing.','error');const btn=$('saveNewStudent');setBusy(btn,true);try{const name=$('addStudentName').value.trim(),roll=$('addStudentRoll').value.trim(),classId=$('addStudentClass').value||null,sectionId=$('addStudentSection').value||null,mobile=$('addStudentMobile').value.trim()||null,parent=$('addStudentParent').value.trim()||null;if(!name||!roll||!classId)return toast('Please enter student name, roll number, and class.','error');const {data,error}=await supabaseClient.rpc('noor_add_student',{p_school_id:schoolId,p_full_name:name,p_roll_number:roll,p_class_id:classId,p_section_id:sectionId,p_mobile_number:mobile,p_parent_name:parent});if(error)throw error;toast('Student added successfully.','success');closeAddStudent();await fetchStudents();await renderCurrentOverview();}catch(err){console.error(err);toast(friendlyError(err),'error');}finally{setBusy(btn,false,'Add student');}});
 async function removeStudent(id){const p=studentRows.find(s=>s.id===id);const name=p?p.full_name:'this student';if(!confirm(`Are you sure you want to remove ${name} from the school roster? This action will permanently unenroll the student.`))return;try{const {error}=await supabaseClient.rpc('noor_remove_student',{p_student_id:id});if(error)throw error;toast('Student removed successfully.','success');closeEdit();await fetchStudents();await renderCurrentOverview();}catch(err){console.error(err);toast(friendlyError(err),'error');}}
 $('deleteStudentBtn')?.addEventListener('click',()=>{if(pendingEditId)removeStudent(pendingEditId);});
-async function renderClasses(){const role=currentProfile?.role;if(!['creator','principal','manager','teacher','owner'].includes(role)){$('view-classes').innerHTML='<div class="empty">This area is not available for your role.</div>';return;}const schoolId=currentSchool?.id||currentProfile?.school_id;if(!schoolId){$('view-classes').innerHTML='<div class="headrow"><div><div class="eyebrow">School structure</div><h1>Classes & sections</h1><p>Set up a school first before adding classes.</p></div></div><div class="empty">No school is linked to this account. The platform creator must create a school workspace and assign this account to it.</div>';return;}$('view-classes').innerHTML=`<div class="headrow"><div><div class="eyebrow">School & University Structure</div><h1>Classes & sections</h1><p>Maintain official class names, academic streams, and custom section labels (Apple, Mango, Rubies, Mars, A, B, etc.).</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn light" id="btnAutoClasses" type="button">⚡ Pre-populate Classes 1–10</button><button class="btn light" id="btnAutoStreams" type="button">🎓 Add College Streams (MPC, BiPC, MEC, HEC, CEC)</button><button class="btn" id="addClassBtn">＋ Add custom class</button></div></div><div id="classFeedback"></div><div class="cols"><div class="panel"><div class="panelhead"><div><h3>Classes & Streams</h3><p>School: Classes 1 to 10 · University: MPC, BiPC, MEC, HEC, CEC.</p></div><span class="pill" id="classCount"></span></div><div id="classList" class="class-list"><div class="empty">Loading class structure…</div></div></div><div class="panel"><div class="panelhead"><div><h3>Custom Section Labels</h3><p>Add custom section names like Apple, Mango, Rubies, Mars, or letters.</p></div></div><div class="field"><label for="sectionClassChoice">Select Class / Stream</label><select id="sectionClassChoice"></select></div><form id="addSectionForm"><div class="field"><label for="newSectionName">Section Name</label><input id="newSectionName" required maxlength="40" placeholder="e.g. Apple, Mango, Rubies, Mars, or Section A"></div><div class="row" style="gap:6px;margin:8px 0 12px;flex-wrap:wrap"><span class="small-note" style="width:100%;font-weight:700">Quick Section Presets (Click to use):</span><button type="button" class="btn light" data-quick-sec="Apple" style="padding:4px 9px;font-size:10px">🍎 Apple</button><button type="button" class="btn light" data-quick-sec="Mango" style="padding:4px 9px;font-size:10px">🥭 Mango</button><button type="button" class="btn light" data-quick-sec="Rubies" style="padding:4px 9px;font-size:10px">💎 Rubies</button><button type="button" class="btn light" data-quick-sec="Mars" style="padding:4px 9px;font-size:10px">🚀 Mars</button><button type="button" class="btn light" data-quick-sec="Section A" style="padding:4px 9px;font-size:10px">Section A</button><button type="button" class="btn light" data-quick-sec="Section B" style="padding:4px 9px;font-size:10px">Section B</button></div><button class="btn full" type="submit">Add Section</button></form><hr class="divider"><div id="sectionList" class="class-list"></div></div></div>`;
-$('addClassBtn').addEventListener('click',addClass);$('btnAutoClasses')?.addEventListener('click',()=>autoPopulateClasses('school'));$('btnAutoStreams')?.addEventListener('click',()=>autoPopulateClasses('university'));$('addSectionForm').addEventListener('submit',addSection);$('sectionClassChoice').addEventListener('change',renderSectionList);document.querySelectorAll('[data-quick-sec]').forEach(b=>b.addEventListener('click',()=>{const input=$('newSectionName');if(input){input.value=b.dataset.quickSec;input.focus();}}));await fetchClasses(schoolId);}
+async function renderClasses(){const role=currentProfile?.role;if(!['creator','principal','manager','teacher','owner'].includes(role)){$('view-classes').innerHTML='<div class="empty">This area is not available for your role.</div>';return;}const schoolId=currentSchool?.id||currentProfile?.school_id;if(!schoolId){$('view-classes').innerHTML='<div class="headrow"><div><div class="eyebrow">School structure</div><h1>Classes & sections</h1><p>Set up a school first before adding classes.</p></div></div><div class="empty">No school is linked to this account. The platform creator must create a school workspace and assign this account to it.</div>';return;}$('view-classes').innerHTML=`<div class="headrow"><div><div class="eyebrow">School & University Structure</div><h1>Classes & sections</h1><p>Maintain official class names, academic streams, and custom section labels (Apple, Mango, Rubies, Mars, A, B, etc.).</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn light" id="btnAutoClasses" type="button">⚡ Pre-populate Classes 1–10</button><button class="btn light" id="btnAutoStreams" type="button">🎓 Add College Streams (MPC, BiPC, MEC, HEC, CEC)</button><button class="btn light" id="btnAutoLabs" type="button">🔬 Pre-populate College Labs</button><button class="btn" id="addClassBtn">＋ Add custom class</button></div></div><div id="classFeedback"></div><div class="cols"><div class="panel"><div class="panelhead"><div><h3>Classes & Streams</h3><p>School: Classes 1 to 10 · University: MPC, BiPC, MEC, HEC, CEC.</p></div><span class="pill" id="classCount"></span></div><div id="classList" class="class-list"><div class="empty">Loading class structure…</div></div></div><div class="panel"><div class="panelhead"><div><h3>Custom Section Labels</h3><p>Add custom section names like Apple, Mango, Rubies, Mars, or letters.</p></div></div><div class="field"><label for="sectionClassChoice">Select Class / Stream</label><select id="sectionClassChoice"></select></div><form id="addSectionForm"><div class="field"><label for="newSectionName">Section Name</label><input id="newSectionName" required maxlength="40" placeholder="e.g. Mars, Rubies, Apple, Lotus, Section A"></div>
+<div style="margin:8px 0 14px;background:#fcf9fa;border:1px solid #f1e2ea;border-radius:12px;padding:12px">
+  <div style="font-size:11px;font-weight:800;color:#5c223c;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">⚡ Quick Thematic Section Presets (Click to use):</div>
+  <div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-size:10px;font-weight:750;color:#6b7280;min-width:70px">🪐 Planets:</span>
+    <button type="button" class="btn light" data-quick-sec="Mars" style="padding:3px 8px;font-size:10px">Mars</button>
+    <button type="button" class="btn light" data-quick-sec="Jupiter" style="padding:3px 8px;font-size:10px">Jupiter</button>
+    <button type="button" class="btn light" data-quick-sec="Venus" style="padding:3px 8px;font-size:10px">Venus</button>
+    <button type="button" class="btn light" data-quick-sec="Saturn" style="padding:3px 8px;font-size:10px">Saturn</button>
+  </div>
+  <div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-size:10px;font-weight:750;color:#6b7280;min-width:70px">💎 Gems:</span>
+    <button type="button" class="btn light" data-quick-sec="Rubies" style="padding:3px 8px;font-size:10px">Rubies</button>
+    <button type="button" class="btn light" data-quick-sec="Diamonds" style="padding:3px 8px;font-size:10px">Diamonds</button>
+    <button type="button" class="btn light" data-quick-sec="Emeralds" style="padding:3px 8px;font-size:10px">Emeralds</button>
+    <button type="button" class="btn light" data-quick-sec="Sapphires" style="padding:3px 8px;font-size:10px">Sapphires</button>
+  </div>
+  <div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-size:10px;font-weight:750;color:#6b7280;min-width:70px">🍎 Fruits:</span>
+    <button type="button" class="btn light" data-quick-sec="Apple" style="padding:3px 8px;font-size:10px">Apple</button>
+    <button type="button" class="btn light" data-quick-sec="Mango" style="padding:3px 8px;font-size:10px">Mango</button>
+    <button type="button" class="btn light" data-quick-sec="Orange" style="padding:3px 8px;font-size:10px">Orange</button>
+    <button type="button" class="btn light" data-quick-sec="Grapes" style="padding:3px 8px;font-size:10px">Grapes</button>
+  </div>
+  <div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-size:10px;font-weight:750;color:#6b7280;min-width:70px">🌸 Nature:</span>
+    <button type="button" class="btn light" data-quick-sec="Lotus" style="padding:3px 8px;font-size:10px">Lotus</button>
+    <button type="button" class="btn light" data-quick-sec="Rose" style="padding:3px 8px;font-size:10px">Rose</button>
+    <button type="button" class="btn light" data-quick-sec="Tulip" style="padding:3px 8px;font-size:10px">Tulip</button>
+    <button type="button" class="btn light" data-quick-sec="Jasmine" style="padding:3px 8px;font-size:10px">Jasmine</button>
+  </div>
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-size:10px;font-weight:750;color:#6b7280;min-width:70px">🔤 Letters:</span>
+    <button type="button" class="btn light" data-quick-sec="Section A" style="padding:3px 8px;font-size:10px">Section A</button>
+    <button type="button" class="btn light" data-quick-sec="Section B" style="padding:3px 8px;font-size:10px">Section B</button>
+    <button type="button" class="btn light" data-quick-sec="Section C" style="padding:3px 8px;font-size:10px">Section C</button>
+  </div>
+</div>
+<button class="btn full" type="submit">Add Section</button></form><hr class="divider"><div id="sectionList" class="class-list"></div></div></div>`;
+$('addClassBtn').addEventListener('click',addClass);$('btnAutoClasses')?.addEventListener('click',()=>autoPopulateClasses('school'));$('btnAutoStreams')?.addEventListener('click',()=>autoPopulateClasses('university'));$('btnAutoLabs')?.addEventListener('click',()=>autoPopulateClasses('labs'));$('addSectionForm').addEventListener('submit',addSection);$('sectionClassChoice').addEventListener('change',renderSectionList);document.querySelectorAll('[data-quick-sec]').forEach(b=>b.addEventListener('click',()=>{const input=$('newSectionName');if(input){input.value=b.dataset.quickSec;input.focus();}}));await fetchClasses(schoolId);}
 function naturalClassRank(name){
   const str = String(name||'').trim();
   const m = str.match(/class\s*(\d+)/i) || str.match(/grade\s*(\d+)/i) || str.match(/^(\d+)$/);
   if(m) return parseInt(m[1], 10);
+  if(/lab|practical|workshop/i.test(str)) return 300;
   if(/mpc|bipc|mec|hec|cec/i.test(str)) return 200;
   return 100;
 }
@@ -344,7 +383,12 @@ async function autoPopulateClasses(type='school'){
   const schoolId=currentSchool?.id||currentProfile?.school_id;
   if(!schoolId)return toast('No school workspace linked.','error');
   const isUniv=type==='university';
-  const targetNames=isUniv?['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']:[...Array(10)].map((_,i)=>'Class '+(i+1));
+  const isLabs=type==='labs';
+  const targetNames=isLabs
+    ? ['Physics Lab', 'Chemistry Lab', 'Computer Science Lab', 'Biology Lab']
+    : isUniv
+      ? ['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']
+      : [...Array(10)].map((_,i)=>'Class '+(i+1));
   let added=0;
   for(let i=0;i<targetNames.length;i++){
     const name=targetNames[i];
@@ -353,7 +397,8 @@ async function autoPopulateClasses(type='school'){
       if(!error)added++;
     }
   }
-  toast(added?added+' '+(isUniv?'streams':'classes')+' created successfully.':'Classes already up to date.','success');
+  const label = isLabs ? 'specialized lab classes' : (isUniv ? 'university streams' : 'school classes');
+  toast(added ? added+' '+label+' created successfully.' : 'Classes already up to date.','success');
   await fetchClasses(schoolId);
 }
 async function fetchClasses(schoolId){
@@ -385,7 +430,8 @@ async function fetchClasses(schoolId){
   // Group into distinct categories so Class 10 is never clubbed with Class 1
   const primaryClasses = classRows.filter(c=>naturalClassRank(c.name)>=1 && naturalClassRank(c.name)<=5);
   const secondaryClasses = classRows.filter(c=>naturalClassRank(c.name)>=6 && naturalClassRank(c.name)<=10);
-  const collegeStreams = classRows.filter(c=>naturalClassRank(c.name)>=200);
+  const collegeStreams = classRows.filter(c=>naturalClassRank(c.name)>=200 && naturalClassRank(c.name)<300);
+  const labClasses = classRows.filter(c=>naturalClassRank(c.name)>=300);
   const customClasses = classRows.filter(c=>naturalClassRank(c.name)===100);
 
   function renderClassCard(c){
@@ -420,6 +466,9 @@ async function fetchClasses(schoolId){
   }
   if(collegeStreams.length){
     html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">🎓</span> UNIVERSITY / COLLEGE STREAMS</div>${collegeStreams.map(renderClassCard).join('')}</div>`;
+  }
+  if(labClasses.length){
+    html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">🔬</span> UNIVERSITY LABS & PRACTICAL ACTIVITIES</div>${labClasses.map(renderClassCard).join('')}</div>`;
   }
   if(customClasses.length){
     html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">📁</span> OTHER CLASSES</div>${customClasses.map(renderClassCard).join('')}</div>`;

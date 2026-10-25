@@ -106,7 +106,10 @@ display:block;min-height:44px;width:100%;border-radius:11px;background:#fff;bord
 .nsc .nsc-day.today>b{background:#71354f;color:#fff;border-radius:50%;width:27px;height:27px;display:grid;place-items:center}
 .nsc .nsc-mini{display:grid;gap:3px}
 .nsc .nsc-mini small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:5px;padding:3px 4px;font-size:10px;background:#fae8ef;color:#672c47}
-.nsc .nsc-mini small.holiday{background:#fff0df;color:#985d35}
+.nsc .nsc-mini small.holiday{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.nsc .nsc-mini small.exam{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+.nsc .nsc-mini small.meeting{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.nsc .nsc-mini small.school{background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8}
 .nsc .nsc-legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;margin:8px 0;color:#7d5770}
 .nsc .nsc-legend span:first-child{color:#9c4771}.nsc .nsc-legend span:last-child{color:#b37d3b}
 .nsc .nsc-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f3e5ea}

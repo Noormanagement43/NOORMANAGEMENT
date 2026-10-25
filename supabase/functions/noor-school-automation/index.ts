@@ -67,9 +67,9 @@ async function sendTest(req: Request, input: any) {
   const recipient = user.email;
   const subject = "NOOR AI email configuration test";
   const key = "test:"+user.id+":"+crypto.randomUUID();
-  const providerKey = Deno.env.get("BREVO_API_KEY");
-  const senderEmail = Deno.env.get("EMAIL_FROM");
-  const senderName = Deno.env.get("EMAIL_FROM_NAME") || "NOOR AI";
+  const providerKey = Deno.env.get("BREVO_API_KEY") || "";
+  const senderEmail = Deno.env.get("EMAIL_FROM") || "annoorhub786@gmail.com";
+  const senderName = Deno.env.get("EMAIL_FROM_NAME") || "NOOR Management (نور)";
   const log = await recordEmailAttempt(client,schoolId,user.id,recipient,subject,key,"queued");
   if (!providerKey || !senderEmail) {
     if (log.data?.id) {

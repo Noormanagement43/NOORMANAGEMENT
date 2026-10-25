@@ -453,9 +453,42 @@ function aggregate(students,sessions,records,day){
 
 function graph(classes,sections,students,sessions,records,day){
   const cs=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
-  if(!cs.length)return empty('No attendance records. Create Classes 6–10 and their sections to begin.');
+  if(!cs.length){
+    const dummy=[6,7,8,9,10];
+    return '<div class="pd-trend-bars" style="display:flex;flex-direction:column;gap:10px">'+dummy.map(n=>`<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;font-size:11px"><b>Class ${n}</b><span style="color:#8c7582">Class not created yet</span></div><div style="width:100%;height:8px;background:#f3e8ee;border-radius:4px"></div></div>`).join('')+'</div><p class="pd-muted" style="margin-top:8px">Create Classes 6–10 under Classes & Sections to track live trends.</p>';
+  }
   const names=[...new Set(sections.filter(s=>cs.some(c=>c.id===s.class_id)).map(s=>s.name))].sort();
   const colors=['#94465b','#3d795b','#3f6b85','#6b588c','#9b7245'];
+  
+  // Calculate aggregated stats per class for graphical bars
+  const classStats=cs.map(c=>{
+    const cStudents=students.filter(s=>s.class_id===c.id);
+    const agg=aggregate(cStudents,sessions,records,day);
+    const pct=agg.marked&&agg.total?percent(agg.present,agg.total):null;
+    return {class:c,students:cStudents,agg,pct};
+  });
+
+  // Render Graphical Status Bars for each class
+  const barsHTML='<div class="pd-trend-bars" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">'+classStats.map(item=>{
+    const pct=item.pct;
+    const color=pct===null?'#9e8a94':pct>=75?'#10b981':pct>=50?'#f59e0b':'#f43f5e';
+    const statusLabel=pct===null?'🕒 Attendance Pending':`${pct}% Present (${item.agg.present}/${item.agg.total})`;
+    const fillWidth=pct===null?10:Math.max(4,pct);
+    return `<div class="pd-bar-row" style="background:#fff9fa;border:1px solid #f1e2e8;border-radius:10px;padding:8px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">📊</span>
+          <b style="font-size:12px;color:#4a2237">${e(item.class.name)}</b>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${color}">${statusLabel}</span>
+      </div>
+      <div style="width:100%;height:8px;background:#eedde4;border-radius:6px;overflow:hidden">
+        <div style="width:${fillWidth}%;height:100%;background:${color};border-radius:6px;transition:width 0.4s ease"></div>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+
+  // Multi-section line trend SVG
   let svg='';
   for(let p=0;p<=100;p+=25){
     const y=185-p*1.5;
@@ -475,7 +508,10 @@ function graph(classes,sections,students,sessions,records,day){
       previous={x,y};
     });
   });
-  return `${has?`<svg class="pd-linechart" viewBox="0 0 490 225" role="img" aria-label="Today's attendance by class and section">${svg}</svg>`:empty('No attendance records submitted for Classes 6–10 today.') }<div class="pd-legend">${names.map((n,i)=>`<span style="color:${colors[i%colors.length]}">● ${e(/^section/i.test(n)?n:'Section '+n)}</span>`).join('')}</div><p class="pd-muted">Present ÷ enrolled · today · unmarked sections have no point</p>`;
+
+  const chartHTML=has?`<div style="margin-top:12px"><svg class="pd-linechart" viewBox="0 0 490 225" role="img" aria-label="Today's attendance by class and section">${svg}</svg><div class="pd-legend">${names.map((n,i)=>`<span style="color:${colors[i%colors.length]}">● ${e(/^section/i.test(n)?n:'Section '+n)}</span>`).join('')}</div></div>`:'';
+
+  return barsHTML+chartHTML+'<p class="pd-muted" style="margin-top:8px">Visual status meters · Classes 6 to 10 · Live percentage tracking</p>';
 }
 
 async function refresh(){

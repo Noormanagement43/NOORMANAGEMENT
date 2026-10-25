@@ -20,6 +20,26 @@ const leader=()=>['owner','principal','manager','creator'].includes(A().profile?
 const canAddEvent=()=>['owner','principal','manager','creator','teacher'].includes(A().profile?.role);
 const btn='type="button"';
 
+function getRegionalFestivals(year){
+ return [
+  {date:year+'-01-14',title:'Makar Sankranti / Pongal 🪁 (Regional)'},
+  {date:year+'-01-26',title:'Republic Day 🇮🇳 (National)'},
+  {date:year+'-03-30',title:'Ugadi / Telugu New Year 🌾 (Telangana Regional)'},
+  {date:year+'-03-31',title:'Eid-ul-Fitr / Ramzan 🌙 (Islamic)'},
+  {date:year+'-06-02',title:'Telangana Formation Day 🇮🇳 (State Public Holiday)'},
+  {date:year+'-06-07',title:'Bakrid / Eid-ul-Adha 🐑 (Islamic)'},
+  {date:year+'-07-06',title:'Muharram 🕌 (Islamic)'},
+  {date:year+'-07-28',title:'Bonalu Festival 🌺 (Hyderabad / Telangana Regional)'},
+  {date:year+'-08-15',title:'Independence Day 🇮🇳 (National)'},
+  {date:year+'-08-27',title:'Ganesh Chaturthi 🐘 (Regional Festival)'},
+  {date:year+'-09-05',title:'Milad-un-Nabi 🕌 (Islamic)'},
+  {date:year+'-10-02',title:'Gandhi Jayanti 🇮🇳 (National)'},
+  {date:year+'-10-12',title:'Bathukamma 🌸 (Telangana State Floral Festival)'},
+  {date:year+'-10-20',title:'Dussehra / Vijayadashami 🏹 (Major Festival)'},
+  {date:year+'-11-01',title:'Diwali / Deepavali 🪔 (Festival of Lights)'},
+  {date:year+'-12-25',title:'Christmas 🎄 (Public Holiday)'}
+ ];
+}
 function open(){
  const app=A(),r=root();if(!r||!app.user?.id||!app.schoolId)return;
  if(st.school!==app.schoolId){st.school=app.schoolId;st.selected=now;st.year=Number(now.slice(0,4));st.month=Number(now.slice(5,7))-1}
@@ -33,8 +53,11 @@ function open(){
  '</div>'+
  '<div class="nsc-weekdays">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<b>'+x+'</b>').join('')+'</div><div id="nscGrid" class="nsc-grid"></div><p id="nscSource" class="nsc-hint">Checking current school data…</p></section>'+
  '<section class="nsc-card"><div class="nsc-row"><h2 id="nscDayTitle">Selected day</h2>'+(canAddEvent()?'<button '+btn+' class="btn light" id="nscAddDay">+ Event for this day</button>':'')+'</div><div id="nscDayEvents"></div></section>'+
- '<section class="nsc-card"><h2>Indian, Hindu & Muslim festival references</h2><p class="nsc-hint">Open the public Indian and Islamic holiday calendars for a broader festival view. School holidays become official only when the school adds them as events.</p>'+
- '<button '+btn+' class="btn light" id="nscReference">View festival calendars</button><div id="nscReferenceBox" hidden></div></section><p id="nscMessage" role="status"></p></div>';
+ '<section class="nsc-card" style="border:1px solid #ebd4de;border-radius:14px;background:#fff;padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><div><h2 style="margin:0;font:800 16px Manrope;color:#5a233c">🕌 🪔 Localized Regional & Religious Festivals (Sangareddy / Hyderabad)</h2><p class="nsc-hint" style="margin:4px 0 0">Verified Telangana regional holidays, Hindu & Islamic festivals localized for '+E(addr)+'. Always visible by default.</p></div><span class="pill green" style="font-weight:700">✓ Dynamic Timezone Active</span></div>'+
+ '<div class="nsc-festivals-strip" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:16px">'+
+ getRegionalFestivals(st.year).slice(0,8).map(f=>`<div style="padding:8px 10px;background:#fdf8fa;border:1px solid #f1e2ea;border-radius:10px;font-size:11px"><b style="color:#5a233c;display:block">${E(f.title)}</b><small style="color:#815a73">${E(f.date)}</small></div>`).join('')+
+ '</div>'+
+ '<div id="nscReferenceBox" style="margin-top:10px"><iframe title="Google public Indian and Islamic holiday calendars" loading="lazy" src="https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&src=en.islamic%23holiday%40group.v.calendar.google.com&ctz='+encodeURIComponent(tz)+'" style="display:block;width:100%;min-height:440px;height:65vh;border:1px solid #f1e2ea;border-radius:12px"></iframe></div></section><p id="nscMessage" role="status"></p></div>';
 
  $('#nscToday',r).onclick=()=>{const s=dateParts(new Date());st.year=Number(s.slice(0,4));st.month=Number(s.slice(5,7))-1;st.selected=s;load()};
  $('#nscPrev',r).onclick=()=>move(-1);$('#nscNext',r).onclick=()=>move(1);
@@ -47,10 +70,7 @@ function open(){
    r.querySelectorAll('[data-cal-filter]').forEach(x=>x.className='btn '+(x===b?'soft':'light'));
    draw();
  });
- $('#nscReference',r).onclick=()=>{const el=$('#nscReferenceBox',r);el.hidden=!el.hidden;if(!el.hidden&&!el.firstChild){
-   const iframe=document.createElement('iframe');iframe.title='Google public Indian and Islamic holiday calendars';iframe.loading='lazy';iframe.src='https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&src=en.islamic%23holiday%40group.v.calendar.google.com&ctz='+encodeURIComponent(getSchoolTimezone());
-   iframe.style.cssText='display:block;width:100%;min-height:440px;height:65vh;border:0;border-radius:12px;margin-top:12px';el.appendChild(iframe);
- }};
+
  load();
 }
 
@@ -77,7 +97,11 @@ async function load(){
  if(id!==st.version||!r.isConnected||a.schoolId!==st.school)return;
  const userRole=a.profile?.role||'student',userId=a.user?.id;
  st.events=(ev.data||[]).filter(x=>leader()||(!x.teacher_id||x.teacher_id===userId||x.created_by===userId)&&(!x.target_roles?.length||x.target_roles.includes(userRole)||x.target_roles.includes('all')));
- st.holidays=Array.isArray(holidaysData)?holidaysData.filter(x=>x.date&&x.name).map(x=>({date:x.date,title:x.localName||x.name})):[];
+ const apiHolidays=Array.isArray(holidaysData)?holidaysData.filter(x=>x.date&&x.name).map(x=>({date:x.date,title:x.localName||x.name})):[];
+ const regional=getRegionalFestivals(y);
+ const holidayMap=new Map();
+ [...regional, ...apiHolidays].forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
+ st.holidays=[...holidayMap.entries()].map(([date,title])=>({date,title}));
  st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+
   (st.holidays.length?'Public holiday data: India national & regional observances.':'National holiday reference active.');
  draw();

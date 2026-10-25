@@ -325,15 +325,211 @@ async function removeStudent(id){const p=studentRows.find(s=>s.id===id);const na
 $('deleteStudentBtn')?.addEventListener('click',()=>{if(pendingEditId)removeStudent(pendingEditId);});
 async function renderClasses(){const role=currentProfile?.role;if(!['creator','principal','manager','teacher','owner'].includes(role)){$('view-classes').innerHTML='<div class="empty">This area is not available for your role.</div>';return;}const schoolId=currentSchool?.id||currentProfile?.school_id;if(!schoolId){$('view-classes').innerHTML='<div class="headrow"><div><div class="eyebrow">School structure</div><h1>Classes & sections</h1><p>Set up a school first before adding classes.</p></div></div><div class="empty">No school is linked to this account. The platform creator must create a school workspace and assign this account to it.</div>';return;}$('view-classes').innerHTML=`<div class="headrow"><div><div class="eyebrow">School & University Structure</div><h1>Classes & sections</h1><p>Maintain official class names, academic streams, and custom section labels (Apple, Mango, Rubies, Mars, A, B, etc.).</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn light" id="btnAutoClasses" type="button">⚡ Pre-populate Classes 1–10</button><button class="btn light" id="btnAutoStreams" type="button">🎓 Add College Streams (MPC, BiPC, MEC, HEC, CEC)</button><button class="btn" id="addClassBtn">＋ Add custom class</button></div></div><div id="classFeedback"></div><div class="cols"><div class="panel"><div class="panelhead"><div><h3>Classes & Streams</h3><p>School: Classes 1 to 10 · University: MPC, BiPC, MEC, HEC, CEC.</p></div><span class="pill" id="classCount"></span></div><div id="classList" class="class-list"><div class="empty">Loading class structure…</div></div></div><div class="panel"><div class="panelhead"><div><h3>Custom Section Labels</h3><p>Add custom section names like Apple, Mango, Rubies, Mars, or letters.</p></div></div><div class="field"><label for="sectionClassChoice">Select Class / Stream</label><select id="sectionClassChoice"></select></div><form id="addSectionForm"><div class="field"><label for="newSectionName">Section Name</label><input id="newSectionName" required maxlength="40" placeholder="e.g. Apple, Mango, Rubies, Mars, or Section A"></div><div class="row" style="gap:6px;margin:8px 0 12px;flex-wrap:wrap"><span class="small-note" style="width:100%;font-weight:700">Quick Section Presets (Click to use):</span><button type="button" class="btn light" data-quick-sec="Apple" style="padding:4px 9px;font-size:10px">🍎 Apple</button><button type="button" class="btn light" data-quick-sec="Mango" style="padding:4px 9px;font-size:10px">🥭 Mango</button><button type="button" class="btn light" data-quick-sec="Rubies" style="padding:4px 9px;font-size:10px">💎 Rubies</button><button type="button" class="btn light" data-quick-sec="Mars" style="padding:4px 9px;font-size:10px">🚀 Mars</button><button type="button" class="btn light" data-quick-sec="Section A" style="padding:4px 9px;font-size:10px">Section A</button><button type="button" class="btn light" data-quick-sec="Section B" style="padding:4px 9px;font-size:10px">Section B</button></div><button class="btn full" type="submit">Add Section</button></form><hr class="divider"><div id="sectionList" class="class-list"></div></div></div>`;
 $('addClassBtn').addEventListener('click',addClass);$('btnAutoClasses')?.addEventListener('click',()=>autoPopulateClasses('school'));$('btnAutoStreams')?.addEventListener('click',()=>autoPopulateClasses('university'));$('addSectionForm').addEventListener('submit',addSection);$('sectionClassChoice').addEventListener('change',renderSectionList);document.querySelectorAll('[data-quick-sec]').forEach(b=>b.addEventListener('click',()=>{const input=$('newSectionName');if(input){input.value=b.dataset.quickSec;input.focus();}}));await fetchClasses(schoolId);}
-async function autoPopulateClasses(type='school'){const schoolId=currentSchool?.id||currentProfile?.school_id;if(!schoolId)return toast('No school workspace linked.','error');const isUniv=type==='university';const targetNames=isUniv?['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']:[...Array(10)].map((_,i)=>'Class '+(i+1));let added=0;for(let i=0;i<targetNames.length;i++){const name=targetNames[i];if(!classRows.some(c=>c.name.toLowerCase()===name.toLowerCase())){const {error}=await supabaseClient.from('classes').insert({school_id:schoolId,name,sort_order:classRows.length+i+1,is_active:true});if(!error)added++;}}toast(added?added+' '+(isUniv?'streams':'classes')+' created successfully.':'Classes already up to date.','success');await fetchClasses(schoolId);}
-async function fetchClasses(schoolId){const {data,error}=await supabaseClient.from('classes').select('id,school_id,name,sort_order,is_active').eq('school_id',schoolId).order('sort_order').order('name');if(error){$('classList').innerHTML=`<div class="notice error">Could not load classes: ${escapeHtml(error.message)}</div>`;return;}classRows=data||[];if(!classRows.length){const isUniv=(currentSchool?.institution_type==='university'||currentSchool?.type==='university'||/college|university|institute/i.test(currentSchool?.name||''));const defaults=isUniv?['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']:[...Array(10)].map((_,i)=>'Class '+(i+1));const inserts=defaults.map((name,idx)=>({school_id:schoolId,name,sort_order:idx+1,is_active:true}));const res=await supabaseClient.from('classes').insert(inserts).select();if(!res.error&&res.data)classRows=res.data;}
-$('classCount').textContent=classRows.filter(c=>c.is_active).length+' active';$('sectionClassChoice').innerHTML=classRows.filter(c=>c.is_active).map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')||'<option value="">Add a class first</option>';$('classList').innerHTML=classRows.length?classRows.map(c=>`<div class="class-item"><div><b>${escapeHtml(c.name)}</b><small>${c.is_active?'Active registration option':'Archived'}</small></div><div class="row"><button class="btn light" style="padding:7px 9px" type="button" data-rename-class="${escapeHtml(c.id)}">Rename</button><button class="btn ${c.is_active?'danger':'soft'}" style="padding:7px 9px" type="button" data-archive-class="${escapeHtml(c.id)}">${c.is_active?'Archive':'Restore'}</button></div></div>`).join(''):'<div class="empty">No classes yet. Add the school’s first class.</div>'; $('classList').querySelectorAll('[data-rename-class]').forEach(b=>b.addEventListener('click',()=>renameClass(b.dataset.renameClass)));$('classList').querySelectorAll('[data-archive-class]').forEach(b=>b.addEventListener('click',()=>toggleClass(b.dataset.archiveClass)));await renderSectionList();}
-async function addClass(){const name=prompt('Enter the class name exactly as it should appear to students (e.g. Class 5 or Grade 10):');if(name===null)return;const clean=name.trim();if(!clean){toast('Class name is required.','error');return;}const schoolId=currentSchool?.id||currentProfile?.school_id;try{const {error}=await supabaseClient.from('classes').insert({school_id:schoolId,name:clean,sort_order:classRows.length+1,is_active:true});if(error)throw error;toast('Class created.','success');await fetchClasses(schoolId);}catch(e){toast(friendlyError(e),'error');}}
-async function renameClass(id){const item=classRows.find(c=>c.id===id);if(!item)return;const name=prompt('Edit class name:',item.name);if(name===null)return;if(!name.trim())return toast('Class name cannot be empty.','error');try{const {error}=await supabaseClient.from('classes').update({name:name.trim()}).eq('id',id);if(error)throw error;toast('Class name updated.','success');await fetchClasses(item.school_id);}catch(e){toast(friendlyError(e),'error');}}
-async function toggleClass(id){const item=classRows.find(c=>c.id===id);if(!item)return;try{const {error}=await supabaseClient.from('classes').update({is_active:!item.is_active}).eq('id',id);if(error)throw error;toast(item.is_active?'Class archived.':'Class restored.','success');await fetchClasses(item.school_id);}catch(e){toast(friendlyError(e),'error');}}
-async function addSection(e){e.preventDefault();const classId=$('sectionClassChoice').value,name=$('newSectionName').value.trim();if(!classId)return toast('Add or select a class first.','error');try{const rpcRes=await supabaseClient.rpc('noor_create_section',{p_class_id:classId,p_name:name});if(rpcRes.error){const {error}=await supabaseClient.from('sections').insert({class_id:classId,name,is_active:true});if(error)throw error;}$('newSectionName').value='';toast('Section added.','success');await renderSectionList();}catch(err){toast(friendlyError(err),'error');}}
-async function renderSectionList(){const target=$('sectionList');if(!target)return;const classId=$('sectionClassChoice').value;if(!classId){target.innerHTML='<div class="empty">Select or add a class first.</div>';return;}const {data,error}=await supabaseClient.from('sections').select('id,class_id,name,is_active').eq('class_id',classId).order('name');if(error){target.innerHTML=`<div class="notice error">${escapeHtml(error.message)}</div>`;return;}sectionRows=data||[];target.innerHTML=sectionRows.length?sectionRows.map(s=>`<div class="class-item"><div><b>${escapeHtml(s.name)}</b><small>${s.is_active?'Shown on registration form':'Archived from new registrations'}</small></div><div class="row" style="gap:6px"><button class="btn light" style="padding:7px 9px" type="button" data-rename-section="${escapeHtml(s.id)}">Rename</button><button class="btn ${s.is_active?'danger':'soft'}" style="padding:7px 9px" type="button" data-toggle-section="${escapeHtml(s.id)}">${s.is_active?'Archive':'Restore'}</button></div></div>`).join(''):'<div class="empty">No sections for this class yet. Add one above.</div>';target.querySelectorAll('[data-rename-section]').forEach(b=>b.addEventListener('click',async()=>{const s=sectionRows.find(x=>x.id===b.dataset.renameSection);if(!s)return;const name=prompt('Edit section name:',s.name);if(name===null)return;if(!name.trim())return toast('Section name cannot be empty.','error');try{const {error}=await supabaseClient.from('sections').update({name:name.trim()}).eq('id',s.id);if(error)throw error;toast('Section renamed.','success');await renderSectionList();}catch(err){toast(friendlyError(err),'error');}}));target.querySelectorAll('[data-toggle-section]').forEach(b=>b.addEventListener('click',async()=>{const s=sectionRows.find(x=>x.id===b.dataset.toggleSection);try{const {error}=await supabaseClient.from('sections').update({is_active:!s.is_active}).eq('id',s.id);if(error)throw error;toast(s.is_active?'Section archived.':'Section restored.','success');await renderSectionList();}catch(err){toast(friendlyError(err),'error');}}));}
+function naturalClassRank(name){
+  const str = String(name||'').trim();
+  const m = str.match(/class\s*(\d+)/i) || str.match(/grade\s*(\d+)/i) || str.match(/^(\d+)$/);
+  if(m) return parseInt(m[1], 10);
+  if(/mpc|bipc|mec|hec|cec/i.test(str)) return 200;
+  return 100;
+}
+function sortClassesNaturally(arr){
+  return arr.slice().sort((a,b)=>{
+    const rA=naturalClassRank(a.name), rB=naturalClassRank(b.name);
+    if(rA!==rB) return rA-rB;
+    return a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'});
+  });
+}
+window.allSectionRows = [];
+async function autoPopulateClasses(type='school'){
+  const schoolId=currentSchool?.id||currentProfile?.school_id;
+  if(!schoolId)return toast('No school workspace linked.','error');
+  const isUniv=type==='university';
+  const targetNames=isUniv?['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']:[...Array(10)].map((_,i)=>'Class '+(i+1));
+  let added=0;
+  for(let i=0;i<targetNames.length;i++){
+    const name=targetNames[i];
+    if(!classRows.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+      const {error}=await supabaseClient.from('classes').insert({school_id:schoolId,name,sort_order:classRows.length+i+1,is_active:true});
+      if(!error)added++;
+    }
+  }
+  toast(added?added+' '+(isUniv?'streams':'classes')+' created successfully.':'Classes already up to date.','success');
+  await fetchClasses(schoolId);
+}
+async function fetchClasses(schoolId){
+  const [cRes, sRes] = await Promise.all([
+    supabaseClient.from('classes').select('id,school_id,name,sort_order,is_active').eq('school_id',schoolId),
+    supabaseClient.from('sections').select('id,class_id,name,is_active').order('name')
+  ]);
+  if(cRes.error){
+    $('classList').innerHTML=`<div class="notice error">Could not load classes: ${escapeHtml(cRes.error.message)}</div>`;
+    return;
+  }
+  let rawClasses = cRes.data||[];
+  window.allSectionRows = sRes.data||[];
+  
+  if(!rawClasses.length){
+    const isUniv=(currentSchool?.institution_type==='university'||currentSchool?.type==='university'||/college|university|institute/i.test(currentSchool?.name||''));
+    const defaults=isUniv?['MPC (Maths, Physics, Chemistry)','BiPC (Biology, Physics, Chemistry)','MEC (Maths, Economics, Commerce)','HEC (History, Economics, Civics)','CEC (Commerce, Economics, Civics)']:[...Array(10)].map((_,i)=>'Class '+(i+1));
+    const inserts=defaults.map((name,idx)=>({school_id:schoolId,name,sort_order:idx+1,is_active:true}));
+    const res=await supabaseClient.from('classes').insert(inserts).select();
+    if(!res.error&&res.data) rawClasses=res.data;
+  }
+  
+  classRows = sortClassesNaturally(rawClasses);
+  $('classCount').textContent = classRows.filter(c=>c.is_active).length+' active classes';
+  
+  // Populate dropdown with natural sort order
+  $('sectionClassChoice').innerHTML = classRows.filter(c=>c.is_active).map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')||'<option value="">Add a class first</option>';
+  
+  // Group into distinct categories so Class 10 is never clubbed with Class 1
+  const primaryClasses = classRows.filter(c=>naturalClassRank(c.name)>=1 && naturalClassRank(c.name)<=5);
+  const secondaryClasses = classRows.filter(c=>naturalClassRank(c.name)>=6 && naturalClassRank(c.name)<=10);
+  const collegeStreams = classRows.filter(c=>naturalClassRank(c.name)>=200);
+  const customClasses = classRows.filter(c=>naturalClassRank(c.name)===100);
 
+  function renderClassCard(c){
+    const secList = (window.allSectionRows||[]).filter(s=>s.class_id===c.id);
+    const secBadges = secList.length ? secList.map(s=>`<span class="pill ${s.is_active?'good':'soft'}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:10px">${escapeHtml(s.name)}<button type="button" data-rename-section="${escapeHtml(s.id)}" title="Rename section" style="border:0;background:transparent;cursor:pointer;font-size:10px;padding:0">✎</button><button type="button" data-toggle-section="${escapeHtml(s.id)}" title="${s.is_active?'Archive':'Restore'}" style="border:0;background:transparent;cursor:pointer;font-size:10px;padding:0">${s.is_active?'✕':'↻'}</button></span>`).join('') : '<small class="small-note" style="color:#92798a">No sections yet</small>';
+    
+    return `<div class="class-item" style="display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:10px;background:#fff;border:1px solid #ebd4de;border-radius:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <b style="font-size:13px;color:#4a1e35">${escapeHtml(c.name)}</b>
+          <span class="pill ${c.is_active?'green':'gold'}" style="margin-left:6px;font-size:9px">${c.is_active?'Active':'Archived'}</span>
+        </div>
+        <div class="row" style="gap:4px">
+          <button class="btn light" style="padding:4px 8px;font-size:10px" type="button" data-quick-add-sec="${escapeHtml(c.id)}">+ Section</button>
+          <button class="btn light" style="padding:4px 8px;font-size:10px" type="button" data-rename-class="${escapeHtml(c.id)}">Rename</button>
+          <button class="btn ${c.is_active?'danger':'soft'}" style="padding:4px 8px;font-size:10px" type="button" data-archive-class="${escapeHtml(c.id)}">${c.is_active?'Archive':'Restore'}</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:4px;border-top:1px dashed #f1e2ea">
+        <span style="font-size:10px;font-weight:700;color:#784e64">Sections:</span>
+        ${secBadges}
+      </div>
+    </div>`;
+  }
+
+  let html='';
+  if(primaryClasses.length){
+    html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">🏫</span> PRIMARY SCHOOL (CLASSES 1 TO 5)</div>${primaryClasses.map(renderClassCard).join('')}</div>`;
+  }
+  if(secondaryClasses.length){
+    html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">🏫</span> SECONDARY SCHOOL (CLASSES 6 TO 10)</div>${secondaryClasses.map(renderClassCard).join('')}</div>`;
+  }
+  if(collegeStreams.length){
+    html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">🎓</span> UNIVERSITY / COLLEGE STREAMS</div>${collegeStreams.map(renderClassCard).join('')}</div>`;
+  }
+  if(customClasses.length){
+    html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:6px;margin:8px 0;font:800 12px Manrope;color:#5a233c"><span style="font-size:14px">📁</span> OTHER CLASSES</div>${customClasses.map(renderClassCard).join('')}</div>`;
+  }
+  if(!html) html='<div class="empty">No classes yet. Add the school’s first class.</div>';
+  
+  $('classList').innerHTML = html;
+  
+  // Bind actions
+  $('classList').querySelectorAll('[data-rename-class]').forEach(b=>b.addEventListener('click',()=>renameClass(b.dataset.renameClass)));
+  $('classList').querySelectorAll('[data-archive-class]').forEach(b=>b.addEventListener('click',()=>toggleClass(b.dataset.archiveClass)));
+  $('classList').querySelectorAll('[data-quick-add-sec]').forEach(b=>b.addEventListener('click',()=>{
+    $('sectionClassChoice').value = b.dataset.quickAddSec;
+    renderSectionList();
+    $('newSectionName')?.focus();
+  }));
+  $('classList').querySelectorAll('[data-rename-section]').forEach(b=>b.addEventListener('click',()=>renameSectionDirect(b.dataset.renameSection)));
+  $('classList').querySelectorAll('[data-toggle-section]').forEach(b=>b.addEventListener('click',()=>toggleSectionDirect(b.dataset.toggleSection)));
+  
+  await renderSectionList();
+}
+async function renameSectionDirect(secId){
+  const s = (window.allSectionRows||[]).find(x=>x.id===secId);
+  if(!s)return;
+  const name=prompt('Edit section name:',s.name);
+  if(name===null)return;
+  if(!name.trim())return toast('Section name cannot be empty.','error');
+  try{
+    const {error}=await supabaseClient.from('sections').update({name:name.trim()}).eq('id',s.id);
+    if(error)throw error;
+    toast('Section renamed.','success');
+    const schoolId=currentSchool?.id||currentProfile?.school_id;
+    if(schoolId)await fetchClasses(schoolId);
+  }catch(err){toast(friendlyError(err),'error');}
+}
+async function toggleSectionDirect(secId){
+  const s = (window.allSectionRows||[]).find(x=>x.id===secId);
+  if(!s)return;
+  try{
+    const {error}=await supabaseClient.from('sections').update({is_active:!s.is_active}).eq('id',s.id);
+    if(error)throw error;
+    toast(s.is_active?'Section archived.':'Section restored.','success');
+    const schoolId=currentSchool?.id||currentProfile?.school_id;
+    if(schoolId)await fetchClasses(schoolId);
+  }catch(err){toast(friendlyError(err),'error');}
+}
+async function addClass(){
+  const name=prompt('Enter the class name (e.g. Class 5, Class 10, or Grade 8):');
+  if(name===null)return;
+  const clean=name.trim();
+  if(!clean){toast('Class name is required.','error');return;}
+  const schoolId=currentSchool?.id||currentProfile?.school_id;
+  try{
+    const {error}=await supabaseClient.from('classes').insert({school_id:schoolId,name:clean,sort_order:classRows.length+1,is_active:true});
+    if(error)throw error;
+    toast('Class created.','success');
+    await fetchClasses(schoolId);
+  }catch(e){toast(friendlyError(e),'error');}
+}
+async function renameClass(id){
+  const item=classRows.find(c=>c.id===id);
+  if(!item)return;
+  const name=prompt('Edit class name:',item.name);
+  if(name===null)return;
+  if(!name.trim())return toast('Class name cannot be empty.','error');
+  try{
+    const {error}=await supabaseClient.from('classes').update({name:name.trim()}).eq('id',id);
+    if(error)throw error;
+    toast('Class name updated.','success');
+    await fetchClasses(item.school_id);
+  }catch(e){toast(friendlyError(e),'error');}
+}
+async function toggleClass(id){
+  const item=classRows.find(c=>c.id===id);
+  if(!item)return;
+  try{
+    const {error}=await supabaseClient.from('classes').update({is_active:!item.is_active}).eq('id',id);
+    if(error)throw error;
+    toast(item.is_active?'Class archived.':'Class restored.','success');
+    await fetchClasses(item.school_id);
+  }catch(e){toast(friendlyError(e),'error');}
+}
+async function addSection(e){
+  e.preventDefault();
+  const classId=$('sectionClassChoice').value,name=$('newSectionName').value.trim();
+  if(!classId)return toast('Add or select a class first.','error');
+  try{
+    const rpcRes=await supabaseClient.rpc('noor_create_section',{p_class_id:classId,p_name:name});
+    if(rpcRes.error){
+      const {error}=await supabaseClient.from('sections').insert({class_id:classId,name,is_active:true});
+      if(error)throw error;
+    }
+    $('newSectionName').value='';
+    toast('Section added.','success');
+    const schoolId=currentSchool?.id||currentProfile?.school_id;
+    if(schoolId)await fetchClasses(schoolId);
+  }catch(err){toast(friendlyError(err),'error');}
+}
+async function renderSectionList(){
+  const target=$('sectionList');
+  if(!target)return;
+  const classId=$('sectionClassChoice').value;
+  if(!classId){target.innerHTML='<div class="empty">Select or add a class first.</div>';return;}
+  const {data,error}=await supabaseClient.from('sections').select('id,class_id,name,is_active').eq('class_id',classId).order('name');
+  if(error){target.innerHTML=`<div class="notice error">${escapeHtml(error.message)}</div>`;return;}
+  sectionRows=data||[];
+  target.innerHTML=sectionRows.length?sectionRows.map(s=>`<div class="class-item"><div><b>${escapeHtml(s.name)}</b><small>${s.is_active?'Shown on registration form':'Archived from new registrations'}</small></div><div class="row" style="gap:6px"><button class="btn light" style="padding:7px 9px" type="button" data-rename-section="${escapeHtml(s.id)}">Rename</button><button class="btn ${s.is_active?'danger':'soft'}" style="padding:7px 9px" type="button" data-toggle-section="${escapeHtml(s.id)}">${s.is_active?'Archive':'Restore'}</button></div></div>`).join(''):'<div class="empty">No sections for this class yet. Add one above.</div>';
+  target.querySelectorAll('[data-rename-section]').forEach(b=>b.addEventListener('click',()=>renameSectionDirect(b.dataset.renameSection)));
+  target.querySelectorAll('[data-toggle-section]').forEach(b=>b.addEventListener('click',()=>toggleSectionDirect(b.dataset.toggleSection)));
+}
 async function renderCreatorOverview(){
  const el=$('view-overview');
  el.innerHTML='<div class="welcome"><div class="eyebrow">NOOR · Platform Creator</div><h2>Master Control Centre</h2><p>Search all schools and people, then open the relevant school record to review its activity and student progress.</p></div><div class="stats" id="creatorStats"></div><div class="panel"><div class="panelhead"><div><h3>Find a school or person</h3><p>Read-only platform overview. School notices and daily operations belong in the school leadership workspace.</p></div><button class="btn light" type="button" onclick="openView(\'schools\')">All schools →</button></div><div class="toolbar"><input id="creatorSearch" class="field-inline" style="width:100%" placeholder="Search school, student, teacher, principal, manager, roll number…"><button class="btn soft" id="creatorSearchBtn" type="button">Search</button></div><div class="row" id="creatorRoleFilters" style="gap:7px;flex-wrap:wrap;margin:10px 0 16px"><button class="btn soft" data-rolefilter="all">All</button><button class="btn light" data-rolefilter="school">Schools</button><button class="btn light" data-rolefilter="student">Students</button><button class="btn light" data-rolefilter="teacher">Teachers</button><button class="btn light" data-rolefilter="principal">Principals</button><button class="btn light" data-rolefilter="manager">Managers</button><button class="btn light" data-rolefilter="owner">School owners</button></div><div id="creatorResults" class="class-list"><div class="empty">Loading platform data…</div></div></div>';

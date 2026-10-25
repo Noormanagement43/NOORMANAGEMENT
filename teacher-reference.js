@@ -270,10 +270,18 @@ async function uploadPhoto(e){
 async function showPeriodEditor(p){
  const app=get(),db=app.db;
  try{
-  const r=await db.from('teacher_assignments').select('class_id,section_id,subject_id').eq('school_id',app.schoolId).eq('teacher_id',app.user.id).eq('is_active',true).limit(200);
+  let r=await db.from('teacher_assignments').select('class_id,section_id,subject_id').eq('school_id',app.schoolId).eq('teacher_id',app.user.id).eq('is_active',true).limit(200);
   if(r.error)throw r.error;
-  if(!r.data?.length)return notify('Principal must assign your classes and sections first.','error');
-  const ids=[...new Set(r.data.map(x=>x.class_id))];
+  let assigns=r.data||[];
+  let ids=[...new Set(assigns.map(x=>x.class_id))];
+  if(!ids.length){
+    const allC=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).limit(100);
+    if(allC.data?.length){
+      ids=allC.data.map(c=>c.id);
+      assigns=allC.data.map(c=>({class_id:c.id,section_id:null,subject_id:null}));
+    }
+  }
+  if(!ids.length)return notify('Please create at least one school class first.','error');
   const [cs,ss,subs]=await Promise.all([
     db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).in('id',ids),
     db.from('sections').select('id,class_id,name').eq('is_active',true).in('class_id',ids),
@@ -281,7 +289,7 @@ async function showPeriodEditor(p){
   ]);
   if(cs.error||ss.error||subs.error)throw cs.error||ss.error||subs.error;
   const cm=new Map((cs.data||[]).map(x=>[x.id,x])), sections=ss.data||[],subj=subs.data||[],options=[];
-  for(const item of r.data){
+  for(const item of assigns){
     const c=cm.get(item.class_id);if(!c)continue;
     const selected=item.section_id?sections.filter(x=>x.id===item.section_id):sections.filter(x=>x.class_id===item.class_id);
     const subject=subj.find(x=>x.id===item.subject_id);
@@ -428,7 +436,7 @@ function initTeacherQuotes(){
  },150);
 }
 
-window.NOOR_TEACHER_REFERENCE={render,renderCalendar,openPaper,openCalendar,getCurrent:()=>current};
+window.NOOR_TEACHER_REFERENCE={render,renderCalendar,openPaper,openCalendar,showPeriodEditor,editTimetable:()=>showPeriodEditor(null),getCurrent:()=>current};
 const watcher=new MutationObserver(()=>{
  const w=document.getElementById('workspace');
  if(!w||w.classList.contains('hidden')||!isTeacher()){w?.classList.remove('noor-teacher-activated','noor-teacher-handset');if(channel&&get().db){get().db.removeChannel(channel);channel=null;}return;}

@@ -11,6 +11,7 @@ const FEATURE_TILES=[
  ['✓ Online / Offline Attendance','attendance','Mark & sync roster'],
  ['◈ Student Learning Gap Detector','gaps','Actual marked results'],
  ['◷ Smart Period Companion','periods','Lessons & homework'],
+ ['✎ Edit Timetable','edit_timetable','Request or update periods'],
  ['✦ Rubric Grading Assistant','rubric','Editable marking criteria'],
  ['▤ Smart Syllabus Tracker','syllabus','Chapter progress'],
  ['▦ Assignment Deadline Planner','deadlines','Review and reschedule'],
@@ -22,6 +23,7 @@ const tileMarkup=()=>'<div class="nti-quick-grid">'+FEATURE_TILES.map(([name,key
 function handleTileClicks(slot){
  slot.querySelectorAll('[data-nti-quick]').forEach(btn=>btn.onclick=()=>{
  const key=btn.dataset.ntiQuick;
+ if(key==='edit_timetable'){window.NOOR_TEACHER_REFERENCE?.editTimetable?.()||document.getElementById('ntEditTimetable')?.click();return}
  if(key==='attendance'){document.querySelector('.nt-attendance')?.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(key==='rubric'){A().openView?.('paper-generator');return}
  if(key==='diary'){const first=document.querySelector('#ntiPeriods [data-nti-log]');if(first){first.click();return}A().openView?.('daily-report');return}
@@ -59,6 +61,7 @@ async function mount(ctx){
 
  slot.innerHTML='<div class="nti-title"><div><span class="nti-eyebrow">YOUR TEACHING WORKSPACE</span><h2>✦ AI Teacher Command Centre</h2><p>Live records, clear priorities — no made-up numbers.</p></div><button type="button" class="nti-refresh" id="ntiRefresh">↻ Refresh</button></div>'+tileMarkup()+'<div class="nti-loading">Checking your assigned classes, periods and assignments…</div>';
  $('#ntiRefresh',slot).onclick=()=>mount(ctx);handleTileClicks(slot);
+ $('#ntiEditTimetableBtn',slot)?.addEventListener('click',()=>{window.NOOR_TEACHER_REFERENCE?.editTimetable?.()||document.getElementById('ntEditTimetable')?.click();});
  if(!assignments.length){slot.innerHTML+='<div class="nti-banner">Your Principal has not assigned any class yet. Class-specific analytics will appear after assignment.</div>'}
  const classIds=[...new Set(assignments.map(a=>a.class_id))],day=today();
  const schoolFilter=()=>db.from('noor_class_assignments').select('id,title,class_id,section_id,due_at,max_marks,status').eq('school_id',school).eq('teacher_id',user).eq('status','published').order('due_at',{ascending:true}).limit(120);
@@ -138,7 +141,7 @@ async function mount(ctx){
  '<p class="nti-help">Based on aggregated marked scores. This does not label individual students or diagnose learning ability.</p></section>'+
  '<section class="nti-pane" id="ntiSyllabus"><div class="nti-subhead"><h3>Smart Syllabus Tracker</h3><button type="button" data-nti-route="daily-report">Teaching report ↗</button></div>'+
  (progress.expected===null?'<p class="nti-help">Set the current academic-year dates to enable pacing comparisons.</p>':'<p class="nti-help">Indicative time elapsed this academic year: '+progress.expected+'%. This is not a mandatory chapter deadline.</p>')+pacing+'</section>'+
- '<section class="nti-pane" id="ntiPeriods"><h3>Smart Period Companion</h3><p class="nti-help">Record the topic, homework and exit ticket after teaching. Visible to authorized Principal staff.</p>'+lessonMarkup+'</section></div>'+
+ '<section class="nti-pane" id="ntiPeriods"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px"><div><h3 style="margin:0">◷ Smart Period Companion & Teaching Periods</h3><p class="nti-help" style="margin:2px 0 0">Live teaching schedule, periods, exit tickets & timetable requests.</p></div><button type="button" class="nti-action" id="ntiEditTimetableBtn" style="padding:6px 14px;font-weight:750;background:#5a233c;color:#fff;border-radius:10px;cursor:pointer">✎ Edit Timetable</button></div>'+lessonMarkup+'</section></div>'+
  '<section class="nti-pane nti-tools"><div class="nti-subhead"><h3>Smart Teaching Tools</h3><span class="nti-pill">Connected to NOOR</span></div><div class="nti-actions">'+
  action('Smart Notes','teaching','✦')+action('Generate paper','paper-generator','▤')+action('Weekly lesson plan','weekly-plan','◷')+
  action('Daily teaching diary','daily-report','✎')+action('Review assignments','paper-generator','✓')+

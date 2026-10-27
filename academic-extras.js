@@ -166,16 +166,43 @@
  }
  async function loadNotifications(){
   const box=$('myNotificationsRows');if(!box)return;
-  let q=db().from('notification_events').select('id,event_type,subject,status,created_at,school_id').eq('recipient_profile_id',me().id).order('created_at',{ascending:false}).limit(100);
-  if(school())q=q.eq('school_id',school());
-  const r=await q;if(r.error){box.innerHTML=notice(error(r.error),'error');return;}
-  box.innerHTML=table(['Date','Notice','Status'],(r.data||[]).map(x=>'<tr><td>'+E(new Date(x.created_at).toLocaleString())+'</td><td><b>'+E(x.subject||x.event_type||'Notification')+'</b></td><td><span class="acad-status">'+E(x.status||'queued')+'</span></td></tr>'));
+  if(!school()||!me()?.id){box.innerHTML=empty('Sign in to your school to see notices.');return;}
+  const since=new Date().toISOString();
+  const [events,published]=await Promise.all([
+   db().from('notification_events').select('id,event_type,subject,status,created_at,school_id')
+    .eq('recipient_profile_id',me().id).eq('school_id',school()).order('created_at',{ascending:false}).limit(100),
+   db().from('school_notices').select('id,title,body,starts_at,ends_at,created_at,target_roles')
+    .eq('school_id',school()).eq('is_active',true).contains('target_roles',[role()]).order('created_at',{ascending:false}).limit(100)
+  ]);
+  const errorMessage=[events.error,published.error].filter(Boolean).map(x=>x.message).join(' · ');
+  const noticeRows=(published.data||[]).filter(n=>(!n.starts_at||n.starts_at<=since)&&(!n.ends_at||n.ends_at>since)).map(n=>({
+   time:n.starts_at||n.created_at,subject:n.title||'School notice',body:n.body||'',status:'Published',kind:'notice'
+  }));
+  const eventRows=(events.data||[]).map(n=>({time:n.created_at,subject:n.subject||n.event_type||'Notification',body:'',status:n.status||'queued',kind:'event'}));
+  const combined=noticeRows.concat(eventRows).sort((a,b)=>String(b.time||'').localeCompare(String(a.time||''))).slice(0,100);
+  box.innerHTML=(errorMessage?notice(errorMessage,'error'):'')+
+   (combined.length?table(['Date','Message','Status'],combined.map(x=>'<tr><td>'+E(new Date(x.time).toLocaleString())+'</td><td><b>'+E(x.subject)+'</b>'+(x.body?'<div class="acad-muted">'+E(x.body.slice(0,240))+'</div>':'')+'</td><td><span class="acad-status">'+E(x.status)+'</span></td></tr>')):empty('No published notices or personal notifications yet.'));
  }
+ // The notification panel always reloads persisted school notices. Realtime is an enhancement,
+ // never the sole means of delivery.
+ let notificationChannel=null,notificationSchool='';
+ function watchNotices(){
+   const id=school();
+   if(!id||!db()?.channel||!['student','teacher','principal','owner','manager'].includes(role()))return;
+   if(notificationChannel&&notificationSchool===id)return;
+   if(notificationChannel){db().removeChannel(notificationChannel);notificationChannel=null;}
+   notificationSchool=id;
+   notificationChannel=db().channel('noor-visible-school-notices-'+id).on('postgres_changes',
+     {event:'*',schema:'public',table:'school_notices',filter:'school_id=eq.'+id},()=>{
+       if(document.getElementById('view-notifications')?.classList.contains('active'))loadNotifications();
+     }).subscribe();
+ }
+
  const original=window.NOOR_ACADEMIC?.open;
  if(!original)return;
  window.NOOR_ACADEMIC.open=async id=>{
   if(id==='assessments'){try{await loadContext();if(role()==='student')return await renderStudentAssessmentResults();return renderAssessment();}catch(e){const el=$('view-assessments');if(el)el.innerHTML=shell('Assessments','Could not load assessments',error(e),notice(error(e),'error'));return true;}}
-  if(id==='notifications'){return await renderNotifications();}
+  if(id==='notifications'){await renderNotifications();watchNotices();return true;}
   return original(id);
  };
 })();

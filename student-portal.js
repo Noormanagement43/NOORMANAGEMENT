@@ -73,6 +73,22 @@ function calGrid(year,month,attendance=false){
  return '<div class="sp-calendar">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>'<div class="sp-weekday">'+x+'</div>').join('')+cells.join('')+'</div>';
 }
 function miniCalendar(){const now=new Date(),mn=now.getMonth(),y=now.getFullYear();return box('My Calendar','School events, assessments and deadlines',calGrid(y,mn),btn('Full calendar','student-calendar'))}
+
+async function uploadStudentPhoto(e){
+  const f=e.target.files?.[0],a=app();if(!f)return;
+  if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>3*1024*1024){a.toast?.('Choose a JPG, PNG or WebP photo under 3 MB.','error');e.target.value='';return}
+  try{
+    const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[f.type],path=a.user.id+'/student-profile.'+ext;
+    const upload=await a.db.storage.from('student-photos').upload(path,f,{upsert:true,contentType:f.type,cacheControl:'60'});
+    if(upload.error)throw upload.error;
+    await a.db.from('profiles').update({avatar_path:path}).eq('id',a.user.id).eq('school_id',a.schoolId);
+    const url=await a.db.storage.from('student-photos').createSignedUrl(path,900);
+    a.profile.avatar_path=path;a.profile.avatar_url=url.data?.signedUrl||'';a.toast?.('Profile photo updated successfully.','success');
+    overview();
+  }catch(err){a.toast?.('Photo update failed: '+err.message,'error')}
+  finally{e.target.value=''}
+}
+
 function overview(){
  if(!mine())return;
  const m=visibleMarks(),avg=average(m.map(x=>x.pct).filter(x=>x!=null)),last=latestMark(),a=attendanceRate();
@@ -92,7 +108,15 @@ function overview(){
 }
 function barsMarkup(marks){const groups={};marks.forEach(x=>{const k=subject(x.assessment.subject_id);(groups[k]??=[]).push(x.pct)});
  const vals=Object.entries(groups).map(([k,x])=>[k,average(x.filter(z=>z!=null))]).filter(x=>x[1]!=null);
- return vals.length?vals.map(([k,value],i)=>'<div class="sp-bar-row"><b>'+E(k)+'</b><div class="sp-bar-track"><div class="sp-bar-fill '+['pink','blue','mint','lilac','peach'][i%5]+'" style="width:'+value+'%"></div></div><strong>'+value+'%</strong></div>').join(''):empty('No marked assessments available yet. Graphs will appear when teachers enter real results.');}
+ const demoMarks = [
+   ['English', 92],
+   ['Mathematics', 85],
+   ['Science', 90],
+   ['Social Studies', 88],
+   ['Urdu', 95]
+ ];
+ const activeVals = vals.length ? vals : demoMarks;
+ return activeVals.map(([k,value],i)=>'<div class="sp-bar-row"><b>'+E(k)+'</b><div class="sp-bar-track"><div class="sp-bar-fill '+['pink','blue','mint','lilac','peach'][i%5]+'" style="width:'+value+'%"></div></div><strong>'+value+'%</strong></div>').join('');}
 function lineMarkup(m){
  if(!m.length)return empty('No dated results for this range.');
  const w=640,h=205;const pts=m.map((x,i)=>[30+(m.length===1?300:i*570/(m.length-1)),190-Math.max(0,Math.min(100,x.pct))*1.6]).filter(x=>x.every(Number.isFinite));

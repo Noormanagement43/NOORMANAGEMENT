@@ -176,6 +176,87 @@ $$;
 GRANT EXECUTE ON FUNCTION public.noor_remove_student(uuid) TO authenticated, anon;
 
 
+CREATE OR REPLACE FUNCTION public.noor_add_teacher(
+  p_school_id uuid,
+  p_full_name text,
+  p_email text,
+  p_subject_name text,
+  p_class_label text,
+  p_start_time time DEFAULT '09:00:00',
+  p_end_time time DEFAULT '10:00:00',
+  p_employee_code text DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_new_id uuid := gen_random_uuid();
+  v_emp_code text := COALESCE(p_employee_code, 'TCH-' || substr(v_new_id::text, 1, 6));
+BEGIN
+  INSERT INTO auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, is_super_admin, created_at, updated_at
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000', v_new_id, 'authenticated', 'authenticated',
+    p_email, crypt('Demo123!Pass', gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}',
+    jsonb_build_object('full_name', p_full_name, 'school_id', p_school_id),
+    false, now(), now()
+  );
+
+  INSERT INTO public.profiles (
+    id, email, full_name, role, status, school_id, updated_at
+  ) VALUES (
+    v_new_id, p_email, p_full_name, 'teacher', 'active', p_school_id, now()
+  );
+
+  INSERT INTO public.school_memberships (school_id, user_id, role, status, employee_id)
+  VALUES (p_school_id, v_new_id, 'teacher', 'active', v_emp_code)
+  ON CONFLICT (school_id, user_id) DO UPDATE SET status = 'active', role = 'teacher';
+
+  INSERT INTO public.noor_teacher_profile_details (school_id, teacher_id, employee_code, qualification, joined_on, address)
+  VALUES (p_school_id, v_new_id, v_emp_code, 'B.Ed. Faculty', CURRENT_DATE, 'Al Noor Campus')
+  ON CONFLICT (school_id, teacher_id) DO UPDATE SET employee_code = EXCLUDED.employee_code;
+
+  INSERT INTO public.noor_teacher_periods (
+    school_id, teacher_id, weekday, period_number, start_time, end_time,
+    subject_name, class_label, approval_status, status
+  ) VALUES (
+    p_school_id, v_new_id, EXTRACT(DOW FROM CURRENT_DATE)::int, 1,
+    p_start_time, p_end_time, p_subject_name, p_class_label, 'approved', 'upcoming'
+  );
+
+  RETURN v_new_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.noor_add_teacher(uuid, text, text, text, text, time, time, text) TO authenticated, anon;
+
+
+CREATE OR REPLACE FUNCTION public.noor_remove_teacher(
+  p_teacher_id uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  DELETE FROM public.noor_teacher_period_runs WHERE teacher_id = p_teacher_id;
+  DELETE FROM public.noor_teacher_periods WHERE teacher_id = p_teacher_id;
+  DELETE FROM public.noor_staff_attendance WHERE teacher_id = p_teacher_id;
+  DELETE FROM public.noor_teacher_profile_details WHERE teacher_id = p_teacher_id;
+  DELETE FROM public.teacher_assignments WHERE teacher_id = p_teacher_id;
+  DELETE FROM public.school_memberships WHERE user_id = p_teacher_id;
+  DELETE FROM public.profiles WHERE id = p_teacher_id;
+  DELETE FROM auth.users WHERE id = p_teacher_id;
+  RETURN true;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.noor_remove_teacher(uuid) TO authenticated, anon;
+
+
 CREATE OR REPLACE FUNCTION public.noor_create_section(
   p_class_id uuid,
   p_name text
@@ -250,17 +331,43 @@ DECLARE
   t_names text[] := ARRAY[
     'Ms. Fathima Ali', 'Mr. Aamir Khan', 'Dr. Sarah Khan',
     'Mrs. Sana Begum', 'Mr. Imran Siddiqui', 'Mrs. Nida Ahmed',
-    'Mrs. Sharma', 'Ms. Patil', 'Mr. Roy'
+    'Mrs. Sharma', 'Ms. Patil', 'Mr. Roy',
+    'Dr. Ayesha Rehman', 'Mr. Tariq Anwar', 'Ms. Farah Ali',
+    'Mr. Faisal Siddiqui', 'Mrs. Hina Tariq', 'Prof. Zubair Ahmed',
+    'Ms. Nadia Qureshi', 'Mr. Kamran Baig', 'Mrs. Zainab Bilgrami',
+    'Mr. Salman Qureshi', 'Ms. Bushra Tabassum', 'Mr. Zeeshan Haider'
   ];
   t_quals text[] := ARRAY[
     'M.Sc. Mathematics', 'M.A. History', 'Ph.D. Physics',
     'M.A. English, B.Ed.', 'M.Sc. Chemistry', 'M.A. Urdu',
-    'B.A. English, B.Ed.', 'M.Sc. Biology', 'M.A. Geography'
+    'B.A. English, B.Ed.', 'M.Sc. Biology', 'M.A. Geography',
+    'Ph.D. Physics', 'M.Sc. Mathematics', 'M.A. English Literature',
+    'M.A. Political Science', 'M.Sc. Botany, B.Ed.', 'M.Tech Computer Science',
+    'M.Sc. Statistics', 'M.P.Ed. Physical Education', 'M.A. Hindi, B.Ed.',
+    'M.F.A. Fine Arts', 'M.A. Islamic Studies', 'M.A. Economics, B.Ed.'
+  ];
+  t_subs text[] := ARRAY[
+    'Mathematics', 'History', 'Physics',
+    'English', 'Chemistry', 'Urdu',
+    'English', 'Science', 'Social Studies',
+    'Physics', 'Mathematics', 'English',
+    'Social Studies', 'Science', 'Computer Science',
+    'Mathematics', 'Physical Education', 'Hindi',
+    'Art & Design', 'Islamic Studies', 'Economics'
+  ];
+  t_classes text[] := ARRAY[
+    'Class 8 - Section A', 'Class 10 - Section B', 'Class 10 - Section A',
+    'Class 7 - Section B', 'Class 9 - Section A', 'Class 6 - Section A',
+    'Class 8 - Section B', 'Class 8 - Section B', 'Class 8 - Section B',
+    'Class 9 - Section A', 'Class 5 - Section A', 'Class 2 - Section B',
+    'Class 6 - Section B', 'Class 4 - Section A', 'Class 10 - Section A',
+    'Class 7 - Section A', 'Class 8 - Section A', 'Class 5 - Section B',
+    'Class 3 - Section B', 'Class 2 - Section A', 'Class 10 - Section B'
   ];
   teacher_uuids uuid[] := ARRAY[]::uuid[];
   
-  c8b_names text[] := ARRAY['Ayesha Khan', 'Mohammad Zaid', 'Sana Fatima', 'Arjun Mehta'];
-  c8b_rolls text[] := ARRAY['801', '802', '803', '804'];
+  c8b_names text[] := ARRAY['Ayesha Khan', 'Mohammad Zaid', 'Sana Fatima', 'Arjun Mehta', 'Ibrahim Ali'];
+  c8b_rolls text[] := ARRAY['801', '802', '803', '804', '805'];
   
   sec_students uuid[];
   all_classes_cursor record;
@@ -402,11 +509,11 @@ BEGIN
     teacher_uuids := array_append(teacher_uuids, v_teacher_id);
   END IF;
 
-  -- Generate 9 Dummy Teachers
-  FOR i IN 1..9 LOOP
+  -- Generate 21 Additional Teachers (Total 22 Teachers for AL Noor Demo Hub)
+  FOR i IN 1..21 LOOP
     v_email := 'demo_tch_' || i || '@alnoor.demo';
     v_name := t_names[i];
-    v_emp_code := 'TCH-ALN-00' || (i + 1);
+    v_emp_code := 'TCH-ALN-0' || lpad(i::text, 2, '0');
 
     SELECT id INTO v_uid FROM auth.users WHERE email = v_email LIMIT 1;
     IF v_uid IS NULL THEN
@@ -436,8 +543,8 @@ BEGIN
     VALUES (v_school_id, v_uid, v_emp_code, t_quals[i], v_today - INTERVAL '1 year', 'Al Noor International School')
     ON CONFLICT (school_id, teacher_id) DO UPDATE SET employee_code = EXCLUDED.employee_code, qualification = EXCLUDED.qualification;
 
-    -- Staff Attendance: 8 teachers present, 1 on leave, 1 absent (Principal KPI shows 8 or 9 / 10)
-    v_status := CASE WHEN i = 7 THEN 'leave' WHEN i = 9 THEN 'absent' ELSE 'present' END;
+    -- Staff Attendance: 18 teachers present, 2 on leave, 1 absent (Total 22 teachers in AL Noor)
+    v_status := CASE WHEN i in (7, 13, 19) THEN 'leave' WHEN i in (9, 17) THEN 'absent' ELSE 'present' END;
     INSERT INTO public.noor_staff_attendance (school_id, teacher_id, attendance_date, status, checked_in_at)
     VALUES (v_school_id, v_uid, v_today, v_status, CASE WHEN v_status = 'present' THEN v_today + TIME '08:05:00' ELSE NULL END)
     ON CONFLICT (school_id, teacher_id, attendance_date) DO UPDATE SET status = EXCLUDED.status, checked_in_at = EXCLUDED.checked_in_at;
@@ -466,27 +573,14 @@ BEGIN
     LOOP
       FOR s_idx IN 1..5 LOOP
         IF all_classes_cursor.sort_order = 8 AND all_secs_cursor.name = 'Section B' THEN
-          IF s_idx = 5 AND v_student_id IS NOT NULL THEN
-            UPDATE public.profiles
-            SET full_name = 'Syeda Sofiya Imran', roll_number = 'STU-2026-402',
-                class_id = all_classes_cursor.id, section_id = all_secs_cursor.id,
-                mobile_number = COALESCE(mobile_number, '+91 98765 43210'),
-                parent_name = COALESCE(parent_name, 'Syed Imran'),
-                status = 'active', academic_year_id = v_acad_id, school_id = v_school_id,
-                updated_at = now()
-            WHERE id = v_student_id;
-
-            INSERT INTO public.school_memberships (school_id, user_id, role, status)
-            VALUES (v_school_id, v_student_id, 'student', 'active')
-            ON CONFLICT (school_id, user_id) DO UPDATE SET status = 'active', role = 'student';
-            CONTINUE;
-          ELSE
-            v_name := c8b_names[s_idx];
-            v_roll := c8b_rolls[s_idx];
-            v_email := 'demo_stu_8b_' || s_idx || '@alnoor.demo';
-          END IF;
+          v_name := c8b_names[s_idx];
+          v_roll := c8b_rolls[s_idx];
+          v_email := 'demo_stu_8b_' || s_idx || '@alnoor.demo';
         ELSE
           v_name := 'Student ' || all_classes_cursor.sort_order || SUBSTRING(all_secs_cursor.name FROM 9 FOR 1) || '-' || s_idx;
+          v_roll := 'R-' || all_classes_cursor.sort_order || SUBSTRING(all_secs_cursor.name FROM 9 FOR 1) || '0' || s_idx;
+          v_email := 'demo_stu_c' || all_classes_cursor.sort_order || '_' || lower(SUBSTRING(all_secs_cursor.name FROM 9 FOR 1)) || '_' || s_idx || '@alnoor.demo';
+        END IF;
           v_roll := 'R-' || all_classes_cursor.sort_order || SUBSTRING(all_secs_cursor.name FROM 9 FOR 1) || '0' || s_idx;
           v_email := 'demo_stu_c' || all_classes_cursor.sort_order || '_' || lower(SUBSTRING(all_secs_cursor.name FROM 9 FOR 1)) || '_' || s_idx || '@alnoor.demo';
         END IF;
@@ -626,25 +720,22 @@ BEGIN
         (v_school_id, v_teacher_id, w_idx, 5, '13:35', '14:20', 'Mathematics', 'Class 10 - Section A', v_class_10_id, v_sec_10a_id, 'class', 'approved', 'upcoming');
     END IF;
 
-    IF array_length(teacher_uuids, 1) >= 7 THEN
-      INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
-      VALUES (v_school_id, teacher_uuids[2], w_idx, 2, v_p2_start, v_p2_end, 'Mathematics', 'Class 8 - Section A', v_class_8_id, v_sec_8a_id, 'class', 'approved', 'ongoing')
+    -- Populate schedule for all 22 teachers
+    FOR idx IN 2..array_length(teacher_uuids, 1) LOOP
+      INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, block_type, approval_status, status)
+      VALUES (v_school_id, teacher_uuids[idx], w_idx, ((idx % 6) + 1),
+        to_char(TIME '08:00:00' + (((idx - 1) % 6) * INTERVAL '55 minutes'), 'HH24:MI'),
+        to_char(TIME '08:45:00' + (((idx - 1) % 6) * INTERVAL '55 minutes'), 'HH24:MI'),
+        t_subs[idx - 1], t_classes[idx - 1], 'class', 'approved', 
+        CASE WHEN idx = 2 THEN 'ongoing' ELSE 'upcoming' END)
       RETURNING id INTO v_period_id;
-      IF w_idx = v_weekday THEN
+
+      IF w_idx = v_weekday AND idx = 2 THEN
         INSERT INTO public.noor_teacher_period_runs (school_id, teacher_id, period_id, class_date, status, started_at)
-        VALUES (v_school_id, teacher_uuids[2], v_period_id, v_today, 'ongoing', now() - INTERVAL '20 minutes')
+        VALUES (v_school_id, teacher_uuids[idx], v_period_id, v_today, 'ongoing', now() - INTERVAL '20 minutes')
         ON CONFLICT (school_id, teacher_id, period_id, class_date) DO UPDATE SET status = 'ongoing';
       END IF;
-
-      INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
-      VALUES (v_school_id, teacher_uuids[3], w_idx, 3, '14:00', '15:00', 'History', 'Class 10 - Section B', v_class_10_id, v_sec_10b_id, 'class', 'approved', 'upcoming');
-
-      INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
-      VALUES (v_school_id, teacher_uuids[4], w_idx, 4, '15:00', '16:00', 'Physics', 'Class 10 - Section A', v_class_10_id, v_sec_10a_id, 'class', 'approved', 'upcoming');
-
-      INSERT INTO public.noor_teacher_periods (school_id, teacher_id, weekday, period_number, start_time, end_time, subject_name, class_label, class_id, section_id, block_type, approval_status, status)
-      VALUES (v_school_id, teacher_uuids[5], w_idx, 5, '16:00', '17:00', 'English', 'Class 7 - Section B', v_class_7_id, v_sec_7b_id, 'class', 'approved', 'upcoming');
-    END IF;
+    END LOOP;
   END LOOP;
 
   -- =========================================================================

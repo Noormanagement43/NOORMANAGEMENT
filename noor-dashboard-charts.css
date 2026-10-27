@@ -1,0 +1,42 @@
+/* Real metrics in screenshot-style chart cards. No placeholder percentages. */
+.sp-reference-dashboard .sp-ref-subject-bars{display:flex;align-items:end;justify-content:space-between;gap:9px;min-height:178px;padding-top:4px}
+.sp-reference-dashboard .sp-ref-subject-column{display:flex;align-items:center;flex-direction:column;justify-content:end;min-width:0;flex:1;min-height:177px;border:0;background:transparent;padding:3px 1px;cursor:pointer}
+.sp-reference-dashboard .sp-ref-subject-column>b{font-size:11px;color:#6e364f;margin-bottom:6px;font-weight:800}
+.sp-reference-dashboard .sp-ref-subject-track{height:116px;width:min(42px,85%);border-radius:9px 9px 3px 3px;background:#f8eef1;display:flex;align-items:end;overflow:hidden;box-shadow:inset 0 0 0 1px #f1e3e7}
+.sp-reference-dashboard .sp-ref-subject-fill{width:100%;display:block;min-height:1px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#f49dbc,#b83880)}
+.sp-reference-dashboard .sp-ref-subject-fill.c1{background:linear-gradient(180deg,#cdc3ff,#7967c4)}
+.sp-reference-dashboard .sp-ref-subject-fill.c2{background:linear-gradient(180deg,#a8e4c9,#36ae80)}
+.sp-reference-dashboard .sp-ref-subject-fill.c3{background:linear-gradient(180deg,#ffcd99,#e9a056)}
+.sp-reference-dashboard .sp-ref-subject-fill.c4{background:linear-gradient(180deg,#b1ece9,#49babd)}
+.sp-reference-dashboard .sp-ref-subject-column small{font-size:9px;color:#7c6372;line-height:1.15;margin-top:8px;min-height:25px;max-width:100%;overflow-wrap:anywhere}
+.sp-reference-dashboard .sp-ref-subject-column:hover .sp-ref-subject-track{outline:2px solid #e8cbd8;outline-offset:2px}
+#workspace.noor-teacher-activated .noor-t4 .nt-ref-analytics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:15px 0}
+#workspace.noor-teacher-activated .noor-t4 .nt-ref-analytics>.nt-card{min-width:0}
+#workspace.noor-teacher-activated .nt-ref-analytics .nt-card-head h2{font-size:16px}
+#workspace.noor-teacher-activated .nt-ref-subject-grid{display:flex;align-items:end;justify-content:space-around;gap:8px;min-height:140px}
+#workspace.noor-teacher-activated .nt-ref-subject{display:flex;align-items:center;justify-content:end;flex-direction:column;gap:5px;min-width:0;flex:1}
+#workspace.noor-teacher-activated .nt-ref-subject strong{font-size:11px;color:#733a5a}
+#workspace.noor-teacher-activated .nt-ref-subject-well{width:min(35px,92%);height:100px;background:#f8edf3;border-radius:8px 8px 3px 3px;overflow:hidden;display:flex;align-items:end}
+#workspace.noor-teacher-activated .nt-ref-subject-well span{display:block;width:100%;background:linear-gradient(180deg,#fbb9d4,#cf4893);border-radius:8px 8px 0 0}
+#workspace.noor-teacher-activated .nt-ref-subject-well span.c1{background:linear-gradient(180deg,#f8c99e,#ed9861)}
+#workspace.noor-teacher-activated .nt-ref-subject-well span.c2{background:linear-gradient(180deg,#c1b5f6,#8267c4)}
+#workspace.noor-teacher-activated .nt-ref-subject-well span.c3{background:linear-gradient(180deg,#9ce7d1,#3fb3a0)}
+#workspace.noor-teacher-activated .nt-ref-subject-well span.c4{background:linear-gradient(180deg,#f7d187,#dfa23b)}
+#workspace.noor-teacher-activated .nt-ref-subject small{font-size:9px;max-width:100%;text-align:center;color:#8a6f80;line-height:1.15;overflow-wrap:anywhere}
+#workspace.noor-teacher-activated .nt-ref-teaching-line{width:100%;height:auto;max-height:150px}
+#workspace.noor-teacher-activated .nt-ref-overview-ring{--period-pct:0;width:132px;height:132px;margin:10px auto 15px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#239667 calc(var(--period-pct)*1%),#fae4eb 0);position:relative}
+#workspace.noor-teacher-activated .nt-ref-overview-ring:before{content:"";position:absolute;inset:13px;background:#fff;border-radius:50%}
+#workspace.noor-teacher-activated .nt-ref-overview-ring>div{position:relative;text-align:center}
+#workspace.noor-teacher-activated .nt-ref-overview-ring strong{display:block;font:800 27px/1.1 Inter,sans-serif;color:#2d7256}
+#workspace.noor-teacher-activated .nt-ref-overview-ring small{font-size:9px;color:#836b7d}
+#workspace.noor-teacher-activated .nt-ref-counts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#workspace.noor-teacher-activated .nt-ref-counts span{font-size:10px;color:#70435f;background:#fff0f6;padding:6px 10px;border-radius:9px}
+@media(max-width:1200px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-ref-analytics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #workspace.noor-teacher-activated .nt-ref-analytics>.nt-card:last-child{grid-column:1/-1}
+}
+@media(max-width:760px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-ref-analytics{grid-template-columns:1fr}
+ #workspace.noor-teacher-activated .nt-ref-analytics>.nt-card:last-child{grid-column:auto}
+ .sp-reference-dashboard .sp-ref-subject-track{height:105px}
+}

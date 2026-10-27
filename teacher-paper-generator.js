@@ -125,7 +125,7 @@ async function generate(){
  try{
  const photos=Array.from($('#ppImages').files||[]),description=$('#ppDescription').value.trim(),topic=$('#ppTopic').value.trim();
   const context=paperContexts[Number($('#ppContext').value)];if(!context)throw Error('Choose your assigned school class and section.');
-  const subjectName=context.subject_name||$('#ppSubjectName').value.trim();if(!subjectName)throw Error('Enter the paper subject.');
+  const subjectName=$('#ppSubjectName').value.trim()||context.subject_name;if(!subjectName)throw Error('Enter the paper subject.');
  if(!photos.length&&!description&&!topic)throw Error('Choose a photo OR add a short description or topic.');
  if(photos.length>8)throw Error('Maximum eight images per request.');
  let total=0;for(const f of photos){if(!['image/jpeg','image/png','image/webp'].includes(f.type))throw Error('Use JPG, PNG or WebP photos.');if(f.size>4*1024*1024)throw Error('Each photo must be under 4 MB.');total+=f.size;}
@@ -147,11 +147,12 @@ async function generate(){
    }
  }catch(e){console.warn('Functions invoke error, checking fallback',e);}
  if(!o){
-   o=await generatePaperDirect({topic,subject:subjectName,type:$('#ppType').value,language:$('#ppLang').value,difficulty:$('#ppDifficulty').value,count:Number($('#ppCount').value),marksPerQ:Number($('#ppMarks').value)});
+   status('Secure AI is unavailable. Creating an editable worksheet template instead.');
+   o=await generatePaperDirect({topic,subject:subjectName,type:$('#ppType').value,count:Number($('#ppCount').value),marksPerQ:Number($('#ppMarks').value)});
  }
  if(!o||!Array.isArray(o.questions)||!o.questions.length)throw Error('No questions generated. Try a clearer photo or description.');
  output=o;draftId=null;display(o.title||TYPE[$('#ppType').value],paperText(o),answerText(o));$('#ppTotalMarks').value=String(Number($('#ppCount').value)*Number($('#ppMarks').value));
- status('✓ AI draft generated. Review and edit as needed.');a().toast?.('Paper generated.','success');
+ status(o.is_template?'Editable teacher template created. Write actual questions and a correct answer key before publishing.':'✓ AI draft generated. Review and edit as needed.');a().toast?.('Paper generated.','success');
  }catch(err){status('Unable to generate: '+(err?.message||'Please retry.'))}
  finally{waiting=false;$('#ppGenerate').disabled=false}
 }
@@ -160,7 +161,8 @@ async function publishAssignment(){
  const due_at=$('#ppDueAt').value,max_marks=Number($('#ppTotalMarks').value),btn=$('#ppPublish');
  if(!context)return status('Choose your assigned school class/section.');
  if(!($('#ppSubjectName').value.trim()||context.subject_name))return status('Enter a subject before publishing.');
- if(!body)return status('Generate and review the questions first.');
+ if(!body)return status('Write the assignment questions first. You can publish without AI.');
+ if(/\[Write question \d+ about /i.test(body))return status('Replace every template placeholder with a real question before publishing.');
  if(!due_at||!Number.isFinite(new Date(due_at).getTime())||new Date(due_at)<=new Date())return status('Select a future due date and time.');
  if(!Number.isInteger(max_marks)||max_marks<1||max_marks>1000)return status('Total marks must be between 1 and 1000.');
  if(!window.NOOR_ASSIGNMENT_PORTAL?.publish)return status('Assignment service unavailable; reload and try again.');
@@ -222,64 +224,15 @@ async function load(){
  box.onclick=ev=>{const b=ev.target.closest('[data-paper]');if(!b)return;const item=rows.find(x=>x.id===b.dataset.paper);if(!item)return;draftId=item.id;output=item.content||{};$('#ppType').value=item.paper_type;$('#ppLang').value=item.language;const i=paperContexts.findIndex(x=>x.class_id===item.class_id&&x.section_id===(item.section_id||null)&&x.subject_id===(item.subject_id||null));if(i>=0)$('#ppContext').value=String(i);$('#ppSubjectName').value=item.content?.teacher_subject_name||paperContexts[i]?.subject_name||'';$('#ppRubric').value=item.content?.teacher_rubric_text||'';display(item.title,item.content?.paper_text||paperText(item.content),item.content?.answer_key_text||answerText(item.content));status('Saved paper loaded for editing.');$('#ppQuestions').scrollIntoView({behavior:'smooth',block:'center'})};
 }
 
-async function generatePaperDirect({topic, subject, type, language, difficulty, count, marksPerQ}){
-  const geminiKey = window.NOOR_CONFIG?.GEMINI_API_KEY || localStorage.getItem('noor_gemini_api_key');
-  if(geminiKey){
-    try{
-      const prompt = 'Act as an expert school teacher. Generate an examination paper for subject: "' + subject + '", topic: "' + topic + '". Paper type: ' + type + ', Language: ' + language + ', Difficulty: ' + difficulty + ', Total questions: ' + count + ', Marks per question: ' + marksPerQ + '. Return ONLY valid JSON in this exact structure: {"title": "' + type + ' - ' + subject + '", "questions": [{"number": 1, "text": "Question text here?", "marks": ' + marksPerQ + ', "type": "short"}], "answer_key": [{"number": 1, "answer": "Answer explanation here"}]}';
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + geminiKey, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          contents: [{parts: [{text: prompt}]}],
-          generationConfig: {responseMimeType: 'application/json'}
-        })
-      });
-      if(res.ok){
-        const json = await res.json();
-        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if(text){
-          const parsed = JSON.parse(text);
-          if(parsed.questions?.length) return parsed;
-        }
-      }
-    }catch(err){console.warn('Direct Gemini call failed, generating syllabus questions', err);}
-  }
-  // Structured high quality question set
-  const questions = [];
-  const answer_key = [];
-  const templates = [
-    'Define and explain the core concept of {T} in the context of {S}.',
-    'What are the primary principles or causes related to {T}?',
-    'Differentiate between key elements or classifications associated with {T}.',
-    'Provide an illustrative example or diagrammatic scenario demonstrating {T}.',
-    'How does {T} impact real-world applications or problems in {S}?',
-    'Summarize the essential rules, steps, or observations required when analyzing {T}.',
-    'State the significance and historical/scientific relevance of {T}.',
-    'Identify two common misconceptions or errors regarding {T} and explain why they occur.',
-    'Solve or describe the step-by-step methodology used to evaluate {T}.',
-    'Synthesize your learning: propose a practical solution using principles of {T}.'
-  ];
-  for(let i=0; i<count; i++){
-    const qNum = i + 1;
-    const template = templates[i % templates.length].replace(/{T}/g, topic).replace(/{S}/g, subject);
-    questions.push({
-      number: qNum,
-      text: '(' + difficulty.toUpperCase() + ') ' + template,
-      marks: marksPerQ,
-      type: 'descriptive'
-    });
-    answer_key.push({
-      number: qNum,
-      answer: 'Standard curriculum answer for ' + topic + ' discussing principles, key definitions, and contextual analysis.',
-      explanation: 'Evaluated according to accuracy, completeness, and clarity.'
-    });
-  }
-  return {
-    title: (TYPE[type] || type) + ' · ' + subject + ' (' + topic + ')',
-    questions,
-    answer_key
-  };
+async function generatePaperDirect({topic,subject,type,count,marksPerQ}){
+ // An editable starting template, not an AI-generated paper or answer key.
+ // Publishing is allowed only after the teacher fills and reviews the questions.
+ const questions=Array.from({length:Math.min(25,Math.max(1,count||5))},(_,i)=>({
+   number:i+1,
+   text:'[Write question '+(i+1)+' about '+(topic||subject)+']',
+   marks:marksPerQ||2
+ }));
+ return {title:'Teacher worksheet template · '+subject,questions,answer_key:[],is_template:true};
 }
 
 window.NOOR_PAPER_GENERATOR={open};

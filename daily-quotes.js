@@ -48,45 +48,6 @@
     return list[index];
   }
 
-  function getGeminiKey() {
-    return window.NOOR_CONFIG?.GEMINI_API_KEY ||
-      window.GEMINI_API_KEY ||
-      localStorage.getItem('noor_gemini_api_key') ||
-      '';
-  }
-
-  async function fetchGeminiQuote(role = 'teacher') {
-    const apiKey = getGeminiKey();
-    if (!apiKey) return null;
-
-    const normalizedRole = ['owner', 'principal', 'manager', 'creator'].includes(role) ? 'Principal & School Leaders' : (role === 'student' ? 'Students' : 'Teachers & Educators');
-    const prompt = `Generate a single inspiring, concise educational quote (max 22 words) specifically tailored for ${normalizedRole}. Return ONLY JSON with format: {"quote": "The quote text here", "author": "Attributed author or Inspiring Educator"}. No markdown, no backticks.`;
-
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 120 }
-        })
-      });
-
-      if (!res.ok) return null;
-      const data = await res.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim?.() || '';
-      const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      if (parsed?.quote) {
-        return { quote: String(parsed.quote).replace(/^"|"$/g, ''), author: String(parsed.author || 'Gemini Inspiration') };
-      }
-    } catch (e) {
-      console.warn('Gemini Daily Quote generation fallback active:', e.message);
-    }
-    return null;
-  }
-
   async function getDailyQuote(role = 'teacher', forceRefresh = false) {
     const today = getDayKey();
     const cacheKey = `noor_daily_quote_${role}_${today}`;
@@ -96,13 +57,6 @@
         const cached = localStorage.getItem(cacheKey);
         if (cached) return JSON.parse(cached);
       } catch (e) {}
-    }
-
-    // Try Gemini API
-    const geminiQuote = await fetchGeminiQuote(role);
-    if (geminiQuote) {
-      try { localStorage.setItem(cacheKey, JSON.stringify(geminiQuote)); } catch (e) {}
-      return geminiQuote;
     }
 
     // Fallback curated quote
@@ -122,7 +76,7 @@
     // Apply to Principal Dashboard
     const pdQuote = document.querySelector('#noor-principal .pd-quote, #pd-quote');
     if (pdQuote) {
-      pdQuote.innerHTML = `“${quoteData.quote}” <span style="display:block;margin-top:4px;font-size:11px;opacity:0.85;font-style:normal">— ${quoteData.author}</span>`;
+      pdQuote.textContent='“'+quoteData.quote+'” — '+quoteData.author;
     }
     const pdInsight = document.getElementById('pd-insight');
     if (pdInsight && (!pdInsight.textContent || pdInsight.textContent.includes('Leadership in education builds'))) {
@@ -132,24 +86,20 @@
     // Apply to Teacher Dashboard
     const teacherQuotes = document.querySelectorAll('.nt-quote p, #nt-quote');
     teacherQuotes.forEach(el => {
-      el.innerHTML = `“${quoteData.quote}” <small style="display:block;margin-top:4px;opacity:0.8">— ${quoteData.author}</small>`;
+      el.textContent='“'+quoteData.quote+'” — '+quoteData.author;
     });
 
     // Apply to Student Dashboard
     const studentBanner = document.querySelector('.sp-daily-quote');
     if (studentBanner) {
-      studentBanner.innerHTML = `<em>“${quoteData.quote}”</em> <small>— ${quoteData.author}</small>`;
+      studentBanner.textContent='“'+quoteData.quote+'” — '+quoteData.author;
     }
   }
 
   window.NOOR_DAILY_QUOTES = {
     getDailyQuote,
     getFallbackQuote,
-    applyQuotes,
-    setApiKey: (key) => {
-      localStorage.setItem('noor_gemini_api_key', key.trim());
-      applyQuotes();
-    }
+    applyQuotes
   };
 
   // Re-run apply on route or workspace changes

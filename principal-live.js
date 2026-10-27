@@ -19,7 +19,7 @@ function setup(){
         <p id="pd-greeting">Welcome, Principal</p>
       </div>
       <div class="pd-head-actions">
-        <button class="pd-btn" id="pd-search-people">⌕ Search people</button>
+        <button class="pd-btn" id="pd-ai-assistant" type="button">✦ NOOR AI</button><button class="pd-btn" id="pd-search-people">⌕ Search people</button>
         <button class="pd-btn" data-route="notifications" aria-label="Notifications">♧</button>
         <button class="pd-btn" id="pd-mode" aria-label="Toggle dashboard theme">☾</button>
         <button class="pd-btn" data-route="settings" aria-label="Settings">⚙</button>
@@ -35,12 +35,12 @@ function setup(){
                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,0.2)"></span>
                 LIVE SCHOOL HEALTH & ACTIVE MONITORING · AUTO-LOADED (Asia/Kolkata)
               </div>
-              <h2 style="font:800 18px Manrope;color:#3b1827;margin:4px 0 2px" id="pd-pulse-title">School Health: 96% Optimal</h2>
-              <p style="margin:0;font-size:12px;color:#786470" id="pd-pulse-desc">10 classes active today · Teacher daily reports updating in real-time · No critical alerts.</p>
+              <h2 style="font:800 18px Manrope;color:#3b1827;margin:4px 0 2px" id="pd-pulse-title">School status: awaiting verified records</h2>
+              <p style="margin:0;font-size:12px;color:#786470" id="pd-pulse-desc">Live metrics appear once your authenticated school data has been loaded.</p>
             </div>
             <div style="display:flex;gap:8px;align-items:center" id="pd-pulse-badges">
-              <span class="pill good" id="pd-pulse-active-classes">10 Active Classes</span>
-              <span class="pill soft" id="pd-pulse-reports">Attendance Real-Time</span>
+              <span class="pill good" id="pd-pulse-active-classes">Classes: —</span>
+              <span class="pill soft" id="pd-pulse-reports">Attendance: awaiting records</span>
             </div>
           </div>
         </section>
@@ -122,6 +122,7 @@ function setup(){
   };
 
   r.querySelector('#pd-refresh').onclick=refresh;
+  r.querySelector('#pd-ai-assistant').onclick=()=>window.NOOR_SECURE_AI?.open?.();
   const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=showTeacherDirectoryModal;
   r.querySelector('#pd-timetable').onclick=showTimetable;
   const addTch=r.querySelector('#pd-add-teacher');if(addTch)addTch.onclick=openAddTeacherModal;
@@ -132,8 +133,8 @@ function setup(){
   r.querySelector('#pd-close').onclick=()=>r.querySelector('#pd-dialog').close();
   r.querySelector('#pd-detail-close').onclick=()=>r.querySelector('#pd-detail-dialog').close();
 
-  r.querySelector('#pd-quick-add-class').onclick=openAddClassModal;
-  r.querySelector('#pd-quick-add-section').onclick=openAddSectionModal;
+  r.querySelector('#pd-quick-add-class').onclick=()=>a().openView?.('classes');
+  r.querySelector('#pd-quick-add-section').onclick=()=>a().openView?.('classes');
   r.querySelector('#pd-search-people').onclick=openPeopleSearchModal;
   r.querySelector('#pd-refresh-quote').onclick=async()=>{
     if(window.NOOR_DAILY_QUOTES){
@@ -841,6 +842,11 @@ async function refresh(){
     }
     const staffPresent=new Set(rows('staff').filter(s=>s.status==='present'&&teacherMap.has(s.teacher_id)).map(s=>s.teacher_id)).size;
     const active=rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
+    // Verified daily summary only, never a synthetic school-health percentage.
+    q('#pd-pulse-title').textContent='Live School Overview';
+    q('#pd-pulse-desc').textContent=classes.length+' active class records · '+today.marked+' student attendance marks today · '+active+' active teaching periods';
+    q('#pd-pulse-active-classes').textContent=classes.length+' School Classes';
+    q('#pd-pulse-reports').textContent=today.marked?today.marked+' Attendance Marks':'Attendance not submitted';
 
     // Pastel KPI Metrics
     q('#pd-kpis').innerHTML=metric('Students Present Today',attError?'—':`${today.marked?today.present:'—'} <em>/ ${today.total}</em>`,today.marked?`${today.marked} marked · ${today.total-today.marked} unmarked`:'Attendance not submitted','#8e4359',!attError&&today.marked?percent(today.present,today.total):null)+

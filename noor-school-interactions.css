@@ -1,0 +1,44 @@
+/* NOOR secure AI & premium class/section controls; all data remains Supabase-scoped. */
+.noor-ai-v2-launcher{position:fixed;right:23px;bottom:76px;z-index:60;display:flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;border:1px solid #f2cada;background:linear-gradient(135deg,#8c2b54,#55142b);color:white;box-shadow:0 14px 35px #3a132c44;font:700 12px Inter,system-ui;cursor:pointer}
+.noor-ai-v2-launcher[hidden],.noor-ai-v2-backdrop[hidden]{display:none!important}
+.noor-ai-v2-launcher span{font:26px Georgia;color:#ffe8a3;line-height:.7}
+.noor-ai-v2-launcher:hover{background:linear-gradient(130deg,#ae3a66,#5c1732)}
+.noor-ai-v2-backdrop{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:14px;background:#250f1bbb;backdrop-filter:blur(8px)}
+.noor-ai-v2-dialog{width:min(620px,100%);max-height:min(92dvh,850px);display:flex;flex-direction:column;border-radius:24px;background:#fffaf8;overflow:hidden;box-shadow:0 25px 80px #19061480;border:1px solid #edcdd4;color:#472035}
+.noor-ai-v2-heading{display:flex;align-items:center;gap:12px;padding:18px 20px;background:radial-gradient(circle at 90% 0%,#df709766,transparent 56%),linear-gradient(118deg,#4d1028,#752646);color:white}
+.noor-ai-v2-orb{height:46px;width:46px;border-radius:17px;display:grid;place-items:center;font:35px Georgia;background:#ffffff24;border:1px solid #ffffff57;color:#f5daac}
+.noor-ai-v2-heading>div:nth-child(2){flex:1;min-width:0}
+.noor-ai-v2-heading small{font-size:9px;letter-spacing:2px;color:#f2d3de}
+.noor-ai-v2-heading h2{font:700 23px 'Playfair Display',Georgia,serif;color:#fff;margin:4px 0}
+.noor-ai-v2-heading p{font:11px Inter,sans-serif;color:#f9dae7;margin:0}
+.noor-ai-v2-heading>button{border:0;background:#ffffff22;color:white;font:21px Inter;cursor:pointer;width:36px;height:36px;border-radius:12px}
+.noor-ai-v2-chips{display:flex;gap:8px;flex-wrap:wrap;padding:15px 19px 11px}
+.noor-ai-v2-chips button{border:1px solid #edd5dd;background:#fff1f5;color:#7b3553;border-radius:99px;font-size:11px;font-weight:700;padding:8px 11px;cursor:pointer}
+.noor-ai-v2-messages{overflow-y:auto;flex:1;min-height:180px;max-height:420px;padding:15px 19px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(160deg,#fffaf8,#fff4f3)}
+.noor-ai-v2-reply{max-width:90%;border-radius:15px 15px 15px 4px;background:white;box-shadow:0 5px 15px #662a400d;padding:12px 14px;border:1px solid #f2e2e5;font:13px/1.55 Inter,system-ui;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.noor-ai-v2-reply.user{margin-left:auto;border-radius:15px 15px 4px 15px;color:#fff;background:#7e3456;border-color:#7e3456}
+.noor-ai-v2-form{display:flex;gap:10px;padding:12px 18px 4px}
+.noor-ai-v2-form textarea{flex:1;resize:vertical;min-height:52px;max-height:170px;border:1px solid #eed0d7;border-radius:12px;padding:12px;background:white;font:12px/1.4 Inter;color:#4c2940;outline-color:#b16c8d}
+.noor-ai-v2-form button{align-self:end;min-height:48px;border:0;border-radius:12px;background:#7f3253;color:white;padding:0 18px;font:700 12px Inter;cursor:pointer}
+.noor-ai-v2-form button:disabled{opacity:.52}
+.noor-ai-v2-state{margin:8px 19px 16px;color:#976b81;font-size:10px}
+body.noor-ai-open{overflow:hidden}
+.noor-structure-icon{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid #efd9e1;border-radius:8px;background:#fff7fa;color:#7e3453;cursor:pointer;padding:5px 8px;font-size:11px;font-weight:750}
+.noor-structure-icon:hover{background:#fbe6ef;border-color:#d9acbe}
+#structureContent{color:#462a3b}
+#structureContent .panel{background:linear-gradient(135deg,#fffaf9,#ffffff)!important;border:1px solid #eed8de!important;box-shadow:0 8px 29px #621d3a0e;border-radius:17px!important;padding:16px!important}
+#structureContent .grid{gap:14px!important}
+#structureContent [data-add-stream],#structureContent #btnAddCustomStream,#structureContent #btnGenerateSchoolClasses{box-shadow:0 4px 15px #7c325621}
+#structureContent [data-add-stream]{border:1px solid #e7c9d4;background:linear-gradient(100deg,#fff4f8,#f7e1eb);color:#75314d}
+#structureContent .noor-extra-classes{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px;margin-top:7px}
+#view-classes .headrow button:focus-visible,#structureContent button:focus-visible,.noor-ai-v2-dialog button:focus-visible{outline:3px solid #c48e9a;outline-offset:2px}
+#ntiGaps{background:radial-gradient(ellipse at 96% 12%,#fce4c5b9,transparent 49%),linear-gradient(120deg,#fff6fb,#f6f1ff)!important;border:1px solid #ebc9df!important;border-radius:18px;box-shadow:0 10px 29px #843f7017}
+#ntiGaps .nti-subhead{border-bottom:1px solid #eadbe6;padding-bottom:10px;margin-bottom:11px}
+#ntiGaps .nti-subhead h3{font-family:'Playfair Display',Georgia,serif;color:#651b45;font-size:18px}
+#ntiGaps .nti-insight{padding:12px 14px 13px;border-radius:12px;border:1px solid #e9d3e6;background:linear-gradient(110deg,#fffafa,#fcf3ff);margin:8px 0;display:block;box-shadow:0 5px 16px #6a1c6110}
+#ntiGaps .nti-insight b{display:block;color:#693b70;font-size:12px;margin-bottom:5px}
+#ntiGaps .nti-insight span{display:block;color:#836b80;font-size:11px}
+#ntiGaps .noor-gap-bar{display:block;height:10px;margin-top:12px;border-radius:99px;background:#eee2ed;overflow:hidden}
+#ntiGaps .noor-gap-bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#b977db,#ee8da7,#fac47c)}
+#ntiGaps .nti-empty{border-radius:12px;background:#fffaf8}
+@media(max-width:760px){.noor-ai-v2-launcher{right:12px;bottom:90px;padding:11px 13px}.noor-ai-v2-dialog{max-height:90dvh}.noor-ai-v2-heading h2{font-size:19px}#structureContent .noor-extra-classes{grid-template-columns:1fr}}

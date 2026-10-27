@@ -17,7 +17,7 @@ function limit(id:string){
 async function askGemini(prompt:string,structured=false):Promise<string>{
  const api=Deno.env.get("GEMINI_API_KEY");
  if(!api)throw Error("Gemini is not configured yet. Add GEMINI_API_KEY to the new NOOR project's Edge Function Secrets.");
- const model=Deno.env.get("GEMINI_MODEL")||"gemini-3.5-flash-lite";
+ const model=Deno.env.get("GEMINI_MODEL")||"gemini-2.5-flash";
  const ctrl=new AbortController(),stop=setTimeout(()=>ctrl.abort(),25000);
  try{
   const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{

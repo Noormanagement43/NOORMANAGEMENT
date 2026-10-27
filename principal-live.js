@@ -650,36 +650,40 @@ function aggregate(students,sessions,records,day){
 }
 
 function graph(classes,sections,students,sessions,records,day){
-  let cs=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
-  const hasRealCs = cs.length > 0;
-  if(!cs.length){
-    // Provide display benchmarks for classes 6 to 10 so dashboard is visually rich immediately
-    cs = [6,7,8,9,10].map(n=>({id:'mock-c'+n, name:'Class '+n, is_active:true}));
-  }
+  const cs=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
+  if(!cs.length)return '<p class="pd-empty">No classes 6–10 have been created yet. Add classes and sections for real attendance charts.</p>';
 
   const colors=['#10b981','#2563eb','#f59e0b','#f43f5e','#8b5cf6'];
   const names=[...new Set(sections.filter(s=>cs.some(c=>c.id===s.class_id)).map(s=>s.name))].sort();
-  if(!names.length) names.push('Section A', 'Section B');
+  if(!names.length)return '<p class="pd-empty">No sections have been set up for classes 6–10 yet.</p>';
 
   // Compute stats per class
   const classStats=cs.map((c, idx)=>{
     const cStudents=students.filter(s=>s.class_id===c.id);
     const agg=cStudents.length ? aggregate(cStudents,sessions,records,day) : {present: 0, marked: 0, total: 0};
-    const pct=agg.marked&&agg.total?percent(agg.present,agg.total):(hasRealCs ? null : [92, 88, 95, 85, 90][idx % 5]);
+    const pct=agg.marked&&agg.total?percent(agg.present,agg.total):null;
     return {class:c,students:cStudents,agg,pct};
   });
 
   // 1. Overall Donut Chart for School Attendance Proportion
-  let totalPresent = records.filter(r=>r.status==='present').length;
-  let totalLate = records.filter(r=>r.status==='late').length;
-  let totalAbsent = records.filter(r=>r.status==='absent').length;
-  let totalMarked = totalPresent + totalLate + totalAbsent;
-  let overallPct = totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 94;
-
-  const donutCircumference = 2 * Math.PI * 34; // r=34 -> ~213.6
-  const pPresent = totalMarked > 0 ? (totalPresent / totalMarked) : 0.88;
-  const pLate = totalMarked > 0 ? (totalLate / totalMarked) : 0.06;
-  const pAbsent = totalMarked > 0 ? (totalAbsent / totalMarked) : 0.06;
+  const submitted=new Set(sessions.filter(x=>x.attendance_date===day&&x.status==='submitted').map(x=>x.id));
+  const roster=new Set(students.map(x=>x.id));
+  const latest=new Map();
+  for(const record of records){
+    if(!submitted.has(record.session_id)||!roster.has(record.student_id)||!['present','late','absent'].includes(record.status))continue;
+    const prev=latest.get(record.student_id);
+    if(!prev||String(record.updated_at||record.marked_at||'')>String(prev.updated_at||prev.marked_at||''))latest.set(record.student_id,record);
+  }
+  const marked=[...latest.values()];
+  const totalPresent=marked.filter(x=>x.status==='present').length;
+  const totalLate=marked.filter(x=>x.status==='late').length;
+  const totalAbsent=marked.filter(x=>x.status==='absent').length;
+  const totalMarked=marked.length;
+  const overallPct=totalMarked?Math.round((totalPresent+totalLate)/totalMarked*100):null;
+  const donutCircumference=2*Math.PI*34;
+  const pPresent=totalMarked?totalPresent/totalMarked:0;
+  const pLate=totalMarked?totalLate/totalMarked:0;
+  const pAbsent=totalMarked?totalAbsent/totalMarked:0;
 
   const dashPresent = pPresent * donutCircumference;
   const dashLate = pLate * donutCircumference;
@@ -695,13 +699,13 @@ function graph(classes,sections,students,sessions,records,day){
           <circle cx="40" cy="40" r="34" stroke="#f43f5e" stroke-width="8" fill="none" stroke-dasharray="${dashAbsent} ${donutCircumference}" stroke-dashoffset="-${dashPresent + dashLate}" stroke-linecap="round" />
         </svg>
         <div style="position:absolute;text-align:center">
-          <strong style="font:800 16px Manrope;color:#4c1e34;display:block">${overallPct}%</strong>
+          <strong style="font:800 16px Manrope;color:#4c1e34;display:block">${overallPct===null?'—':overallPct+'%'}</strong>
           <small style="font-size:9px;color:#8c7582;text-transform:uppercase">Present</small>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;font-size:11px">
-        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10b981"></b> ${totalMarked ? totalPresent + ' Present' : 'Present (Optimal)'} <small style="color:#6b7280">(${Math.round(pPresent*100)}%)</small></span>
-        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f59e0b"></b> ${totalMarked ? totalLate + ' Late' : 'Late Arrivals'} <small style="color:#6b7280">(${Math.round(pLate*100)}%)</small></span>
+        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10b981"></b> ${totalMarked ? totalPresent + ' Present' : 'Not recorded'} <small style="color:#6b7280">(${Math.round(pPresent*100)}%)</small></span>
+        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f59e0b"></b> ${totalMarked ? totalLate + ' Late' : 'Not recorded'} <small style="color:#6b7280">(${Math.round(pLate*100)}%)</small></span>
         <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f43f5e"></b> ${totalMarked ? totalAbsent + ' Absent' : 'Absent'} <small style="color:#6b7280">(${Math.round(pAbsent*100)}%)</small></span>
       </div>
     </div>
@@ -712,7 +716,7 @@ function graph(classes,sections,students,sessions,records,day){
     <div style="background:#ffffff;border:1px solid #f1e2e8;border-radius:14px;padding:14px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <b style="font-size:12px;color:#4a2237">📊 Class-wise Comparative Bar Graph</b>
-        <span style="font-size:10px;color:#786570">Classes 6 – 10 Benchmark</span>
+        <span style="font-size:10px;color:#786570">Classes 6–10 · Today</span>
       </div>
       <svg viewBox="0 0 460 140" width="100%" height="130" style="overflow:visible">
         <line x1="30" y1="20" x2="440" y2="20" stroke="#f1e2e8" stroke-dasharray="3 3"/>
@@ -723,16 +727,16 @@ function graph(classes,sections,students,sessions,records,day){
         <text x="22" y="104" font-size="9" fill="#9c8792" text-anchor="end">0%</text>
         ${classStats.map((item, i)=>{
           const colX = 55 + i * 80;
-          const p = item.pct != null ? item.pct : 85;
-          const barH = Math.max(6, (p / 100) * 80);
+          const p = item.pct;
+          const barH = p==null?0:Math.max(6,(p/100)*80);
           const barY = 100 - barH;
           const barColor = colors[i % colors.length];
           return `
             <g>
-              <rect x="${colX}" y="${barY}" width="38" height="${barH}" rx="6" fill="${barColor}" opacity="0.9">
-                <title>${e(item.class.name)}: ${p}% attendance</title>
-              </rect>
-              <text x="${colX + 19}" y="${barY - 5}" font-size="10" font-weight="800" fill="${barColor}" text-anchor="middle">${p}%</text>
+              ${p===null?'':`<rect x="${colX}" y="${barY}" width="38" height="${barH}" rx="6" fill="${barColor}" opacity="0.9">`}
+                <title>${e(item.class.name)}: ${p==null?'Not recorded':p+'% attendance'}</title>
+              ${p===null?'':'</rect>'}
+              <text x="${colX + 19}" y="${barY - 5}" font-size="10" font-weight="800" fill="${barColor}" text-anchor="middle">${p==null?'—':p+'%'}</text>
               <text x="${colX + 19}" y="116" font-size="10" font-weight="700" fill="#4a2237" text-anchor="middle">${e(item.class.name)}</text>
             </g>
           `;
@@ -745,14 +749,14 @@ function graph(classes,sections,students,sessions,records,day){
   let svg='';
   for(let p=0;p<=100;p+=25){
     const y=185-p*1.5;
-    svg+=`<line x1="40" y1="${y}" x2="470" y2="${y}" stroke="#eedde2"/><text x="0" y="${y+4}" fill="#786670" font-size="10">${p}%</text>`;
+    svg+=`<line x1="40" y1="${y}" x2="470" y2="${y}" stroke="#eedde2"/><text x="0" y="${y+4}" fill="#786670" font-size="10">${p==null?'—':p+'%'}</text>`;
   }
   cs.forEach((c,i)=>{svg+=`<text x="${60+i*390/Math.max(1,cs.length-1)}" y="211" text-anchor="middle" fill="#58283f" font-weight="700">${e(c.name)}</text>`});
   let has=false;
   names.forEach((name,j)=>{
     let previous=null;
     cs.forEach((c,i)=>{
-      const ss=sections.find(s=>s.class_id===c.id&&s.name===name),group=students.filter(s=>s.class_id===c.id&&s.section_id===ss?.id),m=group.length?aggregate(group,sessions,records,day):{present:0,total:0,marked:0},pct=m.marked?percent(m.present,m.total):(hasRealCs ? null : [90, 85, 94, 82, 88][i%5]);
+      const ss=sections.find(s=>s.class_id===c.id&&s.name===name),group=students.filter(s=>s.class_id===c.id&&s.section_id===ss?.id),m=group.length?aggregate(group,sessions,records,day):{present:0,total:0,marked:0},pct=m.marked?percent(m.present,m.total):null;
       if(pct===null){previous=null;return;}
       has=true;
       const x=60+i*390/Math.max(1,cs.length-1),y=185-pct*1.5,color=colors[j%colors.length];
@@ -764,7 +768,7 @@ function graph(classes,sections,students,sessions,records,day){
 
   const lineChartHTML=`<div style="background:#ffffff;border:1px solid #f1e2e8;border-radius:14px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:12px;color:#4a2237">📈 Section Trend Lines</b></div><svg class="pd-linechart" viewBox="0 0 490 225" role="img" aria-label="Today's attendance by class and section">${svg}</svg><div class="pd-legend">${names.map((n,i)=>`<span style="color:${colors[i%colors.length]}">● ${e(/^section/i.test(n)?n:'Section '+n)}</span>`).join('')}</div></div>`;
 
-  return donutHTML + barChartSvg + lineChartHTML + '<p class="pd-muted" style="margin-top:8px">Visual charts · Classes 6 to 10 · Live percentage and multi-section tracking</p>';
+  return donutHTML + barChartSvg + lineChartHTML + '<p class="pd-muted" style="margin-top:8px">Visual charts · Classes 6 to 10 · Submitted records only · No estimates</p>';
 }
 
 async function refresh(){

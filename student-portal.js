@@ -108,15 +108,8 @@ function overview(){
 }
 function barsMarkup(marks){const groups={};marks.forEach(x=>{const k=subject(x.assessment.subject_id);(groups[k]??=[]).push(x.pct)});
  const vals=Object.entries(groups).map(([k,x])=>[k,average(x.filter(z=>z!=null))]).filter(x=>x[1]!=null);
- const demoMarks = [
-   ['English', 92],
-   ['Mathematics', 85],
-   ['Science', 90],
-   ['Social Studies', 88],
-   ['Urdu', 95]
- ];
- const activeVals = vals.length ? vals : demoMarks;
- return activeVals.map(([k,value],i)=>'<div class="sp-bar-row"><b>'+E(k)+'</b><div class="sp-bar-track"><div class="sp-bar-fill '+['pink','blue','mint','lilac','peach'][i%5]+'" style="width:'+value+'%"></div></div><strong>'+value+'%</strong></div>').join('');}
+ if(!vals.length)return empty('No teacher-marked assessment results available yet.');
+ return vals.map(([k,value],i)=>'<div class="sp-bar-row"><b>'+E(k)+'</b><div class="sp-bar-track"><div class="sp-bar-fill '+['pink','blue','mint','lilac','peach'][i%5]+'" style="width:'+Math.max(0,Math.min(100,value))+'%"></div></div><strong>'+Math.round(value)+'%</strong></div>').join('');}
 function lineMarkup(m){
  if(!m.length)return empty('No dated results for this range.');
  const w=640,h=205;const pts=m.map((x,i)=>[30+(m.length===1?300:i*570/(m.length-1)),190-Math.max(0,Math.min(100,x.pct))*1.6]).filter(x=>x.every(Number.isFinite));

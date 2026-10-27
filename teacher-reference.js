@@ -150,6 +150,14 @@ async function render(){
  const readErrors=[extra.error,periods.error,runs.error,checkin.error,assignees.error,personal.error,notices.error,calendar.error,assignment.error,membership.error].filter(Boolean);
  if(readErrors.length){const warning=document.createElement('p');warning.className='nt-followup';warning.textContent='Some school records could not be loaded. Check your account permissions or connection and try again.';wrapper.querySelector('.noor-t4')?.prepend(warning);}
  const dash=wrapper.querySelector('.noor-t4'),profileNode=dash?.querySelector('.nt-profile');
+ const aiCard=dash?.querySelector('#ntOpenJinni');
+ if(aiCard){
+   aiCard.onclick=()=>window.NOOR_SECURE_AI?.open?.();
+   aiCard.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();window.NOOR_SECURE_AI?.open?.()}};
+   aiCard.setAttribute('aria-label','Open secure NOOR AI Assistant');
+ }
+ const quickAssignment=dash?.querySelector('.nt-3d-quick-btn[data-link="paper-generator"]');
+ if(quickAssignment){quickAssignment.removeAttribute('data-link');quickAssignment.dataset.action='create-assignment';}
 
  // Reference-accurate Teacher Dashboard: all figures from scoped school records, no placeholder metrics.
  const hero=document.createElement('div');hero.className='nt-reference-kpis';
@@ -212,7 +220,7 @@ async function render(){
 }
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
- if(b.dataset.action==='take-attendance'){openView('attendance');return;} if(b.dataset.action==='upload-resource'){openView('teaching');return;} if(b.dataset.link){if(b.dataset.link==='paper-generator')openPaper();else if(b.dataset.link==='edit-timetable')showPeriodEditor(null);else if(b.dataset.link==='calendar'||b.dataset.link==='school-calendar')openCalendar();else openView(b.dataset.link);return;}
+ if(b.dataset.action==='create-assignment'){openPaper();setTimeout(()=>{const form=document.getElementById('ppForm');if(!form)return;const t=document.getElementById('ppType');if(t)t.value='assignment';document.getElementById('ppQuestions')?.focus();},0);return;} if(b.dataset.action==='take-attendance'){openView('attendance');return;} if(b.dataset.action==='upload-resource'){openView('teaching');return;} if(b.dataset.link){if(b.dataset.link==='paper-generator')openPaper();else if(b.dataset.link==='edit-timetable')showPeriodEditor(null);else if(b.dataset.link==='calendar'||b.dataset.link==='school-calendar')openCalendar();else openView(b.dataset.link);return;}
  if(b.id==='ntEditProfile'){showProfileEditor();return;}
  if(b.id==='ntChangePhoto'){$('#ntHiddenPhoto')?.click();return}
  if(b.id==='ntEditTimetable'){showPeriodEditor(null);return}

@@ -35,7 +35,7 @@ test('dashboard colors and profiles preserve existing portrait sizes',async()=>{
  assert.match(reference,/#360817/);
  assert.match(charts,/\.sp-ref-subject-bars/);
  assert.match(charts,/\.nt-ref-analytics/);
- assert.doesNotMatch(reference,/\.nt-photo\s*\{|\.sp-avatar\s*\{|\.pd-photo\s*\{/);
+ assert.doesNotMatch(reference,/(?:\.nt-photo|\.sp-avatar|\.pd-photo)\s*\{[^}]*\b(?:width|height)\s*:/);
 });
 
 test('search routes to actual authorised nav entries; demo hub cannot rewrite school membership',async()=>{

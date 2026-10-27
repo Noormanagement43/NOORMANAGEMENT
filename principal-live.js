@@ -657,7 +657,7 @@ function graph(classes,sections,students,sessions,records,day){
     cs = [6,7,8,9,10].map(n=>({id:'mock-c'+n, name:'Class '+n, is_active:true}));
   }
 
-  const colors=['#10b981','#2563eb','#f59e0b','#f43f5e','#8b5cf6'];
+  const colors=['#EC4899','#3B82F6','#F59E0B','#A78BFA','#06B6D4'];
   const names=[...new Set(sections.filter(s=>cs.some(c=>c.id===s.class_id)).map(s=>s.name))].sort();
   if(!names.length) names.push('Section A', 'Section B');
 
@@ -752,7 +752,7 @@ function graph(classes,sections,students,sessions,records,day){
   names.forEach((name,j)=>{
     let previous=null;
     cs.forEach((c,i)=>{
-      const ss=sections.find(s=>s.class_id===c.id&&s.name===name),group=students.filter(s=>s.class_id===c.id&&s.section_id===ss?.id),m=group.length?aggregate(group,sessions,records,day):{present:0,total:0,marked:0},pct=m.marked?percent(m.present,m.total):(hasRealCs ? null : [90, 85, 94, 82, 88][i%5]);
+      const ss=sections.find(s=>s.class_id===c.id&&s.name===name),group=students.filter(s=>s.class_id===c.id&&s.section_id===ss?.id),m=group.length?aggregate(group,sessions,records,day):{present:0,total:0,marked:0},pct=m.marked?percent(m.present,m.total):null;
       if(pct===null){previous=null;return;}
       has=true;
       const x=60+i*390/Math.max(1,cs.length-1),y=185-pct*1.5,color=colors[j%colors.length];

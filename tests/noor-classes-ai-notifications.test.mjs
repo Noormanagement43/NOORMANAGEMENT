@@ -32,7 +32,7 @@ test('both principal and teacher can open a shared server-only AI assistant',asy
  assert.match(teacher,/NOOR_SECURE_AI\?\.open/);
  assert.match(html,/noor-secure-assistant\.js/);
  assert.match(assistant,/functions\.invoke\('noor-ai'/);
- assert.doesNotMatch(assistant,/localStorage|GEMINI_API_KEY|noor_brevo_api_key|api\.brevo\.com/);
+ assert.doesNotMatch(assistant,/localStorage|Deno\.env|getGeminiKey|noor_brevo_api_key|api\.brevo\.com/);
  assert.doesNotThrow(()=>new Script(assistant));
 });
 
@@ -51,7 +51,7 @@ test('secrets never leave server-only configuration',async()=>{
 
 test('teacher assignment button opens editor without needing AI',async()=>{
  const [teacher,paper]=await Promise.all([source('teacher-reference.js'),source('teacher-paper-generator.js')]);
- assert.match(teacher,/data\.action==='create-assignment'/);
+ assert.match(teacher,/dataset\.action==='create-assignment'/);
  assert.match(paper,/Write the assignment questions first/);
  assert.match(paper,/Replace every template placeholder/);
  assert.match(paper,/is_template:true/);

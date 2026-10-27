@@ -16,7 +16,7 @@ test('student performance never falls back to fabricated report-card marks',asyn
   const code=await source('student-portal.js');
   assert.doesNotMatch(code,/demoMarks|activeVals = vals\.length/);
   assert.match(code,/No teacher-marked assessment results available yet/);
-  assert.match(code,/return vals\.map/);
+  assert.match(code,/sp-ref-subject-bars/);
 });
 
 test('principal analytics use recorded submissions and no benchmark fallback',async()=>{

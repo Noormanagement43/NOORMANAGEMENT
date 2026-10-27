@@ -1,0 +1,112 @@
+/* NOOR focused role dashboards | single-action hierarchy, no duplicate teacher widgets
+ * Does not alter profile pictures, image crops, fonts inside forms, auth, or database records.
+ */
+:root{--noor-deep-plum:#471124;--noor-rose-ink:#783750;--noor-gold:#d8ab75;--noor-paper:#fffaf7;--noor-hairline:#f0dee2}
+#workspace.noor-teacher-activated .noor-t4{max-width:1680px;color:#402839}
+#workspace.noor-teacher-activated .nt-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}
+#workspace.noor-teacher-activated .nt-head-status{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid #e5cbd5;border-radius:999px;background:#fff6f8;color:#85495f;font-size:10px;font-weight:850;letter-spacing:.45px;white-space:nowrap}
+#workspace.noor-teacher-activated .nt-head-status::first-letter{color:#b86783}
+#workspace.noor-teacher-activated .nt-priority-section{margin:18px 0;position:relative}
+#workspace.noor-teacher-activated .nt-priority-heading{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:0 0 12px;padding:0 1px}
+#workspace.noor-teacher-activated .nt-priority-heading h2{margin:2px 0 4px;font:700 clamp(20px,2vw,26px)/1.2 'Playfair Display',Georgia,serif!important;color:#4f162d}
+#workspace.noor-teacher-activated .nt-priority-heading p{font-size:11px;color:#936c79;margin:0}
+#workspace.noor-teacher-activated .nt-priority-date{font-size:10px;font-weight:800;color:#a45d76;background:#fff7f5;border:1px solid #efdbe0;padding:7px 13px;border-radius:999px;white-space:nowrap}
+#workspace.noor-teacher-activated .nt-priority-grid{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(290px,.73fr);gap:16px;align-items:start}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-card{min-width:0;box-shadow:0 12px 37px #5e2b4014;border:1px solid #ebd8db;border-radius:20px}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance{margin:0;position:relative;overflow:hidden;background:linear-gradient(120deg,#fffcfc 0%,#fffaf7 100%);isolation:isolate}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance:before{content:"";position:absolute;top:0;left:0;width:5px;height:100%;background:linear-gradient(#ba5881,#e4af86)}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance .nt-card-head h2{font-size:20px!important}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance .nt-btn{border-radius:9px;color:#7f2c52;background:#fff0f5;border-color:#ebd0d9}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-card:has(.nt-refined-actions){margin:0;background:radial-gradient(circle at 100% 0%,#f8cdd42f,transparent 60%),#fffdfb}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-card:has(.nt-refined-actions) .nt-card-head{margin:0 0 11px}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-card:has(.nt-refined-actions) .nt-card-head h2{font-size:20px!important}
+#workspace.noor-teacher-activated .nt-refined-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn{display:flex!important;flex-direction:column;justify-content:space-between;align-items:start;text-align:left;gap:10px;min-height:111px;min-width:0;padding:15px 13px;background:#fff7f8;border:1px solid #edced9;border-radius:14px;color:#713451;box-shadow:none;transform:none}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(2){background:#f3effe;border-color:#ded1f4;color:#624492}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(3){background:#fff2e8;border-color:#f8e0ca;color:#9b5b3f}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(4){background:#ebf7f2;border-color:#d1eadb;color:#32735e}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:hover{transform:translateY(-3px);box-shadow:0 12px 21px #4b203121}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:focus-visible{outline:3px solid #dbacc2;outline-offset:2px}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#f8dce8;color:#9b315d;font:700 24px Georgia,serif}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-icon.violet{background:#e8dcfc;color:#6d48b3}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-icon.pink{background:#ffe0d3;color:#b35a45}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-icon.amber{background:#cef1e0;color:#318462}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-text{display:grid;gap:4px;text-align:left;max-width:100%}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-text b{font-size:12px;line-height:1.25;font-weight:850;white-space:normal}
+#workspace.noor-teacher-activated .nt-refined-actions .nt-quick-text small{font-size:10px;color:inherit;opacity:.75;line-height:1.35}
+#workspace.noor-teacher-activated #ntOpenJinni{margin-top:14px;border-radius:14px;position:relative;overflow:hidden;border:1px solid #e2c6eb;background:linear-gradient(115deg,#f9edff,#fff0f7);box-shadow:0 8px 19px #88456512;min-height:75px}
+#workspace.noor-teacher-activated #ntOpenJinni:hover{background:linear-gradient(115deg,#f3e4ff,#ffeaf3)}
+#workspace.noor-teacher-activated #ntOpenJinni .nt-jinni-info h4{font-size:15px;font-weight:850;color:#632a65}
+#workspace.noor-teacher-activated #ntOpenJinni .nt-jinni-info p{font-size:10px;color:#886b81}
+#workspace.noor-teacher-activated .nt-analytics-row{margin:18px 0!important;gap:15px}
+#workspace.noor-teacher-activated .nt-ref-analytics>.nt-card{border-radius:19px;border:1px solid #f0dfe6;box-shadow:0 9px 28px #552d4013;background:linear-gradient(145deg,#ffffff,#fffbf8)}
+#workspace.noor-teacher-activated .nt-ref-analytics>.nt-card:nth-child(2){background:linear-gradient(140deg,#fffbff,#f8f5ff)}
+#workspace.noor-teacher-activated .nt-ref-analytics>.nt-card:nth-child(3){background:linear-gradient(140deg,#f9fffc,#f3fbf7)}
+#workspace.noor-teacher-activated .nt-advanced-details{border:1px solid #e9ced9;border-radius:20px;background:#fffafc;margin:20px 0;overflow:hidden;box-shadow:0 10px 31px #733c5414}
+#workspace.noor-teacher-activated .nt-advanced-details>summary{list-style:none;display:flex;align-items:center;gap:14px;cursor:pointer;padding:18px 22px;background:linear-gradient(100deg,#fffaf8,#fff1f6 70%,#f9efff)}
+#workspace.noor-teacher-activated .nt-advanced-details>summary::-webkit-details-marker{display:none}
+#workspace.noor-teacher-activated .nt-advanced-details>summary:focus-visible{outline:3px solid #d49bb2;outline-offset:-3px}
+#workspace.noor-teacher-activated .nt-advanced-summary-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:16px;background:linear-gradient(145deg,#8b3157,#b45e83);color:#ffdeb7;font:33px Georgia;box-shadow:0 5px 15px #74294d35}
+#workspace.noor-teacher-activated .nt-advanced-summary-copy{flex:1;min-width:0;display:grid;gap:5px}
+#workspace.noor-teacher-activated .nt-advanced-summary-copy>b{font:700 20px 'Playfair Display',Georgia,serif;color:#58223b}
+#workspace.noor-teacher-activated .nt-advanced-summary-copy>small{font-size:11px;color:#9a6f81}
+#workspace.noor-teacher-activated .nt-advanced-summary-tag{font-size:10px;font-weight:800;letter-spacing:.7px;color:#7f4660;padding:9px 12px;border:1px solid #e7ccd6;background:#fff;border-radius:50px}
+#workspace.noor-teacher-activated .nt-advanced-chevron{font:28px Georgia;color:#945671;transition:transform .18s}
+#workspace.noor-teacher-activated .nt-advanced-details[open] .nt-advanced-chevron{transform:rotate(180deg)}
+#workspace.noor-teacher-activated .nt-advanced-content{padding:16px 20px 22px;border-top:1px solid #ead6dc;background:#fffdfc}
+#workspace.noor-teacher-activated .nt-advanced-content #ntTeacherIntelligence{margin:0 0 18px}
+#workspace.noor-teacher-activated .nt-advanced-content .nti-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#workspace.noor-teacher-activated .nt-advanced-content .nti-quick-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+#workspace.noor-teacher-activated .nt-advanced-content .nti-quick-grid button{padding:12px;border-radius:12px}
+#workspace.noor-teacher-activated .nt-advanced-content .nti-tools{border-radius:14px}
+#workspace.noor-teacher-activated .noor-t4 .nt-card{overflow-wrap:anywhere}
+#workspace.noor-teacher-activated .noor-t4 .nt-columns{gap:15px}
+#workspace.noor-teacher-activated .noor-t4 .nt-columns>.nt-card{min-width:0}
+body:has(#noor-principal) #noor-principal .pd-head{border-bottom:1px solid #f0ddd6;padding-bottom:13px;margin-bottom:13px}
+body:has(#noor-principal) #noor-principal .pd-head h1{letter-spacing:-.8px}
+body:has(#noor-principal) #noor-principal .pd-top{gap:15px}
+body:has(#noor-principal) #noor-principal .pd-card{border-color:#efdfda;box-shadow:0 12px 33px #6538220f}
+body:has(#noor-principal) #noor-principal .pd-charts .pd-card{background:linear-gradient(135deg,#fffdfc,#fff9f7)}
+body:has(#noor-principal) #noor-principal .pd-kpis .pd-kpi:nth-child(1){background:linear-gradient(135deg,#fff7f9,#ffedf1);border-color:#f4dce4}
+body:has(#noor-principal) #noor-principal .pd-kpis .pd-kpi:nth-child(2){background:linear-gradient(135deg,#fffaf3,#fff2df);border-color:#f7e8d6}
+body:has(#noor-principal) #noor-principal .pd-kpis .pd-kpi:nth-child(3){background:linear-gradient(135deg,#f1fcf6,#e7f8ec);border-color:#e0f1e3}
+body:has(#noor-principal) #noor-principal .pd-kpis .pd-kpi:nth-child(4){background:linear-gradient(135deg,#f5f8ff,#e7efff);border-color:#e3e9fa}
+body:has(#noor-principal) #noor-principal .pd-rail .pd-card{background:linear-gradient(140deg,#fffefc,#fff8f4)}
+.noor-creator-provider{padding-bottom:18px}
+.noor-creator-provider .panelhead{align-items:flex-start}
+.noor-creator-provider .noor-provider-row{display:flex;align-items:center;gap:13px;margin:12px 0;padding:13px 15px;border-radius:13px;background:#fff;border:1px solid #eedce4}
+.noor-creator-provider .noor-provider-row b{display:block;color:#65344c;font-size:13px}
+.noor-creator-provider .noor-provider-row small{display:block;line-height:1.5;font-size:11px;color:#957181;margin-top:3px}
+.noor-creator-provider .noor-provider-icon{flex:none;display:grid;place-items:center;border-radius:13px;height:41px;width:41px;background:#f9e6ee;color:#9d486b;font:27px Georgia}
+.noor-creator-provider .noor-provider-row:nth-of-type(2) .noor-provider-icon{background:#eaf3ff;color:#396ba5}
+.noor-creator-provider .noor-provider-link{display:inline-flex!important;align-items:center;gap:7px;text-decoration:none;border-radius:11px;padding:12px 17px}
+.noor-creator-provider>.small-note{font-size:10px;line-height:1.55;margin-top:13px}
+@media(max-width:1250px){
+ #workspace.noor-teacher-activated .nt-priority-grid{grid-template-columns:minmax(0,1.15fr) minmax(270px,.85fr)}
+ #workspace.noor-teacher-activated .nt-advanced-content .nti-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:980px){
+ #workspace.noor-teacher-activated .nt-priority-grid{grid-template-columns:minmax(0,1fr)}
+ #workspace.noor-teacher-activated .nt-priority-grid>.nt-card:has(.nt-refined-actions){max-width:none}
+ #workspace.noor-teacher-activated .nt-refined-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ #workspace.noor-teacher-activated .nt-advanced-content .nti-grid{grid-template-columns:1fr}
+}
+@media(max-width:660px){
+ #workspace.noor-teacher-activated .nt-head{align-items:flex-start}
+ #workspace.noor-teacher-activated .nt-head-status{font-size:8px;padding:7px 9px;white-space:normal;max-width:130px}
+ #workspace.noor-teacher-activated .nt-priority-heading{align-items:start;flex-direction:column}
+ #workspace.noor-teacher-activated .nt-priority-grid{grid-template-columns:1fr}
+ #workspace.noor-teacher-activated .nt-priority-grid>.nt-card{border-radius:15px}
+ #workspace.noor-teacher-activated .nt-refined-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn{min-height:102px;padding:12px}
+ #workspace.noor-teacher-activated .nt-advanced-summary-tag{display:none}
+ #workspace.noor-teacher-activated .nt-advanced-details>summary{padding:14px 11px;gap:9px}
+ #workspace.noor-teacher-activated .nt-advanced-summary-icon{width:36px;height:36px;flex:none}
+ #workspace.noor-teacher-activated .nt-advanced-summary-copy>b{font-size:17px}
+ #workspace.noor-teacher-activated .nt-advanced-summary-copy>small{font-size:9px}
+ #workspace.noor-teacher-activated .nt-advanced-content{padding:12px 9px}
+ #workspace.noor-teacher-activated .nt-advanced-content .nti-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ #workspace.noor-teacher-activated .nt-advanced-chevron,#workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn{transition:none}
+}

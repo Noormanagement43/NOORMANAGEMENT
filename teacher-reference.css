@@ -207,7 +207,7 @@
 .noor-t4 .nt-btn.small{font-size:13px;min-height:40px;padding:8px 12px}
 .noor-t4 .nt-att-table th,.noor-t4 .nt-att-table td{padding:13px 10px;font-size:13px}
 .noor-t4 .nt-radio{width:26px;height:26px}
-.noor-t4 .nt-profile .nt-photo{width:140px!important;height:185px!important;min-width:140px!important;border-radius:20px!important;object-fit:cover}
+.noor-t4 .nt-profile .nt-photo{width:160px!important;height:190px!important;min-width:160px!important;border-radius:20px!important;object-fit:cover}
 
 /* Exact Teacher Dashboard Reference Upgrades (Matching Screenshot media_1793106226385_355da32f.jpg) */
 .nt-hero-stats{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}

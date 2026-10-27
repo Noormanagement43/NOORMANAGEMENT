@@ -1,0 +1,224 @@
+/* NOOR 2026 reference treatment · principal, teacher and student dashboards.
+   UI only: keep existing large portrait dimensions, upload controls, real data and RLS untouched. */
+:root{--noor-oxblood:#4c1024;--noor-burgundy:#68172f;--noor-rose:#bc6c84;--noor-champagne:#dfb48b;--noor-ivory:#fffaf6;--noor-faint:#faedf0}
+body.noor-student-mode,body:has(#view-principal-studio.active),#workspace.noor-teacher-activated{font-synthesis:none}
+body.noor-student-mode :is(button,a),#workspace.noor-teacher-activated :is(button,a),#noor-principal :is(button,a){-webkit-tap-highlight-color:transparent}
+body.noor-student-mode :is(button,a):focus-visible,#workspace.noor-teacher-activated :is(button,a):focus-visible,#noor-principal :is(button,a):focus-visible{outline:3px solid #d8a578;outline-offset:3px}
+body.noor-student-mode .sidebar,body:has(#view-principal-studio.active) .sidebar,
+#workspace.noor-teacher-activated .sidebar{background:linear-gradient(165deg,#360817 0%,#581329 49%,#431020 100%)!important;border-right:1px solid #af6c7836!important;color:#fff4ee!important}
+body.noor-student-mode .sidebar:after,
+#workspace.noor-teacher-activated .sidebar:after,
+body:has(#view-principal-studio.active) .sidebar:after{content:"❦";position:absolute;left:3%;bottom:7%;pointer-events:none;font:120px/1 Georgia,serif;color:#d98e9b1b;transform:rotate(-17deg)}
+body.noor-student-mode .sidebar :is(.brand b,.schoolbadge b,.sidebar-bottom b,.navlabel),#workspace.noor-teacher-activated .sidebar :is(.brand b,.schoolbadge b,.navlabel),
+body:has(#view-principal-studio.active) .sidebar :is(.brand b,.schoolbadge b,.navlabel){color:#fff3ec!important}
+body.noor-student-mode .sidebar :is(.brand small,.schoolbadge small,.sidebar-bottom),
+#workspace.noor-teacher-activated .sidebar :is(.brand small,.schoolbadge small,.sidebar-bottom){color:#e1b9c7!important}
+body.noor-student-mode .sidebar .nav button{color:#f1dce3!important;min-height:44px;font-size:12px!important;border-radius:10px;padding:11px 13px}
+body.noor-student-mode .sidebar .nav button:hover{background:#ffffff13!important}
+body.noor-student-mode .sidebar .nav button.active{color:#fff!important;border:1px solid #d992a15e!important;background:linear-gradient(103deg,#ac536a,#74304b)!important;box-shadow:inset 3px 0 #f3cfac,0 9px 24px #2208153d!important}
+body.noor-student-mode .main{background:linear-gradient(137deg,#fff9f7 0%,#fcf1ee 55%,#fff6f1 100%)}
+body.noor-student-mode .content{max-width:1820px;padding:18px clamp(16px,2vw,33px) 70px}
+body.noor-student-mode .topbar{background:linear-gradient(108deg,#4c152b,#682139)!important;border-bottom-color:#78435c;color:#ffeff2;min-height:62px}
+body.noor-student-mode .topbar :is(.crumb,.crumb b,.small-note,.user-mini b,.user-mini small){color:#ffedf3!important}
+body.noor-student-mode .topbar button{border-color:#ffffff56}
+body.noor-student-mode .mobileback{background:#ffffff1c!important;color:#fff!important;border-color:#ffffff5c!important}
+.sp-reference-dashboard{--sp-dark:#4a142b;--sp-muted:#8b707b;--sp-line:#f1e2e1;color:#332536;font-family:Inter,'DM Sans',system-ui,sans-serif;line-height:1.45}
+.sp-reference-dashboard .sp-kicker{letter-spacing:1.8px;color:#9e4668}
+.sp-reference-dashboard .sp-ref-hero{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(205px,275px);gap:23px;align-items:center;position:relative;overflow:hidden;padding:16px 22px 16px 18px;border:1px solid #f3ddd9;border-radius:21px;background:radial-gradient(ellipse at 100% 5%,#eec6c65c,transparent 40%),linear-gradient(110deg,#fff8f5,#fffdfc 58%,#fff0e8);box-shadow:0 11px 38px #591c3011;isolation:isolate}
+.sp-reference-dashboard .sp-ref-hero:before{content:"❧";position:absolute;top:-56px;right:185px;font:180px/1 Georgia,serif;color:#cb688b25;transform:rotate(24deg);z-index:-1;pointer-events:none}
+.sp-reference-dashboard .sp-ref-hero:after{content:"✿";position:absolute;bottom:-58px;left:-18px;font:165px/1 Georgia,serif;color:#dd8fab25;z-index:-1;pointer-events:none}
+.sp-reference-dashboard .sp-ref-hero .sp-avatar{grid-column:1;justify-self:center;position:relative;z-index:1;box-shadow:0 16px 37px #4a132d29!important}
+.sp-reference-dashboard .sp-ref-student-identity{min-width:0}
+.sp-reference-dashboard .sp-ref-student-identity h1{color:#471729;font:700 clamp(25px,2.45vw,37px)/1.15 'Playfair Display',Georgia,serif;letter-spacing:-.6px;margin:4px 0 11px;overflow-wrap:anywhere}
+.sp-reference-dashboard .sp-ref-student-identity h1 span{color:#dcad6a;font:20px Georgia}
+.sp-reference-dashboard .sp-ref-role{display:flex;align-items:center;gap:14px;margin-bottom:17px;flex-wrap:wrap;color:#482538;font-size:12px}
+.sp-reference-dashboard .sp-ref-role span{background:#e6f4e8;color:#247454;border-radius:50px;padding:6px 14px;font-weight:800}
+.sp-reference-dashboard .sp-ref-role b{font-weight:750}
+.sp-reference-dashboard .sp-ref-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;font-size:11px;color:#755666}
+.sp-reference-dashboard .sp-ref-detail-grid>span{min-width:0;overflow-wrap:anywhere}
+.sp-reference-dashboard .sp-ref-detail-grid strong{color:#452c37}
+.sp-reference-dashboard .sp-ref-hero-quote{position:relative;align-self:stretch;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:16px 11px 13px 24px;background:radial-gradient(circle at 94% 84%,#ebc9bd64,transparent 51%);border-radius:18px}
+.sp-reference-dashboard .sp-ref-hero-quote:after{content:"❦";position:absolute;right:-24px;bottom:-42px;font:125px/1 Georgia,serif;color:#b65a7928;pointer-events:none}
+.sp-reference-dashboard .sp-ref-edit{position:absolute;right:0;top:0;background:#fff;color:#78334c;border:1px solid #e8ccd2;border-radius:9px;padding:9px 13px;cursor:pointer;font-size:11px;font-weight:800;z-index:1;box-shadow:0 2px 9px #6820390b}
+.sp-reference-dashboard .sp-ref-hero-quote blockquote{font:italic 19px/1.4 'Playfair Display',Georgia,serif;color:#652a40;margin:28px 0 10px;text-align:center;position:relative;z-index:1}
+.sp-reference-dashboard .sp-ref-hero-quote>span{font:800 9px Inter,sans-serif;letter-spacing:2px;color:#a5677b;align-self:center}
+.sp-reference-dashboard .sp-ref-grid{display:grid;gap:14px;margin:14px 0;align-items:stretch}
+.sp-reference-dashboard .sp-ref-grid-top{grid-template-columns:minmax(0,1.02fr) minmax(0,1.05fr) minmax(265px,.84fr)}
+.sp-reference-dashboard .sp-ref-grid-middle{grid-template-columns:minmax(0,1.55fr) minmax(320px,.91fr)}
+.sp-reference-dashboard .sp-ref-grid-bottom{grid-template-columns:minmax(0,.98fr) minmax(0,1.05fr) minmax(0,.93fr)}
+.sp-reference-dashboard .sp-ref-grid>.sp-card,.sp-reference-dashboard .sp-ref-stack>.sp-card{height:100%;min-width:0}
+.sp-reference-dashboard .sp-ref-stack{display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:14px}
+.sp-reference-dashboard .sp-card{border-radius:16px;padding:17px 18px;border:1px solid #f1e3de;box-shadow:0 6px 28px #7233440c;background:#fffefdf7}
+.sp-reference-dashboard .sp-card-head{align-items:center;margin-bottom:13px}
+.sp-reference-dashboard .sp-card-head h2{font:700 clamp(15px,1.22vw,18px)/1.3 'Playfair Display',Georgia,serif;color:#45172a;letter-spacing:-.2px}
+.sp-reference-dashboard .sp-card-head>.sp-action{padding:6px 10px;min-height:30px;white-space:nowrap;border-radius:8px;font-size:10px;background:#fff6f6;color:#ad375c;border-color:#f5e5e5}
+.sp-reference-dashboard .sp-card-head .sp-muted{font-size:10px;color:#9c8286}
+.sp-reference-dashboard .sp-ref-att-visual{display:flex;align-items:center;gap:18px;min-height:140px}
+.sp-reference-dashboard .sp-ref-att-ring{--attendance:0;display:grid;place-items:center;flex-shrink:0;width:130px;height:130px;border-radius:50%;background:conic-gradient(#2a9165 calc(var(--attendance)*1%),#eab0b7 0);box-shadow:inset 0 0 0 1px #e9d9dd;position:relative}
+.sp-reference-dashboard .sp-ref-att-ring:before{content:"";position:absolute;inset:13px;border-radius:50%;background:#fff}
+.sp-reference-dashboard .sp-ref-att-ring>div{position:relative;text-align:center}
+.sp-reference-dashboard .sp-ref-att-ring strong{font:800 30px/1.1 Inter,sans-serif;color:#173d2f;display:block}
+.sp-reference-dashboard .sp-ref-att-ring small{font-size:10px;color:#7f6c78}
+.sp-reference-dashboard .sp-ref-att-details{flex:1;min-width:0}
+.sp-reference-dashboard .sp-ref-days{display:flex;justify-content:space-between;gap:3px;flex-wrap:wrap}
+.sp-reference-dashboard .sp-ref-days .sp-empty{padding:12px;font-size:11px}
+.sp-reference-dashboard .sp-ref-day{display:grid;justify-items:center;gap:6px}
+.sp-reference-dashboard .sp-ref-day small{font-size:10px;color:#876b76}
+.sp-reference-dashboard .sp-ref-day b{display:grid;place-items:center;border-radius:50%;width:27px;height:27px;background:#e8f5ec;color:#1b8b5b}
+.sp-reference-dashboard .sp-ref-day.absent b{background:#fce4e8;color:#d94a69}
+.sp-reference-dashboard .sp-ref-day.late b{background:#fff0d8;color:#b57824}
+.sp-reference-dashboard .sp-ref-att-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:20px}
+.sp-reference-dashboard .sp-ref-att-counts>span{border-radius:8px;padding:6px 5px;background:#e8f5ec;color:#30785c;font-size:9px;text-align:center}
+.sp-reference-dashboard .sp-ref-att-counts>span:nth-child(2){background:#fdecef;color:#c95367}
+.sp-reference-dashboard .sp-ref-att-counts>span:nth-child(3){background:#fff1de;color:#a56e2b}
+.sp-reference-dashboard .sp-ref-att-counts b{display:block;font-size:16px}
+.sp-reference-dashboard .sp-bar-row{display:grid;grid-template-columns:minmax(72px,1fr) minmax(0,2fr) 43px;gap:9px;margin:13px 0}
+.sp-reference-dashboard .sp-bar-track{height:17px;border-radius:7px;background:#f7edf2}
+.sp-reference-dashboard .sp-bar-fill{border-radius:7px;box-shadow:inset 0 -2px #ffffff4c}
+.sp-reference-dashboard .sp-bar-fill.pink{background:linear-gradient(90deg,#ed9bb4,#b8327a)}
+.sp-reference-dashboard .sp-bar-fill.blue{background:linear-gradient(90deg,#d2c8ff,#8063c1)}
+.sp-reference-dashboard .sp-bar-fill.mint{background:linear-gradient(90deg,#acf0ca,#38aa78)}
+.sp-reference-dashboard .sp-bar-fill.lilac{background:linear-gradient(90deg,#f6c9ad,#f1984f)}
+.sp-reference-dashboard .sp-bar-fill.peach{background:linear-gradient(90deg,#d4f3f0,#43b9bc)}
+.sp-reference-dashboard .sp-ref-action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.sp-reference-dashboard .sp-ref-action{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;border:1px solid #f0e7f1;border-radius:11px;padding:11px 5px;min-height:91px;background:#f2f0ff;color:#493769;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.sp-reference-dashboard .sp-ref-action:hover{transform:translateY(-2px);box-shadow:0 6px 16px #53204018}
+.sp-reference-dashboard .sp-ref-action strong{font-size:11px;line-height:1.23;font-weight:800}
+.sp-reference-dashboard .sp-ref-action-icon{font:700 25px/1 Georgia,serif}
+.sp-reference-dashboard .sp-ref-action.mint{background:#e8f7ee;color:#267252}
+.sp-reference-dashboard .sp-ref-action.rose{background:#ffecf0;color:#b74769}
+.sp-reference-dashboard .sp-ref-action.peach{background:#fff1e5;color:#a35a29}
+.sp-reference-dashboard .sp-ref-action.violet{background:#f1ebff;color:#684c9e}
+.sp-reference-dashboard .sp-ref-action.sky{background:#eaf2fe;color:#3a679e}
+.sp-reference-dashboard .sp-ref-schedule{display:grid;gap:7px}
+.sp-reference-dashboard .sp-ref-period{display:grid;grid-template-columns:99px 37px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;border-radius:10px;background:#fcf7f7;text-align:left;cursor:pointer;color:#35232a}
+.sp-reference-dashboard .sp-ref-period:nth-child(even){background:#f6f1fe}
+.sp-reference-dashboard .sp-ref-period:hover{background:#fff0f1}
+.sp-reference-dashboard .sp-ref-period-time{display:grid;gap:4px}
+.sp-reference-dashboard .sp-ref-period-time small{font-size:10px;color:#805b6d}
+.sp-reference-dashboard .sp-ref-period-time b{font-size:10px;color:#503249;white-space:nowrap}
+.sp-reference-dashboard .sp-ref-period-icon{height:34px;width:34px;border-radius:9px;background:#fce4ef;display:grid;place-items:center;color:#b54e7e;font-size:19px}
+.sp-reference-dashboard .sp-ref-period-icon.p1{background:#eee4ff;color:#8462c1}.sp-reference-dashboard .sp-ref-period-icon.p2{background:#dff5ff;color:#338cc7}.sp-reference-dashboard .sp-ref-period-icon.p3{background:#fff0d8;color:#a96a29}.sp-reference-dashboard .sp-ref-period-icon.p4{background:#dff7e8;color:#25895b}
+.sp-reference-dashboard .sp-ref-period-name{display:grid;gap:3px;min-width:0}
+.sp-reference-dashboard .sp-ref-period-name strong{font-size:12px;color:#402234}
+.sp-reference-dashboard .sp-ref-period-name small{font-size:10px;color:#907784;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-reference-dashboard .sp-ref-period-badge{background:#e8f5ee;border-radius:40px;padding:5px 9px;color:#2d795c;font-size:9px;white-space:nowrap}
+.sp-reference-dashboard .sp-ref-list{display:grid;gap:2px}
+.sp-reference-dashboard .sp-ref-list-row{display:grid;grid-template-columns:31px minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #f2e8e9;padding:9px 0;cursor:pointer;color:#563449}
+.sp-reference-dashboard .sp-ref-list-row:last-child{border-bottom:0}
+.sp-reference-dashboard .sp-ref-list-row:hover{background:#fff8fa}
+.sp-reference-dashboard .sp-ref-list-icon{height:30px;width:30px;border-radius:8px;background:#e5f5ff;color:#287bad;display:grid;place-items:center;font-size:18px}
+.sp-reference-dashboard .sp-ref-list-icon.violet{background:#f1ecff;color:#7252ab}.sp-reference-dashboard .sp-ref-list-icon.rose{background:#fce6ed;color:#bf4c75}
+.sp-reference-dashboard .sp-ref-list-row span:nth-child(2){min-width:0}
+.sp-reference-dashboard .sp-ref-list-row strong{display:block;font-size:11px;color:#513246;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-reference-dashboard .sp-ref-list-row small{display:block;color:#987f85;font-size:10px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-reference-dashboard .sp-ref-list-row em{font-size:9px;font-style:normal;background:#fce8ed;color:#ba4964;border-radius:25px;padding:5px 8px}
+.sp-reference-dashboard .sp-ref-list-row em.score{background:#eaf7ef;color:#1f7b52;font-weight:800}
+.sp-reference-dashboard .sp-ref-library{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sp-reference-dashboard .sp-ref-library .sp-ref-action{min-height:101px}
+.sp-reference-dashboard .sp-ref-library .sp-ref-action strong{font-size:10px}
+.sp-reference-dashboard .sp-ref-compact-calendar .sp-calendar{gap:3px}
+.sp-reference-dashboard .sp-ref-compact-calendar .sp-weekday{font-size:9px;padding:3px 0}
+.sp-reference-dashboard .sp-ref-compact-calendar .sp-day{min-height:32px;padding:4px;background:#fff;border:0;font-size:10px;display:grid;justify-items:center;align-content:center;gap:2px;border-radius:50%}
+.sp-reference-dashboard .sp-ref-compact-calendar .sp-day.today{background:#6b2037;box-shadow:none;color:white}
+.sp-reference-dashboard .sp-ref-compact-calendar .sp-day .sp-dot{width:5px;height:5px;border-radius:50%;padding:0;margin:0;background:#cb7097;font-size:0;line-height:0}
+.sp-reference-dashboard .sp-ref-status{font-size:10px;color:#9e7f8a;text-align:center;padding:6px 0 0}
+.sp-reference-dashboard .sp-empty{padding:18px;font-size:12px;background:#fffaf9;border-color:#f0dedf}
+/* Teacher visual refinement: portrait sizes intentionally NOT overridden. */
+#workspace.noor-teacher-activated .content{max-width:1810px;padding:19px clamp(16px,2vw,31px) 80px}
+#workspace.noor-teacher-activated .noor-t4{max-width:1670px;font-family:Inter,'DM Sans',sans-serif;color:#422839}
+#workspace.noor-teacher-activated .noor-t4 h1,#workspace.noor-teacher-activated .noor-t4 h2{font-family:'Playfair Display',Georgia,serif;color:#55142b;font-weight:700}
+#workspace.noor-teacher-activated .noor-t4 .nt-head{margin:2px 0 12px}
+#workspace.noor-teacher-activated .noor-t4 .nt-head h1{font-size:clamp(25px,2.5vw,38px)}
+#workspace.noor-teacher-activated .noor-t4 .nt-card{border:1px solid #f2e2e1;border-radius:16px;box-shadow:0 7px 25px #7129420d;background:#fffefdf9}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile{position:relative;background:radial-gradient(ellipse at 99% 14%,#f6daddad,transparent 46%),linear-gradient(112deg,#fff7f4,#fffaf8 60%,#fff0ee);overflow:hidden;border-color:#f6e4e1;isolation:isolate}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile:before{content:"❦";position:absolute;right:13%;top:-65px;font:160px Georgia,serif;color:#b5577b25;pointer-events:none;z-index:-1}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile:after{content:"✿";position:absolute;left:-15px;bottom:-53px;font:140px Georgia,serif;color:#d989a422;pointer-events:none;z-index:-1}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile h2{font-size:clamp(24px,2vw,31px);color:#4c142c}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote{background:radial-gradient(circle at 95% 98%,#eabdc48c,transparent 45%),linear-gradient(130deg,#fae5ec,#fff6f0);border:1px solid #f5dce5}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote p{font:italic 20px/1.36 'Playfair Display',Georgia,serif;color:#742e4c}
+#workspace.noor-teacher-activated .nt-reference-kpis{background:#fffdfdd6;border:1px solid #f0e1df;border-radius:15px;margin:0 0 14px;padding:10px 15px;box-shadow:0 5px 21px #67344c08}
+#workspace.noor-teacher-activated .nt-reference-greeting strong{font-family:'Playfair Display',Georgia,serif;color:#651932}
+#workspace.noor-teacher-activated .nt-reference-kpi{border-radius:11px}
+#workspace.noor-teacher-activated .nt-3d-quick-btn{border-radius:11px;transition:transform .15s,box-shadow .15s}
+#workspace.noor-teacher-activated .nt-3d-quick-btn:hover{transform:translateY(-2px);box-shadow:0 8px 17px #64223714}
+#workspace.noor-teacher-activated .nt-analytics-row .nt-card{min-height:105px}
+#workspace.noor-teacher-activated #ntTeacherIntelligence{border-radius:17px}
+#workspace.noor-teacher-activated .nt-3d-quick-grid{gap:8px}
+#workspace.noor-teacher-activated .nt-reference-action{border:1px solid #e9dfe6;border-radius:10px}
+#workspace.noor-teacher-activated .nt-reference-action:hover{background:#fff3f6}
+#workspace.noor-teacher-activated .nt-timeline .nt-period{border-radius:11px}
+#workspace.noor-teacher-activated .nt-camera{z-index:3}
+/* Principal: screenshot-inspired ivory canvas, burgundy navigation and separated right rail. */
+body:has(#view-principal-studio.active) .main{background:linear-gradient(127deg,#fef8f1,#faf0e8 57%,#fff9f2)}
+body:has(#view-principal-studio.active) .content{max-width:1880px;padding:17px clamp(16px,2vw,34px) 90px}
+#noor-principal{color:#282437;font-family:Inter,'DM Sans',system-ui,sans-serif}
+#noor-principal h1,#noor-principal .pd-profile h2{font-family:'Playfair Display',Georgia,serif;color:#551329}
+#noor-principal h2{font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#3e2430}
+#noor-principal .pd-head p{color:#8f523c}
+#noor-principal .pd-card,#noor-principal .pd-kpi{border:1px solid #f2e5db;background:#fffefdfc;box-shadow:0 7px 24px #79411f0d;border-radius:17px}
+#noor-principal .pd-layout{grid-template-columns:minmax(0,1fr) 276px;gap:15px}
+#noor-principal .pd-top{grid-template-columns:1.02fr 1fr}
+#noor-principal .pd-class{border-radius:12px;border:1px solid #ffffff93}
+#noor-principal .pd-insight{background:radial-gradient(circle at 100% 100%,#f6d4c6,transparent 62%),#fffaf4;isolation:isolate;overflow:hidden}
+#noor-principal .pd-insight:after{content:"❦";position:absolute;right:-18px;bottom:-32px;z-index:-1;font:155px Georgia,serif;color:#a962752e}
+#noor-principal .pd-insight blockquote{font-family:'Playfair Display',Georgia,serif;color:#44283c}
+#noor-principal .pd-kpi strong{letter-spacing:-1px}
+#noor-principal .pd-link{color:#a3294a;font-weight:700}
+#noor-principal .pd-schedule th{background:#fbede5}
+#noor-principal .pd-rail .pd-card header h2{font-size:16px}
+@media(max-width:1450px){
+ .sp-reference-dashboard .sp-ref-grid-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .sp-reference-dashboard .sp-ref-grid-top>.sp-card:last-child{grid-column:1/-1}
+ .sp-reference-dashboard .sp-ref-grid-top>.sp-card:last-child .sp-ref-action-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .sp-reference-dashboard .sp-ref-grid-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sp-reference-dashboard .sp-ref-grid-bottom>.sp-card:last-child{grid-column:1/-1}
+}
+@media(max-width:1130px){
+ .sp-reference-dashboard .sp-ref-hero{grid-template-columns:170px minmax(0,1fr)}
+ .sp-reference-dashboard .sp-ref-hero-quote{grid-column:1/-1;min-height:100px;display:block;text-align:center}
+ .sp-reference-dashboard .sp-ref-hero-quote blockquote{margin:26px 0 4px}
+ .sp-reference-dashboard .sp-ref-grid-middle{grid-template-columns:1fr}
+ .sp-reference-dashboard .sp-ref-stack{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}
+ #noor-principal .pd-layout{grid-template-columns:minmax(0,1fr) 225px}
+}
+@media(max-width:760px){
+ body.noor-student-mode .sidebar{height:100dvh;position:sticky;top:0}
+ body.noor-student-mode .content{padding:12px 10px 110px}
+ .sp-reference-dashboard .sp-ref-hero{grid-template-columns:minmax(105px,35%) 1fr;gap:12px;padding:13px}
+ .sp-reference-dashboard .sp-ref-hero .sp-avatar{grid-column:1;align-self:start}
+ .sp-reference-dashboard .sp-ref-student-identity h1{font-size:clamp(22px,5.5vw,29px)}
+ .sp-reference-dashboard .sp-ref-detail-grid{grid-template-columns:1fr;font-size:10px;gap:7px}
+ .sp-reference-dashboard .sp-ref-role{gap:7px;margin-bottom:9px;font-size:10px}
+ .sp-reference-dashboard .sp-ref-role span{padding:4px 9px}
+ .sp-reference-dashboard .sp-ref-grid-top,.sp-reference-dashboard .sp-ref-grid-bottom{grid-template-columns:1fr}
+ .sp-reference-dashboard .sp-ref-grid-top>.sp-card:last-child,.sp-reference-dashboard .sp-ref-grid-bottom>.sp-card:last-child{grid-column:auto}
+ .sp-reference-dashboard .sp-ref-grid-top>.sp-card:last-child .sp-ref-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .sp-reference-dashboard .sp-ref-stack{grid-template-columns:1fr}
+ .sp-reference-dashboard .sp-ref-hero-quote blockquote{font-size:16px}
+ .sp-reference-dashboard .sp-ref-att-ring{width:112px;height:112px}
+ .sp-reference-dashboard .sp-ref-att-ring strong{font-size:25px}
+ .sp-reference-dashboard .sp-ref-library{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #workspace.noor-teacher-activated .content{padding:14px 10px 100px}
+ #noor-principal .pd-layout{grid-template-columns:1fr}
+ #noor-principal h1{font-size:27px}
+ #noor-principal .pd-rail{display:grid;grid-template-columns:1fr}
+}
+@media(max-width:480px){
+ .sp-reference-dashboard .sp-ref-hero{grid-template-columns:minmax(105px,40%) minmax(0,1fr)}
+ .sp-reference-dashboard .sp-ref-hero .sp-avatar{justify-self:start}
+ .sp-reference-dashboard .sp-ref-student-identity h1{font-size:21px}
+ .sp-reference-dashboard .sp-ref-att-visual{gap:10px}
+ .sp-reference-dashboard .sp-ref-att-ring{width:100px;height:100px}
+ .sp-reference-dashboard .sp-ref-att-counts{gap:4px}
+ .sp-reference-dashboard .sp-ref-att-counts>span{font-size:8px;padding:4px 2px}
+ .sp-reference-dashboard .sp-ref-att-counts b{font-size:14px}
+ .sp-reference-dashboard .sp-ref-period{grid-template-columns:84px 30px minmax(0,1fr);gap:5px;padding:8px 7px}
+ .sp-reference-dashboard .sp-ref-period-icon{width:28px;height:28px}
+ .sp-reference-dashboard .sp-ref-period-badge{display:none}
+ .sp-reference-dashboard .sp-ref-period-time b{font-size:9px}
+ .sp-reference-dashboard .sp-card{padding:13px}
+ .sp-reference-dashboard .sp-card-head h2{font-size:16px}
+ .sp-reference-dashboard .sp-ref-action{min-height:84px}
+}
+@media(prefers-reduced-motion:reduce){.sp-reference-dashboard .sp-ref-action,.nt-3d-quick-btn{transition:none!important}}

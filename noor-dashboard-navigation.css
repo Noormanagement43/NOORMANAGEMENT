@@ -1,0 +1,21 @@
+/* Search uses only authorised navigation, no fake data. */
+#workspace .noor-ref-search{display:flex;align-items:center;gap:8px;position:relative;width:clamp(165px,23vw,330px);margin-left:auto;padding:8px 12px;border:1px solid #ead5dc;border-radius:11px;background:#fff9fb;color:#87506d;z-index:18}
+#workspace .noor-ref-search>span{font:24px/1 Georgia;color:#9a6179}
+#workspace .noor-ref-search input{width:100%;min-width:0;background:transparent;border:0!important;box-shadow:none!important;outline:none!important;color:#50253d;font-size:11px;padding:3px 0}
+#workspace .noor-ref-search input::placeholder{color:#a18c95}
+#workspace .noor-ref-search-results{position:absolute;top:calc(100% + 7px);left:0;right:0;background:#fffefa;box-shadow:0 15px 45px #4c142c2e;border:1px solid #e7cfda;border-radius:12px;padding:6px;max-height:300px;overflow:auto;color:#573147;z-index:60}
+#workspace .noor-ref-search-results[hidden]{display:none}
+#workspace .noor-ref-search-results button{display:block;background:transparent;border:0;border-radius:8px;padding:9px 10px;text-align:left;font-size:11px;color:#552940;width:100%;cursor:pointer}
+#workspace .noor-ref-search-results button:hover{background:#f9ebf0}
+#workspace .noor-ref-search-none{padding:11px;color:#8a6879;font-size:11px;line-height:1.5}
+#workspace .school-hub-switcher select:disabled{cursor:default!important;opacity:1!important}
+@media(max-width:1020px){#workspace .noor-ref-search{width:200px}}
+@media(max-width:760px){
+ #workspace .topbar{gap:6px;flex-wrap:nowrap}
+ #workspace .noor-ref-search{min-width:0;width:36px;flex:0 0 36px;padding:7px;justify-content:center;margin-left:0}
+ #workspace .noor-ref-search input{width:0;opacity:0;padding:0}
+ #workspace .noor-ref-search:focus-within{position:absolute;left:10px;right:10px;width:auto;flex:auto;z-index:40;justify-content:flex-start}
+ #workspace .noor-ref-search:focus-within input{width:100%;opacity:1;padding:3px}
+ #workspace .noor-ref-search-results{min-width:230px}
+ #workspace .school-hub-switcher{display:none!important}
+}

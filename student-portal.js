@@ -91,25 +91,54 @@ async function uploadStudentPhoto(e){
 
 function overview(){
  if(!mine())return;
- const m=visibleMarks(),avg=average(m.map(x=>x.pct).filter(x=>x!=null)),last=latestMark(),a=attendanceRate();
- const av=p().avatar_url?'<img src="'+E(p().avatar_url)+'" alt="Student photograph">':E(greeting().slice(0,1));
- const kpis=[['Attendance',a==null?'—':a+'%','Based on recorded sessions'],['My Progress',avg==null?'—':avg+'%','Average of selected actual tests'],['Pending Tasks',pending().length,'Homework not submitted'],['Latest Marks',last?money(last.marks_obtained)+' / '+money(last.assessment.max_marks):'—',last?.assessment?.title||'No marked assessment yet']];
- const header='<div class="sp-intro"><div><span class="sp-kicker">NOOR · MY SCHOOL</span><h1>Good to see you, '+E(greeting())+'</h1><p class="sp-muted">'+E(app().school?.name||'My school')+' · '+E(classText())+' · '+E(sectionText())+'</p><div class="sp-subline">'+badge('Roll '+(p().roll_number||'Not assigned'))+badge('My Learning Centre')+'</div></div><div class="sp-avatar">'+av+'</div></div>';
- const kp='<div class="sp-kpis">'+kpis.map((x,i)=>'<button type="button" class="sp-kpi" data-sp-nav="'+['student-attendance','student-progress','student-homework','student-progress'][i]+'" style="text-align:left"><div class="sp-label">'+E(x[0])+'</div><div class="sp-value">'+E(x[1])+'</div><small>'+E(x[2])+'</small></button>').join('')+'</div>';
- const next=(data.assignments||[]).filter(x=>!data.submissions.some(s=>s.assignment_id===x.id)).slice(0,4).map(x=>item(x.title,subject(x.subject_id)+' · '+(x.due_at?'Due '+dayTime(x.due_at):'No deadline'),btn('Open','student-homework'))).join('')||empty('No outstanding homework.');
- const recentNotes=(data.notes||[]).slice(0,3).map(x=>item(x.title,subject(x.subject_id)+' · '+date(x.updated_at),btn('Read','student-learning'))).join('')||empty('No published teacher notes yet.');
- const examNext=(data.exams||[]).slice().sort((a,b)=>a.assessment_date.localeCompare(b.assessment_date)).slice(0,3);const recentNotice=notices().slice(0,3).map(x=>item(x.title,x.body?.slice(0,110)||date(x.created_at),btn('Read','notices'))).join('')||empty('No active school announcements.');
- const mini=box('My Classroom','Latest teacher-published learning material','<div class="sp-list">'+recentNotes+'</div>',btn('Learning','student-learning'));
- const graph=box('Academic Performance','Actual school-assessed marks only',barsMarkup(m),btn('Progress','student-progress'));
- const due=box('Homework & Deadlines','Tasks requiring your response','<div class="sp-list">'+next+'</div>',btn('All tasks','student-homework'));
- const exbox=box('Upcoming Exams','Countdown to school-planned assessments',examNext.length?'<div class="sp-list">'+examNext.map(x=>item(x.title,subject(x.subject_id)+' · '+date(x.assessment_date)+' · '+Math.max(0,Math.ceil((new Date(x.assessment_date+'T23:59:59')-new Date())/86400000))+' day(s) left')).join('')+'</div>':empty('No upcoming school exams have been scheduled yet.'));const daily=box('My Daily Schedule','Today’s approved class periods',scheduleRows(new Date().getDay()),btn('All periods','student-schedule'));const nbox=box('Latest School Notices','Relevant authorised announcements','<div class="sp-list">'+recentNotice+'</div>',btn('All notices','notices'));
- root().innerHTML='<div class="sp-root">'+header+kp+alertErrors()+'<div class="sp-grid">'+miniCalendar()+mini+'</div><div class="sp-grid">'+graph+due+'</div>'+daily+exbox+nbox+'</div>';
+ const me=p(),school=app().school||{},markList=visibleMarks(),attendanceRows=data.recordDays||[],rate=attendanceRate();
+ const latest=latestMark(),due=pending().slice().sort((a,b)=>String(a.due_at||'').localeCompare(String(b.due_at||''))).slice(0,4);
+ const avatar=me.avatar_url?'<img src="'+E(me.avatar_url)+'" alt="Student profile photograph">':E(greeting().slice(0,1));
+ const totalPresent=attendanceRows.filter(x=>x.status==='present').length;
+ const totalAbsent=attendanceRows.filter(x=>x.status==='absent').length;
+ const totalLate=attendanceRows.filter(x=>x.status==='late').length;
+ const totalLeave=attendanceRows.filter(x=>x.status==='leave'||x.status==='excused').length;
+ const dayRecords=[...new Map(attendanceRows.map(x=>[x.day,x])).values()].sort((a,b)=>b.day.localeCompare(a.day)).slice(0,5).reverse();
+ const refAction=(icon,label,route,tone)=>'<button type="button" class="sp-ref-action '+E(tone)+'" data-sp-nav="'+E(route)+'"><span class="sp-ref-action-icon" aria-hidden="true">'+icon+'</span><strong>'+E(label)+'</strong></button>';
+ const records=dayRecords.length?dayRecords.map(x=>'<span class="sp-ref-day '+E(x.status)+'" title="'+E(date(x.day)+' · '+x.status)+'"><small>'+E(new Date(x.day+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short'}))+'</small><b>'+(x.status==='present'?'✓':x.status==='absent'?'×':x.status==='late'?'◷':'•')+'</b></span>').join(''):empty('No recorded school attendance yet.');
+ const pct=rate===null?null:Math.max(0,Math.min(100,rate));
+ const attendanceHTML='<div class="sp-ref-att-visual"><div class="sp-ref-att-ring" style="--attendance:'+(pct===null?0:pct)+'"><div><strong>'+(pct===null?'—':pct+'%')+'</strong><small>Attendance</small></div></div><div class="sp-ref-att-details"><div class="sp-ref-days">'+records+'</div><div class="sp-ref-att-counts"><span><b>'+totalPresent+'</b> Present</span><span><b>'+totalAbsent+'</b> Absent</span><span><b>'+totalLate+'</b> Late</span>'+(totalLeave?'<span><b>'+totalLeave+'</b> Leave</span>':'')+'</div></div></div>';
+ const attendanceCard=box('Today’s Attendance','Recorded school sessions · '+E(new Date().toLocaleDateString('en-IN',{month:'short',year:'numeric'})),attendanceHTML,btn('Details','student-attendance'));
+ const performanceCard=box('Subject-Wise Performance','Actual teacher-marked results',barsMarkup(markList),btn('This term','student-progress'));
+ const actionsCard=box('Quick Actions','Open your school tools','<div class="sp-ref-action-grid">'+[
+  refAction('▦','View Timetable','student-schedule','blue'),
+  refAction('▤','Open Notes','student-learning','mint'),
+  refAction('⇧','Submit Assignment','student-homework','rose'),
+  refAction('✎','Practice & Revision','student-learning','peach'),
+  refAction('✧','Ask My Teacher','student-questions','violet'),
+  refAction('▥','View Results','student-progress','sky')
+ ].join('')+'</div>');
+ const currentDay=new Date().getDay();
+ const todays=(data.periods||[]).filter(x=>x.weekday===currentDay).sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time))).slice(0,7);
+ const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E(classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge">Approved</span></button>').join('')+'</div>':empty('No approved timetable for today. Your school will publish periods here.');
+ const scheduleCard=box('Today’s Schedule',new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'}),scheduleHTML,btn('Full Timetable','student-schedule'));
+ const dueHTML=due.length?'<div class="sp-ref-list">'+due.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-homework"><span class="sp-ref-list-icon">▤</span><span><strong>'+E(x.title)+'</strong><small>'+E(subject(x.subject_id)+(x.due_at?' · Due '+dayTime(x.due_at):' · No deadline'))+'</small></span><em>'+(x.due_at&&new Date(x.due_at)<new Date()?'Overdue':'Pending')+'</em></button>').join('')+'</div>':empty('No pending assignments.');
+ const resultRows=(data.marks||[]).slice().reverse().slice(0,3);
+ const resultsHTML=resultRows.length?'<div class="sp-ref-list">'+resultRows.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-progress"><span class="sp-ref-list-icon violet">▥</span><span><strong>'+E(x.assessment.title)+'</strong><small>'+E(subject(x.assessment.subject_id)+' · '+date(x.assessment.assessment_date))+'</small></span><em class="score">'+E(money(x.marks_obtained)+' / '+money(x.assessment.max_marks))+'</em></button>').join('')+'</div>':empty('No teacher-marked results have been published.');
+ const hub='<div class="sp-ref-action-grid sp-ref-library">'+[
+  refAction('▤','Smart Notes','student-learning','rose'),refAction('▣','Learning Resources','student-learning','blue'),
+  refAction('☑','Practice Questions','student-learning','mint'),refAction('✧','Ask My Teacher','student-questions','peach')
+ ].join('')+'</div>';
+ const noticeRows=notices().slice(0,3);
+ const noticeHTML=noticeRows.length?'<div class="sp-ref-list">'+noticeRows.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="notices"><span class="sp-ref-list-icon rose">◈</span><span><strong>'+E(x.title)+'</strong><small>'+E((x.body||'').slice(0,70)||date(x.starts_at||x.created_at))+'</small></span><b>›</b></button>').join('')+'</div>':empty('No active school notices.');
+ const profile='<section class="sp-ref-hero"><div class="sp-avatar">'+avatar+'</div><div class="sp-ref-student-identity"><span class="sp-kicker">WELCOME TO NOOR</span><h1>'+E(greeting())+' <span aria-hidden="true">✦</span></h1><div class="sp-ref-role"><span>Student</span><b>'+E(classText()+' · '+sectionText())+'</b></div><div class="sp-ref-detail-grid"><span>▤ <strong>Roll Number:</strong> '+E(me.roll_number||'Not assigned')+'</span><span>▦ <strong>Student ID:</strong> '+E(me.student_id||'Not assigned')+'</span><span>⌂ <strong>School:</strong> '+E(school.name||'Your school')+'</span><span>✉ <strong>Email:</strong> '+E(me.email||u().email||'Not provided')+'</span><span>⌖ <strong>Location:</strong> '+E(me.city_or_area||school.address||'Not provided')+'</span><span>☎ <strong>Phone:</strong> '+E(me.mobile_number||'Not provided')+'</span></div></div><aside class="sp-ref-hero-quote"><button type="button" class="sp-ref-edit" data-sp-nav="profile">✎ Edit Profile</button><blockquote>“Discipline today creates the brighter you of tomorrow.”</blockquote><span>LEARN · TEACH · GROW</span></aside></section>';
+ const myCalendar='<div class="sp-ref-compact-calendar">'+calGrid(new Date().getFullYear(),new Date().getMonth())+'</div>';
+ root().innerHTML='<div class="sp-root sp-reference-dashboard">'+profile+alertErrors()+
+ '<div class="sp-ref-grid sp-ref-grid-top">'+attendanceCard+performanceCard+actionsCard+'</div>'+
+ '<div class="sp-ref-grid sp-ref-grid-middle">'+scheduleCard+'<div class="sp-ref-stack">'+box('Upcoming Assignments','School-published homework',dueHTML,btn('View all','student-homework'))+box('Recent Test Results','Graded assessments only',resultsHTML,btn('View all','student-progress'))+'</div></div>'+
+ '<div class="sp-ref-grid sp-ref-grid-bottom">'+box('My Learning Hub','Teacher-published study resources',hub,btn('Explore','student-learning'))+box('School Calendar','Academic events and due dates',myCalendar,btn('View all','student-calendar'))+box('School Notices','Official school updates',noticeHTML,btn('View all','notices'))+'</div>'+
+ '<div class="sp-ref-status">◆ Synced with your authorised school records. No sample marks or attendance are displayed.</div></div>';
  document.body.classList.add('noor-student-mode');
 }
 function barsMarkup(marks){const groups={};marks.forEach(x=>{const k=subject(x.assessment.subject_id);(groups[k]??=[]).push(x.pct)});
  const vals=Object.entries(groups).map(([k,x])=>[k,average(x.filter(z=>z!=null))]).filter(x=>x[1]!=null);
  if(!vals.length)return empty('No teacher-marked assessment results available yet.');
- return vals.map(([k,value],i)=>'<div class="sp-bar-row"><b>'+E(k)+'</b><div class="sp-bar-track"><div class="sp-bar-fill '+['pink','blue','mint','lilac','peach'][i%5]+'" style="width:'+Math.max(0,Math.min(100,value))+'%"></div></div><strong>'+Math.round(value)+'%</strong></div>').join('');}
+ return '<div class="sp-ref-subject-bars">'+vals.slice(0,6).map(([k,value],i)=>'<button type="button" class="sp-ref-subject-column" data-sp-nav="student-progress" title="'+E(k+' · '+Math.round(value)+'%')+'"><b>'+Math.round(value)+'%</b><div class="sp-ref-subject-track"><span class="sp-ref-subject-fill c'+i%5+'" style="height:'+Math.max(0,Math.min(100,value))+'%"></span></div><small>'+E(k)+'</small></button>').join('')+'</div>';}
 function lineMarkup(m){
  if(!m.length)return empty('No dated results for this range.');
  const w=640,h=205;const pts=m.map((x,i)=>[30+(m.length===1?300:i*570/(m.length-1)),190-Math.max(0,Math.min(100,x.pct))*1.6]).filter(x=>x.every(Number.isFinite));

@@ -172,8 +172,12 @@ function studentNotices(){
  box('Latest Notices','Filtered by school access and publication dates',list.length?'<div class="sp-list">'+list.map(x=>'<article class="sp-item"><h3>'+E(x.title)+'</h3><p class="sp-muted">'+E(dayTime(x.starts_at||x.created_at))+'</p><p style="white-space:pre-wrap;margin-top:9px">'+E(x.body)+'</p></article>').join('')+'</div>':empty('No active classroom or school notices at the moment.')));
 }
 function studentNotifications(){
- const list=data.notifications||[];renderShell('notifications','My Notifications','Account-specific events saved by your school.',
- box('Messages & Updates','Queued messages are not proof that an external email was delivered',list.length?'<div class="sp-list">'+list.map(x=>item(x.subject||x.event_type||'School update',dayTime(x.created_at)+' · '+(x.status||'queued'))).join('')+'</div>':empty('No account notifications have been recorded yet.')));
+ const personal=data.notifications||[],published=notices();
+ const noticesHtml=published.length?published.map(x=>'<article class="sp-item"><h3>▤ '+E(x.title||'School notice')+'</h3><p class="sp-muted">'+E(dayTime(x.starts_at||x.created_at))+' · Published for students</p><p style="white-space:pre-wrap;margin-top:7px">'+E(x.body||'')+'</p></article>').join(''):'';
+ const personalHtml=personal.map(x=>item(x.subject||x.event_type||'School update',dayTime(x.created_at)+' · '+(x.status||'queued'))).join('');
+ renderShell('notifications','My Notifications','Published school notices and your personal notifications.',
+  box('Messages & School Notices','In-app delivery is separate from optional email delivery.',
+   (noticesHtml||personalHtml)?'<div class="sp-list">'+noticesHtml+personalHtml+'</div>':empty('No notifications or school notices yet.')));
 }
 function marksTable(m){return m.length?'<div class="sp-table-scroll"><table><thead><tr><th>Date</th><th>Test</th><th>Subject</th><th>Marks</th><th>Feedback</th></tr></thead><tbody>'+m.slice().reverse().map(x=>'<tr><td>'+E(date(x.assessment.assessment_date))+'</td><td>'+E(x.assessment.title)+'</td><td>'+E(subject(x.assessment.subject_id))+'</td><td><strong>'+E(money(x.marks_obtained))+' / '+E(money(x.assessment.max_marks))+'</strong></td><td>'+E(x.teacher_feedback||'Awaiting feedback')+'</td></tr>').join('')+'</tbody></table></div>':empty('No teacher-marked results available.');
 }

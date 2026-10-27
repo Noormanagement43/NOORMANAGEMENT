@@ -41,6 +41,34 @@ function activityHtml(items){
  if(!items.length)return '<p class="nt-empty">No recent activity has been recorded yet.</p>';
  return items.map(x=>'<div class="nt-activity-row"><span class="nt-round" style="height:35px;width:35px;font-size:15px">'+esc(x.icon)+'</span><div><strong>'+esc(x.title)+'</strong><small>'+esc(x.sub)+'</small></div><span class="nt-time">'+esc(dateTime(x.timestamp))+'</span></div>').join('');
 }
+function realTeachingAnalytics(periods,runs,checkin){
+ const ordered=[...periods].sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
+ const groups=new Map();
+ for(const period of ordered){
+  const name=period.subject_name||'Subject';
+  const g=groups.get(name)||{total:0,completed:0};
+  g.total++;
+  if(runs.get(period.id)?.status==='done')g.completed++;
+  groups.set(name,g);
+ }
+ const columns=[...groups.entries()].slice(0,6).map(([name,g],i)=>{
+  const pct=Math.round(g.completed/g.total*100);
+  return '<div class="nt-ref-subject"><strong>'+pct+'%</strong><div class="nt-ref-subject-well"><span class="c'+(i%5)+'" style="height:'+pct+'%"></span></div><small>'+esc(name)+'</small></div>';
+ }).join('')||'<p class="nt-empty">No approved subject periods for today.</p>';
+ const total=ordered.length,done=ordered.filter(x=>runs.get(x.id)?.status==='done').length;
+ const pct=total?Math.round(done/total*100):null;
+ const display=ordered.slice(0,7);
+ const xcoords=display.map((p,i)=>{
+  const run=runs.get(p.id),val=run?.status==='done'?100:run?.status==='ongoing'?50:0;
+  return {x:25+i*(display.length>1?270/(display.length-1):0),y:105-val*.85,period:p.period_number,val};
+ });
+ const line=xcoords.length?'<svg class="nt-ref-teaching-line" viewBox="0 0 340 145" role="img" aria-label="Today’s period completion timeline"><line x1="24" x2="320" y1="105" y2="105" stroke="#e8d6e3"/><line x1="24" x2="320" y1="62.5" y2="62.5" stroke="#f4e4ef" stroke-dasharray="4 3"/><polyline fill="none" stroke="#bd4b83" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+xcoords.map(p=>p.x+','+p.y).join(' ')+'"/>'+xcoords.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="#ad3f7b"><title>Period '+esc(p.period)+': '+p.val+'% completion status</title></circle><text x="'+p.x+'" y="125" text-anchor="middle" font-size="9" fill="#865977">P'+esc(p.period)+'</text>').join('')+'</svg>':'<p class="nt-empty">No periods scheduled for today.</p>';
+ const attend=checkin?.status==='present';
+ return '<div class="nt-analytics-row nt-ref-analytics">'+
+ '<article class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▥</span><h2>Subject-Wise Teaching Progress</h2></div><span class="nt-pill">Today</span></div><div class="nt-ref-subject-grid">'+columns+'</div><p class="nt-muted">Approved periods completed · No invented marks</p></article>'+
+ '<article class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">⌁</span><h2>Teaching Period Timeline</h2></div><span class="nt-pill">Today</span></div>'+line+'<p class="nt-muted">'+done+' of '+total+' approved periods completed</p></article>'+
+ '<article class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">◉</span><h2>Today’s Status Overview</h2></div><span class="nt-pill '+(attend?'done':'waiting')+'">'+(attend?'Checked in':'Check-in pending')+'</span></div><div class="nt-ref-overview-ring" style="--period-pct:'+(pct??0)+'"><div><strong>'+(pct==null?'—':pct+'%')+'</strong><small>Periods complete</small></div></div><div class="nt-ref-counts"><span>✓ '+done+' Completed</span><span>◷ '+Math.max(0,total-done)+' Remaining</span></div></article></div>';
+}
 async function render(){
  const app=get(),wrapper=root();
  if(!isTeacher()||!wrapper||rendering)return;
@@ -116,7 +144,7 @@ async function render(){
  '<button type="button" class="nt-event" style="width:100%;text-align:left;background:none;border:0" data-link="notifications"><span class="nt-round">✧</span><span><b>School messages</b><small>View tasks and communication</small></span><span class="nt-arrow">›</span></button></section>'+
  '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✓</span><h2>Principal Tasks</h2></div><button class="nt-btn small" data-link="weekly-plan">Weekly plan</button></div>'+
  (assignedTasks.slice(0,3).map(x=>'<div class="nt-event"><span class="nt-round">▤</span><span><b>'+esc(x.title)+'</b><small>'+esc(x.due_at?formatDate(x.due_at):'No due date')+' · '+esc(taskStatus.get(x.id)||x.status||'assigned')+'</small></span></div>').join('')||'<p class="nt-muted">No pending Principal tasks.</p>')+'</section></div></div>'+
- '<div class="nt-analytics-row"><article class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▥</span><h2>Teaching Analytics</h2></div></div><p class="nt-muted">Verified daily period progress and assigned work are shown below. Subject performance appears when assessed results are published.</p></article></div>'+'<section class="nt-card nt-attendance"><div class="nt-card-head"><div><span class="nt-icon">♟</span><h2>Student Attendance</h2></div><button class="nt-btn" data-link="attendance">View Full Attendance →</button></div><div id="ntAttendanceEmbed"><p class="nt-muted">Loading assigned students and attendance…</p></div></section>'+
+ realTeachingAnalytics(approved,runByPeriod,checkin.data)+'<section class="nt-card nt-attendance"><div class="nt-card-head"><div><span class="nt-icon">♟</span><h2>Student Attendance</h2></div><button class="nt-btn" data-link="attendance">View Full Attendance →</button></div><div id="ntAttendanceEmbed"><p class="nt-muted">Loading assigned students and attendance…</p></div></section>'+
  '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">◷</span><h2>Recent Activity</h2></div><button class="nt-btn small" data-link="calendar">School Calendar</button></div><div class="nt-activity">'+activityHtml(activities)+'</div></section>'+
  '<input id="ntHiddenPhoto" type="file" accept="image/jpeg,image/png,image/webp" hidden></div>';
  const readErrors=[extra.error,periods.error,runs.error,checkin.error,assignees.error,personal.error,notices.error,calendar.error,assignment.error,membership.error].filter(Boolean);

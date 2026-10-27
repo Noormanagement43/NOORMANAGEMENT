@@ -23,7 +23,7 @@ async function askGemini(prompt:string,structured=false):Promise<string>{
   const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
    method:"POST",
    headers:{"Content-Type":"application/json","x-goog-api-key":api},
-   body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:structured?.45:.6,maxOutputTokens:structured?4100:1100,...(structured?{responseMimeType:"application/json"}:{})}}),
+   body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:structured ? 0.45 : 0.6,maxOutputTokens:structured?4100:1100,...(structured?{responseMimeType:"application/json"}:{})}}),
    signal:ctrl.signal
   });
   if(!response.ok){console.error("Gemini request failed",response.status);throw Error(response.status===429?"AI is currently busy; retry soon.":"AI provider returned an error ("+response.status+").")}

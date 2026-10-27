@@ -300,7 +300,7 @@ async function enterWorkspace(user){currentUser=user;try{let data=null,error=nul
 async function refreshAvatar(profile){if(!profile?.avatar_path)return null;const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(profile.avatar_path,600);if(error){console.warn(error);return null;}return data?.signedUrl||null;}
 function profileAvatarHTML(profile,large=false){const size=large?'width:148px;height:164px;border-radius:20px;font-size:38px;flex-shrink:0;':'';const url=profile?.avatar_url||'';return `<div class="avatar" style="${size}">${url?`<img src="${escapeHtml(url)}" alt="">`:escapeHtml(initials(profile?.full_name))}</div>`;}
 function workspaceLabel(){if(currentProfile?.role==='creator')return 'Platform Master Control';const name=currentSchool?.name||currentProfile?.school_name_submitted||'';const isUniv=(currentSchool?.institution_type==='university'||currentSchool?.type==='university'||/college|university|institute/i.test(name));const instType=isUniv?'University Workspace':'School Workspace';return name?name+' · '+instType:instType;}
-function navConfig(){const role=currentProfile?.role||'student';if(role==='creator')return [{id:'overview',icon:'⌂',label:'Platform overview'},{id:'schools',icon:'⌂',label:'Master Control Centre'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(currentProfile?.status!=='active'||(role!=='creator'&&currentSchool&&(currentSchool.verification_status!=='verified'||currentSchool.account_status!=='active'||!currentSchool.is_active)))return [{id:'overview',icon:'⌂',label:'Access status'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(role==='student')return [{id:'overview',icon:'⌂',label:'Dashboard'},{id:'profile',icon:'◉',label:'My Profile'},{id:'student-schedule',icon:'▦',label:'My Timetable'},{id:'student-attendance',icon:'✓',label:'Attendance'},{id:'student-progress',icon:'▥',label:'Tests & Results'},{id:'student-homework',icon:'☑',label:'Assignments'},{id:'student-learning',icon:'▤',label:'My Learning Hub'},{id:'student-calendar',icon:'▦',label:'Calendar'},{id:'notices',icon:'◇',label:'School Notices'},{id:'notifications',icon:'♧',label:'Messages'},{id:'student-questions',icon:'✎',label:'Ask My Teacher'},{id:'student-planner',icon:'◷',label:'Study Planner'},{id:'student-portfolio',icon:'☆',label:'Achievements'},{id:'settings',icon:'⚙',label:'Settings'}];if(role==='teacher')return [{id:'overview',icon:'⌂',label:'Teacher Dashboard'},{id:'profile',icon:'◉',label:'My Profile'},{id:'schedules',icon:'▦',label:'My Timetable'},{id:'attendance',icon:'♧',label:'Student Attendance'},{id:'school-tasks',icon:'☑',label:'Tasks & Deadlines'},{id:'teacher-classroom',icon:'▤',label:'Classwork & Resources'},{id:'assessments',icon:'▥',label:'Assessments'},{id:'notices',icon:'◇',label:'Notices'},{id:'teaching',icon:'✦',label:'Smart Notes'},{id:'paper-generator',icon:'✎',label:'Assignment Generator'},{id:'notifications',icon:'✉',label:'Messages'},{id:'school-calendar',icon:'▦',label:'Calendar'},{id:'weekly-plan',icon:'▤',label:'Weekly Lesson Plan'},{id:'daily-report',icon:'▤',label:'Teaching Report'},{id:'student-gaps',icon:'◈',label:'Learning Gap Detector'},{id:'syllabus-tracker',icon:'▤',label:'Syllabus Tracker'},{id:'deadline-planner',icon:'▦',label:'Deadline Planner'},{id:'teaching-diary',icon:'✎',label:'Teaching Diary'},{id:'rubric-assistant',icon:'✦',label:'Rubric Grading'},{id:'settings',icon:'⚙',label:'Settings'}];if(role==='parent')return [{id:'overview',icon:'⌂',label:'Parent dashboard'},{id:'notices',icon:'◇',label:'School Notices'},{id:'notifications',icon:'◇',label:'My Notifications'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(['owner','principal'].includes(role))return [{id:'overview',icon:'⌂',label:'Principal dashboard'},{id:'classes',icon:'▦',label:'Classes & Sections'},{id:'teacher-assignments',icon:'✎',label:'Teacher Assignments'},{id:'student-directory',icon:'♙',label:'People & Students'},{id:'staff-management',icon:'✦',label:'Staff & Access'},{id:'attendance',icon:'✓',label:'Attendance by class'},{id:'academic-monitoring',icon:'▥',label:'Daily Academic Monitoring'},{id:'school-calendar',icon:'▦',label:'School Calendar'},{id:'notices',icon:'◇',label:'Notices & Meetings'},{id:'parent-support',icon:'♡',label:'Parent Follow-ups'},{id:'school-tasks',icon:'☑',label:'Tasks & Deadlines'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];return [{id:'overview',icon:'⌂',label:role==='manager'?'Manager dashboard':'Admin overview'},{id:'management',icon:'▤',label:'Management Portal'},{id:'classes',icon:'▦',label:'Classes & Sections'},{id:'teacher-assignments',icon:'✎',label:'Teacher Assignments'},{id:'school-calendar',icon:'▦',label:'School Calendar'},{id:'academic-monitoring',icon:'▥',label:'Academic Monitoring'},{id:'student-directory',icon:'♙',label:'Student Directory'},{id:'teacher-directory',icon:'✎',label:'Teacher Directory'},{id:'staff-management',icon:'⚿',label:'Staff & Access'},{id:'attendance',icon:'✓',label:'Attendance'},{id:'assessments',icon:'▧',label:'Assessments & Marks'},{id:'schedules',icon:'◷',label:'Schedules & Extra Classes'},{id:'notifications',icon:'◇',label:'My Notifications'},{id:'meetings',icon:'▦',label:'Meetings'},{id:'notices',icon:'◇',label:'Notices'},...(role==='creator'?[{id:'schools',icon:'⌂',label:'Master Control Centre'}]:[]),{id:'audit-logs',icon:'≡',label:'Audit Logs'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];}
+function navConfig(){const role=currentProfile?.role||'student';if(role==='creator')return [{id:'overview',icon:'⌂',label:'Platform overview'},{id:'schools',icon:'⌂',label:'Master Control Centre'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(currentProfile?.status!=='active'||(role!=='creator'&&currentSchool&&(currentSchool.verification_status!=='verified'||currentSchool.account_status!=='active'||!currentSchool.is_active)))return [{id:'overview',icon:'⌂',label:'Access status'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(role==='student')return [{id:'overview',icon:'⌂',label:'Dashboard'},{id:'profile',icon:'◉',label:'My Profile'},{id:'student-schedule',icon:'▦',label:'My Timetable'},{id:'student-attendance',icon:'✓',label:'Attendance'},{id:'student-progress',icon:'▥',label:'Tests & Results'},{id:'student-homework',icon:'☑',label:'Assignments'},{id:'student-learning',icon:'▤',label:'My Learning Hub'},{id:'student-calendar',icon:'▦',label:'Calendar'},{id:'notices',icon:'◇',label:'School Notices'},{id:'notifications',icon:'♧',label:'Messages'},{id:'student-questions',icon:'✎',label:'Ask My Teacher'},{id:'student-planner',icon:'◷',label:'Study Planner'},{id:'student-portfolio',icon:'☆',label:'Achievements'},{id:'settings',icon:'⚙',label:'Settings'}];if(role==='teacher')return [{id:'overview',icon:'⌂',label:'Dashboard'},{id:'attendance',icon:'✓',label:'Take Attendance'},{id:'schedules',icon:'◷',label:'My Timetable'},{id:'teacher-classroom',icon:'▤',label:'My Classes'},{id:'paper-generator',icon:'✎',label:'Assignments & Papers'},{id:'teaching',icon:'✦',label:'Smart Notes & Resources'},{id:'assessments',icon:'▥',label:'Marks & Progress'},{id:'school-tasks',icon:'☑',label:'Tasks & Deadlines'},{id:'notifications',icon:'✉',label:'Notices & Messages'},{id:'school-calendar',icon:'▦',label:'Calendar'},{id:'profile',icon:'◉',label:'My Profile'},{id:'settings',icon:'⚙',label:'Settings'}];if(role==='parent')return [{id:'overview',icon:'⌂',label:'Parent dashboard'},{id:'notices',icon:'◇',label:'School Notices'},{id:'notifications',icon:'◇',label:'My Notifications'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];if(['owner','principal'].includes(role))return [{id:'overview',icon:'⌂',label:'Dashboard'},{id:'classes',icon:'▦',label:'Classes & Sections'},{id:'teacher-assignments',icon:'◷',label:'Timetables & Teachers'},{id:'staff-management',icon:'♧',label:'Staff & Access'},{id:'student-directory',icon:'♙',label:'Students'},{id:'attendance',icon:'✓',label:'Daily Attendance'},{id:'academic-monitoring',icon:'▥',label:'Academic Monitoring'},{id:'notices',icon:'◇',label:'Notices & Meetings'},{id:'school-tasks',icon:'☑',label:'Tasks & Deadlines'},{id:'school-calendar',icon:'▦',label:'School Calendar'},{id:'parent-support',icon:'♡',label:'Parent Communication'},{id:'profile',icon:'◉',label:'My Profile'},{id:'settings',icon:'⚙',label:'Settings'}];return [{id:'overview',icon:'⌂',label:role==='manager'?'Manager dashboard':'Admin overview'},{id:'management',icon:'▤',label:'Management Portal'},{id:'classes',icon:'▦',label:'Classes & Sections'},{id:'teacher-assignments',icon:'✎',label:'Teacher Assignments'},{id:'school-calendar',icon:'▦',label:'School Calendar'},{id:'academic-monitoring',icon:'▥',label:'Academic Monitoring'},{id:'student-directory',icon:'♙',label:'Student Directory'},{id:'teacher-directory',icon:'✎',label:'Teacher Directory'},{id:'staff-management',icon:'⚿',label:'Staff & Access'},{id:'attendance',icon:'✓',label:'Attendance'},{id:'assessments',icon:'▧',label:'Assessments & Marks'},{id:'schedules',icon:'◷',label:'Schedules & Extra Classes'},{id:'notifications',icon:'◇',label:'My Notifications'},{id:'meetings',icon:'▦',label:'Meetings'},{id:'notices',icon:'◇',label:'Notices'},...(role==='creator'?[{id:'schools',icon:'⌂',label:'Master Control Centre'}]:[]),{id:'audit-logs',icon:'≡',label:'Audit Logs'},{id:'profile',icon:'◉',label:'My profile'},{id:'settings',icon:'⚙',label:'Appearance & Sound'}];}
 function renderMobileNav(){
  const workspace=$('workspace');if(!workspace||!currentProfile)return;
  let bar=$('noorMobileNav');if(!bar){bar=document.createElement('nav');bar.id='noorMobileNav';bar.setAttribute('aria-label','Mobile role navigation');workspace.appendChild(bar)}
@@ -841,15 +841,12 @@ async function renderSectionList(){
 async function renderCreatorOverview(){
  const el=$('view-overview');
  el.innerHTML='<div class="welcome"><div class="eyebrow">NOOR · Platform Creator</div><h2>Master Control Centre</h2><p>Search all schools and people, then open the relevant school record to review its activity and student progress.</p></div><div class="stats" id="creatorStats"></div>' +
-  '<div class="panel" style="margin-top:16px;border:1px solid #ebd4e0;background:linear-gradient(135deg,#fffdfd 0%,#fcf6f9 100%)">' +
-    '<div class="panelhead"><div><h3 style="color:#5a233c;font-size:15px">🔑 Platform API & Communications (Gemini & Brevo)</h3><p>Configure platform-level Gemini AI intelligence and Brevo transactional SMTP automation. All institutions, schools, and roles inherit these credentials automatically in the background.</p></div><span class="pill good" id="creatorApiStatus">Active & Synchronised</span></div>' +
-    '<div class="formcols">' +
-      '<div class="field full"><label for="creatorGeminiKey">Google Gemini API Key (Co-Pilot, Paper Generator & Smart Notes)</label><input id="creatorGeminiKey" type="password" placeholder="Paste Gemini API Key" autocomplete="off"><span class="help">Enables real-time AI Insights, Question Paper Generation, and Voice Assistant across all schools.</span></div>' +
-      '<div class="field"><label for="creatorBrevoKey">Brevo Transactional SMTP API Key</label><input id="creatorBrevoKey" type="password" placeholder="Paste Brevo API Key (xsmtpsib-...)" autocomplete="off"><span class="help">Powers school task reminders, exam alerts, and email automation.</span></div>' +
-      '<div class="field"><label for="creatorSenderEmail">Official Sender Email Address</label><input id="creatorSenderEmail" type="email" placeholder="e.g. annoorhub786@gmail.com" value="annoorhub786@gmail.com"><span class="help">Verified sender address in your Brevo account.</span></div>' +
-    '</div>' +
-    '<div class="row" style="margin-top:12px;gap:8px"><button class="btn" id="btnSaveCreatorKeys" type="button">Save Platform Keys</button><button class="btn light" id="btnTestGeminiKey" type="button">Test Gemini Connection ⚡</button><button class="btn light" id="btnTestBrevoEmail" type="button">Send Test Email via Brevo ✉️</button></div>' +
-    '<div id="creatorKeyResult" style="margin-top:10px"></div>' +
+  '<div class="panel noor-creator-provider" style="margin-top:16px;border:1px solid #ebd4e0;background:linear-gradient(135deg,#fffdfd,#fcf6f9)">' +
+    '<div class="panelhead"><div><h3>🔐 AI & Email Integrations</h3><p>Provider keys are stored only inside the secure Supabase project, never on this website or inside your browser.</p></div><span class="pill soft">Server setup required</span></div>' +
+    '<div class="noor-provider-row"><span class="noor-provider-icon">✦</span><div><b>Gemini AI</b><small>Use the secret name GEMINI_API_KEY. Works only after its Edge Function is deployed to the chosen database.</small></div></div>' +
+    '<div class="noor-provider-row"><span class="noor-provider-icon">✉</span><div><b>Brevo Email</b><small>Use BREVO_API_KEY and EMAIL_FROM with a verified sender. Email delivery requires a deployed server function.</small></div></div>' +
+    '<a class="btn noor-provider-link" href="https://supabase.com/dashboard/project/ayrryemawwplguaauxij/settings/functions" target="_blank" rel="noopener noreferrer">Open new NOOR Supabase · Secrets ↗</a>' +
+    '<p class="small-note">Important: This public website still uses its earlier Supabase schema. Do not switch its credentials until the new project supports the live NOOR school workflows.</p>' +
   '</div>' + '<div class="panel"><div class="panelhead"><div><h3>Find a school or person</h3><p>Read-only platform overview. School notices and daily operations belong in the school leadership workspace.</p></div><button class="btn light" type="button" onclick="openView(\'schools\')">All schools →</button></div><div class="toolbar"><input id="creatorSearch" class="field-inline" style="width:100%" placeholder="Search school, student, teacher, principal, manager, roll number…"><button class="btn soft" id="creatorSearchBtn" type="button">Search</button></div><div class="row" id="creatorRoleFilters" style="gap:7px;flex-wrap:wrap;margin:10px 0 16px"><button class="btn soft" data-rolefilter="all">All</button><button class="btn light" data-rolefilter="school">Schools</button><button class="btn light" data-rolefilter="student">Students</button><button class="btn light" data-rolefilter="teacher">Teachers</button><button class="btn light" data-rolefilter="principal">Principals</button><button class="btn light" data-rolefilter="manager">Managers</button><button class="btn light" data-rolefilter="owner">School owners</button></div><div id="creatorResults" class="class-list"><div class="empty">Loading platform data…</div></div></div>';
  try{
   const [sr,pr]=await Promise.all([
@@ -870,75 +867,7 @@ async function renderCreatorOverview(){
   };
   draw();$('creatorSearchBtn').addEventListener('click',draw);$('creatorSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();draw();}});
 
-  // Bind Creator API Vault inputs and test buttons
-  const geminiInput = $('creatorGeminiKey');
-  const brevoInput = $('creatorBrevoKey');
-  const senderInput = $('creatorSenderEmail');
-  if (geminiInput) geminiInput.value = localStorage.getItem('noor_gemini_api_key') || '';
-  if (brevoInput) brevoInput.value = localStorage.getItem('noor_brevo_api_key') || '';
-  if (senderInput) senderInput.value = localStorage.getItem('noor_sender_email') || 'annoorhub786@gmail.com';
-
-  $('btnSaveCreatorKeys')?.addEventListener('click', () => {
-    const gKey = geminiInput?.value.trim() || '';
-    const bKey = brevoInput?.value.trim() || '';
-    const sMail = senderInput?.value.trim() || 'annoorhub786@gmail.com';
-    if (gKey) localStorage.setItem('noor_gemini_api_key', gKey);
-    else localStorage.removeItem('noor_gemini_api_key');
-    if (bKey) localStorage.setItem('noor_brevo_api_key', bKey);
-    else localStorage.removeItem('noor_brevo_api_key');
-    localStorage.setItem('noor_sender_email', sMail);
-    toast('Platform API credentials saved and synchronised for all institutions.', 'success');
-    const res = $('creatorKeyResult');
-    if (res) res.innerHTML = '<div class="notice success">✓ Platform credentials saved. Gemini AI and Brevo automation are live across all schools.</div>';
-  });
-
-  $('btnTestGeminiKey')?.addEventListener('click', async () => {
-    const gKey = geminiInput?.value.trim() || localStorage.getItem('noor_gemini_api_key');
-    const res = $('creatorKeyResult');
-    if (!gKey) { if (res) res.innerHTML = '<div class="notice error">Enter a Gemini API key first.</div>'; return; }
-    if (res) res.innerHTML = '<div class="notice info">Testing Gemini API connection…</div>';
-    try {
-      const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + gKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Respond with: NOOR Gemini Intelligence Connected Successfully' }] }] })
-      });
-      if (!resp.ok) throw new Error('API returned status ' + resp.status);
-      const data = await resp.json();
-      const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Connection verified';
-      if (res) res.innerHTML = '<div class="notice success">✓ ' + escapeHtml(txt) + '</div>';
-    } catch(err) {
-      if (res) res.innerHTML = '<div class="notice error">Gemini connection failed: ' + escapeHtml(err.message) + '</div>';
-    }
-  });
-
-  $('btnTestBrevoEmail')?.addEventListener('click', async () => {
-    const bKey = brevoInput?.value.trim() || localStorage.getItem('noor_brevo_api_key');
-    const sMail = senderInput?.value.trim() || 'annoorhub786@gmail.com';
-    const recipient = currentUser?.email || 'annoorhub786@gmail.com';
-    const res = $('creatorKeyResult');
-    if (!bKey) { if (res) res.innerHTML = '<div class="notice error">Enter a Brevo API key first.</div>'; return; }
-    if (res) res.innerHTML = '<div class="notice info">Dispatching test email to ' + escapeHtml(recipient) + '…</div>';
-    try {
-      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: { 'accept': 'application/json', 'api-key': bKey, 'content-type': 'application/json' },
-        body: JSON.stringify({
-          sender: { name: 'NOOR Management (نور)', email: sMail },
-          to: [{ email: recipient }],
-          subject: 'NOOR Management — Platform Brevo Integration Verified',
-          htmlContent: '<h3>NOOR Platform Email Automation</h3><p>Your Brevo API Key has been verified and configured for all institution workspaces.</p>'
-        })
-      });
-      if (!r.ok) {
-        const errJson = await r.json().catch(()=>({}));
-        throw new Error(errJson.message || 'Brevo responded with code ' + r.status);
-      }
-      if (res) res.innerHTML = '<div class="notice success">✓ Test email delivered to ' + escapeHtml(recipient) + ' successfully!</div>';
-    } catch(err) {
-      if (res) res.innerHTML = '<div class="notice error">Brevo email test failed: ' + escapeHtml(err.message) + '</div>';
-    }
-  });
+  // Provider secrets must be configured in Supabase Edge Functions; browser does not accept credentials.
  }catch(e){$('creatorResults').innerHTML='<div class="notice error">Could not load platform data: '+escapeHtml(e.message)+'</div>';}
 }
 async function renderSchools(){if(currentProfile.role!=='creator'){$('view-schools').innerHTML='<div class="empty">Platform creator access required.</div>';return;}$('view-schools').innerHTML='<div class="headrow"><div><div class="eyebrow">Platform administration</div><h1>Master Control Centre</h1><p>Search schools, view student/attendance data, and manage subscription access. Pausing never deletes records.</p></div></div><div class="panel"><div class="panelhead"><div><h3>All schools</h3><p>Choose a school to open its complete data view.</p></div></div><div class="toolbar"><input id="schoolSearch" class="field-inline" style="width:100%" placeholder="Search school name, email or status…"></div><div id="schoolList" class="class-list"><div class="empty">Loading schools…</div></div></div><div id="creatorSchoolDetail" class="panel"><div class="empty">Select a school above.</div></div>';$('schoolSearch').addEventListener('input',filterCreatorSchoolList);await loadSchoolList();}

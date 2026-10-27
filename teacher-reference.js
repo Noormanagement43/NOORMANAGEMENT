@@ -118,7 +118,7 @@ async function render(){
  const activities=logActivity(allRuns,approved,checkin.data,validNotices);
  const assignedTasks=tasks.filter(x=>taskStatus.get(x.id)!=='completed'&&taskStatus.get(x.id)!=='done');
  wrapper.innerHTML='<div class="noor-t4">'+
- '<div class="nt-head"><div><span class="nt-kicker">NOOR · SCHOOL WORKSPACE</span><h1>Teacher Dashboard</h1><div class="nt-muted">Today’s classes, attendance and learning — organised in one place.</div></div><button type="button" class="nt-btn primary nt-main-attendance" data-action="take-attendance">✓ Take Attendance ↗</button></div>'+
+ '<div class="nt-head"><div><span class="nt-kicker">NOOR · SCHOOL WORKSPACE</span><h1>Teacher Dashboard</h1><div class="nt-muted">Today’s classes, attendance and learning — organised in one place.</div></div><span class="nt-head-status">◈ SCHOOL RECORDS · LIVE VIEW</span></div>'+
  '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div><button class="nt-camera" id="ntChangePhoto" type="button" aria-label="Change profile photograph">◉</button></div>'+
  '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span><button class="nt-btn" id="ntEditProfile" type="button">✎ Edit Profile</button></div></div>'+
  '<div class="nt-profile-grid">'+det('Employee ID:',details.employee_code,'▤')+det('Joining date:',formatDate(details.joined_on),'▣')+det('Date of birth:',formatDate(details.date_of_birth),'♧')+det('Qualification:',details.qualification,'◈')+

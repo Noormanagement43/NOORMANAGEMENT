@@ -395,12 +395,12 @@ async function renderClasses(){
   $('tabSchoolMode').onclick = () => { noorActiveStructureTab = 'school'; renderClasses(); };
   $('tabUnivMode').onclick = () => { noorActiveStructureTab = 'university'; renderClasses(); };
 
-  await fetchClasses(schoolId);
+  await fetchStructureClasses(schoolId);
 }
 
 window.allSectionRows = [];
 
-async function fetchClasses(schoolId){
+async function fetchStructureClasses(schoolId){
   const [cRes, sRes] = await Promise.all([
     supabaseClient.from('classes').select('id,school_id,name,sort_order,is_active').eq('school_id', schoolId),
     supabaseClient.from('sections').select('id,class_id,name,is_active').order('name')
@@ -414,21 +414,15 @@ async function fetchClasses(schoolId){
   let rawClasses = cRes.data || [];
   window.allSectionRows = sRes.data || [];
 
-  // Automatically ensure Classes 1 to 10 exist for School mode
-  if (noorActiveStructureTab === 'school' && !rawClasses.some(c => naturalClassRank(c.name) >= 1 && naturalClassRank(c.name) <= 10)) {
-    const schoolDefaults = [...Array(10)].map((_, i) => ({ school_id: schoolId, name: 'Class ' + (i + 1), sort_order: i + 1, is_active: true }));
-    const autoIns = await supabaseClient.from('classes').insert(schoolDefaults).select();
-    if (!autoIns.error && autoIns.data) rawClasses = [...rawClasses, ...autoIns.data];
-  }
-
+  // Reading the page is read-only. Create school classes only after the Principal clicks Generate.
   classRows = sortClassesNaturally(rawClasses);
   const container = $('structureContent');
   if (!container) return;
 
   if (noorActiveStructureTab === 'school') {
     // School Mode: Classes 1 to 10 + Extra Classes
-    const schoolList = classRows.filter(c => naturalClassRank(c.name) >= 1 && naturalClassRank(c.name) <= 100);
-    const extraList = classRows.filter(c => naturalClassRank(c.name) === 100);
+    const schoolList = classRows.filter(c => naturalClassRank(c.name) >= 1 && naturalClassRank(c.name) <= 10);
+    const extraList = classRows.filter(c => (c.sort_order >= 100 && c.sort_order < 200) || (naturalClassRank(c.name) === 100 && !schoolList.includes(c)));
 
     container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:12px 16px;background:#fff8fa;border:1px solid #eedde5;border-radius:14px">
@@ -436,45 +430,47 @@ async function fetchClasses(schoolId){
           <b style="font-size:13px;color:#4a1e35">🏫 School Classes (Classes 1 – 10)</b>
           <p class="small-note" style="margin:2px 0 0">Click '+ Create Section' on any class to add custom labels like Mars, Rubies, Apple, or Section A.</p>
         </div>
-        <span class="pill good">${schoolList.filter(c=>c.is_active).length} Active Classes</span>
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="pill good">${schoolList.filter(c=>c.is_active).length} Active Classes</span><button type="button" class="btn" id="btnGenerateSchoolClasses" style="font-size:11px;padding:9px 13px;border-radius:10px">✦ Generate Classes 1–10</button></div>
       </div>
       <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:14px" id="schoolClassGrid">
-        ${schoolList.map(c => renderClassStructureCard(c)).join('')}
+        ${schoolList.length ? schoolList.map(c => renderClassStructureCard(c)).join('') : '<div class="empty">No school classes yet. Click Generate Classes 1–10 to create your structure.</div>'}
       </div>
       <div style="margin-top:22px;padding:16px;background:#ffffff;border:1px dashed #d5b8c7;border-radius:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div>
           <b style="color:#5a233c;font-size:13px">Need additional school classes?</b>
-          <p class="small-note" style="margin:2px 0 0">Add specialized classes like Computer Class, Science Lab, or Library Session.</p>
+          <p class="small-note" style="margin:2px 0 0">Give each extra class any name your institution needs.</p>
         </div>
         <button type="button" class="btn" id="btnAddExtraClass" style="padding:8px 16px">+ Add Extra Class</button>
+        <div class="noor-extra-classes">${extraList.length ? extraList.map(c=>renderClassStructureCard(c)).join('') : '<p class="small-note">No extra classes yet.</p>'}</div>
       </div>
     `;
 
-    $('btnAddExtraClass')?.addEventListener('click', addClass);
+    $('btnGenerateSchoolClasses')?.addEventListener('click',event=>generateStructureClasses(event.currentTarget));
+    $('btnAddExtraClass')?.addEventListener('click',()=>addStructureItem('school'));
   } else {
     // University / College Mode: MPC, BiPC, MEC, HEC, CEC & College Labs
-    const univList = classRows.filter(c => naturalClassRank(c.name) >= 200);
+    const univList = classRows.filter(c => naturalClassRank(c.name) >= 200 || c.sort_order >= 200);
 
     container.innerHTML = `
       <div style="margin-bottom:14px;padding:14px 18px;background:#fbf7fc;border:1px solid #ebd8ea;border-radius:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div>
             <b style="font-size:14px;color:#3b1e4a">🎓 University & College Academic Streams</b>
-            <p class="small-note" style="margin:2px 0 0">One-click activation for standard streams or add custom practical labs.</p>
+            <p class="small-note" style="margin:2px 0 0">Choose a stream below or add any custom programme. All names and sections are editable.</p>
           </div>
           <div class="row" style="gap:6px;flex-wrap:wrap">
             <button type="button" class="btn light" data-add-stream="MPC (Maths, Physics, Chemistry)" style="font-size:11px;padding:5px 10px">+ MPC</button>
-            <button type="button" class="btn light" data-add-stream="BiPC (Biology, Physics, Chemistry)" style="font-size:11px;padding:5px 10px">+ BiPC</button>
+            <button type="button" class="btn light" data-add-stream="BPC" style="font-size:11px;padding:5px 10px">+ BPC</button><button type="button" class="btn light" data-add-stream="MTC" style="font-size:11px;padding:5px 10px">+ MTC</button>
             <button type="button" class="btn light" data-add-stream="MEC (Maths, Economics, Commerce)" style="font-size:11px;padding:5px 10px">+ MEC</button>
-            <button type="button" class="btn light" data-add-stream="HEC (History, Economics, Civics)" style="font-size:11px;padding:5px 10px">+ HEC</button>
+            
             <button type="button" class="btn light" data-add-stream="CEC (Commerce, Economics, Civics)" style="font-size:11px;padding:5px 10px">+ CEC</button>
-            <button type="button" class="btn light" data-add-stream="College Science Labs" style="font-size:11px;padding:5px 10px">+ College Labs</button>
+            
             <button type="button" class="btn" id="btnAddCustomStream" style="font-size:11px;padding:5px 12px">+ Custom Stream</button>
           </div>
         </div>
       </div>
       <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:14px" id="univClassGrid">
-        ${univList.length ? univList.map(c => renderClassStructureCard(c)).join('') : '<div class="empty" style="grid-column:1/-1">No college streams added yet. Click one of the buttons above to activate MPC, BiPC, MEC, HEC, CEC, or College Labs.</div>'}
+        ${univList.length ? univList.map(c => renderClassStructureCard(c)).join('') : '<div class="empty" style="grid-column:1/-1">No university programmes yet. Choose one above or add a custom programme.</div>'}
       </div>
     `;
 
@@ -485,7 +481,7 @@ async function fetchClasses(schoolId){
       });
     });
 
-    $('btnAddCustomStream')?.addEventListener('click', addClass);
+    $('btnAddCustomStream')?.addEventListener('click',()=>addStructureItem('university'));
   }
 
   // Bind inline section creation & deletion across all cards
@@ -498,16 +494,16 @@ function renderClassStructureCard(c) {
     ? secList.map(s => `
         <span class="pill ${s.is_active ? 'good' : 'soft'}" style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;font-size:11px">
           ${escapeHtml(s.name)}
-          <button type="button" data-delete-sec="${escapeHtml(s.id)}" title="Delete section" style="border:0;background:transparent;color:#782845;cursor:pointer;font-size:11px;padding:0;line-height:1">✕</button>
+          <button type="button" data-edit-structure-sec="${escapeHtml(s.id)}" title="Edit section" aria-label="Edit section ${escapeHtml(s.name)}" class="noor-structure-icon">✎</button><button type="button" data-archive-structure-sec="${escapeHtml(s.id)}" title="${s.is_active?'Archive':'Restore'} section" class="noor-structure-icon">${s.is_active?'−':'↻'}</button>
         </span>
       `).join('')
-    : '<small class="small-note" style="color:#8c7582">No sections yet. Create one below.</small>';
+    : '<small class="small-note" style="color:#8c7582">No sections yet — add your first section.</small>';
 
   return `
     <div class="panel" style="margin:0;padding:14px;border:1px solid #ebd7e2;border-radius:14px;background:#ffffff">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <b style="font-size:14px;color:#4a1e35">${escapeHtml(c.name)}</b>
-        <span class="pill ${c.is_active ? 'green' : 'gold'}" style="font-size:10px">${c.is_active ? 'Active' : 'Archived'}</span>
+        <div style="display:flex;gap:7px;align-items:center"><button type="button" class="noor-structure-icon" data-edit-structure-class="${escapeHtml(c.id)}" title="Edit name">✎ Edit</button><span class="pill ${c.is_active ? 'green' : 'gold'}" style="font-size:10px">${c.is_active ? 'Active' : 'Archived'}</span></div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px;min-height:26px;align-items:center">
         ${secBadges}
@@ -516,7 +512,7 @@ function renderClassStructureCard(c) {
         <input
           type="text"
           class="field-inline"
-          placeholder="e.g., Mars, Rubies, Apple, Lotus, Section A"
+          placeholder="Type section name (A, B, or custom)"
           id="secInput_${c.id}"
           style="flex:1;font-size:11.5px;padding:6px 10px"
           autocomplete="off"
@@ -533,56 +529,94 @@ function renderClassStructureCard(c) {
 }
 
 function bindStructureCardEvents(schoolId) {
-  // Inline Section Creation
-  document.querySelectorAll('[data-btn-create-sec]').forEach(btn => {
-    btn.onclick = async () => {
-      const classId = btn.dataset.btnCreateSec;
-      const input = $('secInput_' + classId);
-      const name = input?.value.trim();
-      if (!name) { toast('Please enter a section name.', 'error'); return; }
-      btn.disabled = true;
-      try {
-        const { error } = await supabaseClient.from('sections').insert({ class_id: classId, name, is_active: true });
-        if (error) throw error;
-        toast('Section "' + name + '" created successfully.', 'success');
-        if (input) input.value = '';
-        await fetchClasses(schoolId);
-      } catch(err) {
-        toast('Failed to create section: ' + (err.message || err), 'error');
-      } finally {
-        btn.disabled = false;
-      }
-    };
+  const panel=$('structureContent');
+  if(!panel)return;
+  panel.querySelectorAll('[data-btn-create-sec]').forEach(btn=>btn.onclick=async()=>{
+    const classId=btn.dataset.btnCreateSec, name=String($('secInput_'+classId)?.value||'').trim();
+    if(!classRows.some(c=>c.id===classId&&c.school_id===schoolId))return toast('Please select a class in your school.','error');
+    if(!name||name.length>80)return toast('Enter a section name (1–80 characters).','error');
+    if((window.allSectionRows||[]).some(x=>x.class_id===classId&&x.name.toLowerCase()===name.toLowerCase()))return toast('This section already exists.','info');
+    btn.disabled=true;
+    try{
+      const rpc=await supabaseClient.rpc('noor_create_section',{p_class_id:classId,p_name:name});
+      if(rpc.error){const {error}=await supabaseClient.from('sections').insert({class_id:classId,name,is_active:true});if(error)throw error;}
+      toast('Section saved.','success');await fetchStructureClasses(schoolId);
+    }catch(err){toast('Unable to save section: '+(err.message||err),'error');}
+    finally{btn.disabled=false}
   });
-
-  // Section Deletion
-  document.querySelectorAll('[data-delete-sec]').forEach(btn => {
-    btn.onclick = async () => {
-      const secId = btn.dataset.deleteSec;
-      if (!confirm('Are you sure you want to remove this section?')) return;
-      try {
-        const { error } = await supabaseClient.from('sections').delete().eq('id', secId);
-        if (error) throw error;
-        toast('Section removed.', 'success');
-        await fetchClasses(schoolId);
-      } catch(err) {
-        toast('Could not remove section: ' + (err.message || err), 'error');
-      }
-    };
+  panel.querySelectorAll('[data-edit-structure-class]').forEach(btn=>btn.onclick=async()=>{
+    const record=classRows.find(c=>c.id===btn.dataset.editStructureClass&&c.school_id===schoolId);
+    if(!record)return;
+    const label=prompt('Edit class / programme name:',record.name);
+    if(label===null)return;
+    const name=label.trim();
+    if(!name||name.length>120)return toast('Enter a name (1–120 characters).','error');
+    if(classRows.some(c=>c.id!==record.id&&c.name.toLowerCase()===name.toLowerCase()))return toast('That name is already in use.','info');
+    btn.disabled=true;
+    try{const {data,error}=await supabaseClient.from('classes').update({name}).eq('school_id',schoolId).eq('id',record.id).select('id');
+      if(error)throw error;if(!data?.length)throw Error('Update was not permitted.');await fetchStructureClasses(schoolId);toast('Class name updated.','success');
+    }catch(err){toast('Could not update name: '+(err.message||err),'error');}finally{btn.disabled=false}
   });
+  panel.querySelectorAll('[data-edit-structure-sec],[data-archive-structure-sec]').forEach(btn=>btn.onclick=async()=>{
+    const id=btn.dataset.editStructureSec||btn.dataset.archiveStructureSec;
+    const section=(window.allSectionRows||[]).find(x=>x.id===id);
+    if(!section||!classRows.some(c=>c.id===section.class_id&&c.school_id===schoolId))return;
+    let changes={};
+    if(btn.dataset.editStructureSec){
+      const label=prompt('Edit section name:',section.name);if(label===null)return;
+      const name=label.trim();if(!name||name.length>80)return toast('Enter a section name (1–80 characters).','error');
+      changes={name};
+    }else{
+      if(!confirm(section.is_active?'Archive this section? Existing student records will be preserved.':'Restore this section?'))return;
+      changes={is_active:!section.is_active};
+    }
+    btn.disabled=true;
+    try{const {data,error}=await supabaseClient.from('sections').update(changes).eq('class_id',section.class_id).eq('id',id).select('id');
+      if(error)throw error;if(!data?.length)throw Error('Section update was not permitted.');
+      toast('Section updated.','success');await fetchStructureClasses(schoolId);
+    }catch(err){toast('Section update failed: '+(err.message||err),'error');}finally{btn.disabled=false}
+  });
+}
+async function generateStructureClasses(btn){
+ const schoolId=currentProfile?.school_id;
+ if(!schoolId||!['principal','owner','manager'].includes(currentProfile?.role))return toast('Only authorised school management can generate classes.','error');
+ btn.disabled=true;
+ try{
+  const {data,error}=await supabaseClient.from('classes').select('name').eq('school_id',schoolId);
+  if(error)throw error;
+  const existing=new Set((data||[]).map(x=>x.name.trim().toLowerCase()));
+  const missing=Array.from({length:10},(_,i)=>i+1).filter(i=>!existing.has('class '+i));
+  if(!missing.length){toast('Classes 1–10 already exist.','info');return;}
+  const rows=missing.map(i=>({school_id:schoolId,name:'Class '+i,sort_order:i,is_active:true}));
+  const save=await supabaseClient.from('classes').insert(rows).select('id');
+  if(save.error)throw save.error;
+  toast('Created '+missing.length+' missing school classes.','success');
+  await fetchStructureClasses(schoolId);
+ }catch(err){toast('Classes were not generated: '+(err.message||err),'error')}
+ finally{btn.disabled=false}
+}
+async function addStructureItem(type){
+ const schoolId=currentProfile?.school_id;
+ if(!schoolId)return toast('No authorised school workspace.','error');
+ const promptLabel=type==='university'?'Enter the programme / stream name:':'Enter your extra class name:';
+ const name=prompt(promptLabel);
+ if(name===null)return;
+ const clean=name.trim();
+ if(!clean||clean.length>120)return toast('Enter a name (1–120 characters).','error');
+ await createNamedClass(clean,type==='university'?200:100);
 }
 
 async function createNamedClass(name, rank = 100) {
-  const schoolId = currentSchool?.id || currentProfile?.school_id;
+  const schoolId = currentProfile?.school_id;
   if (!schoolId) return toast('No school workspace linked.', 'error');
   if (classRows.some(c => c.name.toLowerCase() === name.toLowerCase())) {
     return toast('Class/stream "' + name + '" is already active.', 'info');
   }
   try {
-    const { error } = await supabaseClient.from('classes').insert({ school_id: schoolId, name, sort_order: classRows.length + 1, is_active: true });
+    const { error } = await supabaseClient.from('classes').insert({ school_id: schoolId, name, sort_order: rank + classRows.filter(c=>c.sort_order>=rank&&c.sort_order<rank+100).length, is_active: true });
     if (error) throw error;
     toast('Added "' + name + '" successfully.', 'success');
-    await fetchClasses(schoolId);
+    await fetchStructureClasses(schoolId);
   } catch(err) {
     toast('Could not add class: ' + (err.message || err), 'error');
   }
@@ -592,7 +626,7 @@ function naturalClassRank(name){
   const m = str.match(/class\s*(\d+)/i) || str.match(/grade\s*(\d+)/i) || str.match(/^(\d+)$/);
   if(m) return parseInt(m[1], 10);
   if(/lab|practical|workshop/i.test(str)) return 300;
-  if(/mpc|bipc|mec|hec|cec/i.test(str)) return 200;
+  if(/mpc|bipc|bpc|mtc|mec|hec|cec/i.test(str)) return 200;
   return 100;
 }
 function sortClassesNaturally(arr){
@@ -623,7 +657,7 @@ async function autoPopulateClasses(type='school'){
   }
   const label = isLabs ? 'specialized lab classes' : (isUniv ? 'university streams' : 'school classes');
   toast(added ? added+' '+label+' created successfully.' : 'Classes already up to date.','success');
-  await fetchClasses(schoolId);
+  await fetchStructureClasses(schoolId);
 }
 async function fetchClasses(schoolId){
   const [cRes, sRes] = await Promise.all([

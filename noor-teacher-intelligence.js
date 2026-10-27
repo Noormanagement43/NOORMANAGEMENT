@@ -8,15 +8,11 @@ const when=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'sho
 const today=()=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const g=k=>p.find(x=>x.type===k)?.value;return g('year')+'-'+g('month')+'-'+g('day')};
 let revision=0,activeSchool='',channel=null,last={};
 const FEATURE_TILES=[
- ['✓ Online / Offline Attendance','attendance','Mark & sync roster'],
- ['◈ Student Learning Gap Detector','gaps','Actual marked results'],
- ['◷ Smart Period Companion','periods','Lessons & homework'],
- ['✎ Edit Timetable','edit_timetable','Request or update periods'],
- ['✦ Rubric Grading Assistant','rubric','Editable marking criteria'],
- ['▤ Smart Syllabus Tracker','syllabus','Chapter progress'],
- ['▦ Assignment Deadline Planner','deadlines','Review and reschedule'],
- ['✎ Digital Teaching Diary','diary','Saved teaching records'],
- ['▧ School Calendar','calendar','School & festival events']
+ ['◈ Learning Gap Detector','gaps','Assessment-based support'],
+ ['▤ Syllabus Progress','syllabus','Track real topic completion'],
+ ['▦ Deadline Planner','deadlines','Plan weekly assignments'],
+ ['✎ Teaching Diary','diary','Record today’s lessons'],
+ ['✦ Rubric & Grading','rubric','Teacher-reviewed feedback']
 ];
 const tileMarkup=()=>'<div class="nti-quick-grid">'+FEATURE_TILES.map(([name,key,sub])=>
  '<button type="button" data-nti-quick="'+key+'"><b>'+name+'</b><small>'+sub+'</small></button>').join('')+'</div>';
@@ -143,10 +139,8 @@ async function mount(ctx){
  (progress.expected===null?'<p class="nti-help">Set the current academic-year dates to enable pacing comparisons.</p>':'<p class="nti-help">Indicative time elapsed this academic year: '+progress.expected+'%. This is not a mandatory chapter deadline.</p>')+pacing+'</section>'+
  '<section class="nti-pane" id="ntiPeriods"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px"><div><h3 style="margin:0">◷ Smart Period Companion & Teaching Periods</h3><p class="nti-help" style="margin:2px 0 0">Live teaching schedule, periods, exit tickets & timetable requests.</p></div><button type="button" class="nti-action" id="ntiEditTimetableBtn" style="padding:6px 14px;font-weight:750;background:#5a233c;color:#fff;border-radius:10px;cursor:pointer">✎ Edit Timetable</button></div>'+lessonMarkup+'</section></div>'+
  '<section class="nti-pane nti-tools"><div class="nti-subhead"><h3>Smart Teaching Tools</h3><span class="nti-pill">Connected to NOOR</span></div><div class="nti-actions">'+
- action('Smart Notes','teaching','✦')+action('Generate paper','paper-generator','▤')+action('Weekly lesson plan','weekly-plan','◷')+
- action('Daily teaching diary','daily-report','✎')+action('Review assignments','paper-generator','✓')+
- action('School calendar','school-calendar','▦')+action('Teacher notices','notices','◇')+
- action('School messages','notifications','✉')+'</div>'+
+ action('Weekly lesson plan','weekly-plan','◷')+action('Teacher-reviewed rubric','paper-generator','✦')+
+ action('Student support follow-ups','teacher-classroom','♡')+'</div>'+
  '<p class="nti-help">More workflows, including confidential rubrics and substitute handovers, require Principal-approved setup.</p></section>'+
  '<section class="nti-pane nti-tools"><div class="nti-subhead"><h3>Private Student Support Follow-ups</h3><span class="nti-pill">Teacher + authorized Principal only</span></div>'+
  '<p class="nti-help">Record supportive academic follow-ups for enrolled students. Avoid labels or sensitive medical details.</p>'+

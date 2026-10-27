@@ -30,8 +30,8 @@ test('teacher dashboard metrics are drawn from real period records',async()=>{
   const code=await source('teacher-reference.js');
   assert.doesNotMatch(code,/Avg 86\.6%|85% Peak|100 \/ 85 ✓|Chat with NOOR AI Jinni/);
   assert.match(code,/Today’s periods/);
-  assert.match(code,/data\.action==='take-attendance'/);
-  assert.match(code,/data\.action==='upload-resource'/);
+  assert.match(code,/dataset\.action==='take-attendance'/);
+  assert.match(code,/dataset\.action==='upload-resource'/);
 });
 
 test('existing large profile portraits and photo editing remain untouched',async()=>{

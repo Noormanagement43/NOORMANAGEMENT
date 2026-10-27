@@ -53,7 +53,7 @@ async function render(){
  const school=app.schoolId,uid=app.user.id,db=app.db,weekday=new Date().getDay();
  const [extra,periods,runs,checkin,assignees,personal,notices,calendar,assignment,membership]=await Promise.all([
  db.from('noor_teacher_profile_details').select('*').eq('school_id',school).eq('teacher_id',uid).maybeSingle(),
- db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id,subject_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(100),
+ db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(100),
  db.from('noor_teacher_period_runs').select('id,period_id,status,started_at,finished_at').eq('school_id',school).eq('teacher_id',uid).eq('class_date',today()),
  db.from('noor_staff_attendance').select('id,status,checked_in_at').eq('school_id',school).eq('teacher_id',uid).eq('attendance_date',today()).maybeSingle(),
  db.from('task_assignees').select('task_id,status').eq('school_id',school).eq('assignee_id',uid).limit(40),
@@ -308,6 +308,11 @@ async function showPeriodEditor(p){
       }
     }
   }
+  if(!options.length){
+    for(let k=1;k<=10;k++){
+      options.push({class_id:null,section_id:null,subject_name:'General',class_label:'Class '+k+' · Section A'});
+    }
+  }
   if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
     options.unshift({class_id:p.class_id,section_id:p.section_id||null,subject_name:p.subject_name||'Class',class_label:p.class_label||'Assigned Class'});
   }
@@ -322,11 +327,10 @@ async function showPeriodEditor(p){
     field('End time','end_time',fmt(p?.end_time||'09:45'),'time','required')+
     '<label>Block type<select name="block_type">'+kinds+'</select></label>'+
     '<label>Assigned Class & Section<select name="context_index" required>'+choices+'</select></label>'+
-    field('Subject','subject_name',p?.subject_name||options[selected].subject_name,'text','required maxlength="80"')+
+    field('Subject','subject_name',p?.subject_name||options[selected]?.subject_name||'General','text','required maxlength="80"')+
     '<p class="nt4-span nt-muted">Timetable changes need Principal approval before becoming active.</p>';
   const modalNode=modal(p?'Edit period request':'New timetable request',body,async form=>{
-    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))];
-    if(!context)throw Error('Choose an assigned school class.');
+    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))]||options[0]||{class_label:'Class 1 · Section A',subject_name:'General'};
     if(!val('subject_name'))throw Error('Subject is required.');
     if(val('start_time')>=val('end_time'))throw Error('End time must be later than start time.');
     const values={

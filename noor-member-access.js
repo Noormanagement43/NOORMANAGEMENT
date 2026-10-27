@@ -175,8 +175,8 @@
       '<input class="ac-search" type="search" autocomplete="off" aria-label="Search student or teacher by name" placeholder="Search student or teacher name…">'+
       '<div class="ac-list" aria-live="polite"><p>Type at least 2 letters to search names.</p></div>'+
       '<div class="ac-profile" hidden></div><div class="ac-feedback" aria-live="polite"></div>';
-    const top=$('.pd-head',dashboard);
-    if(top)top.after(root);else dashboard.prepend(root);
+    // Place Student & Staff Access neatly at the bottom of the principal dashboard
+    dashboard.appendChild(root);
     $('.ac-search',root).addEventListener('input',()=>{clearTimeout(debounce);debounce=setTimeout(()=>findPeople(root),300);});
     root.addEventListener('click',event=>{
       const target=event.target.closest('button');if(!target||!root.contains(target))return;

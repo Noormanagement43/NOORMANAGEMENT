@@ -1,0 +1,459 @@
+/* NOOR School Management - Guide Avatar & Voice Assistant */
+:root {
+  --guide-accent: #6b2649;
+  --guide-gold: #cba46c;
+  --guide-bg: #fffbfd;
+  --guide-card: #ffffff;
+  --guide-border: #f0dfe7;
+  --guide-ink: #2d1824;
+  --guide-muted: #7d6b75;
+}
+
+/* Avatar Header Container */
+.noor-guide-widget {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  z-index: 100;
+  user-select: none;
+}
+
+.noor-guide-avatar-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fceef4 0%, #f7dbe7 100%);
+  border: 2px solid #ecd3e0;
+  box-shadow: 0 4px 14px rgba(107, 38, 73, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  animation: guideAvatarBreathe 3.5s ease-in-out infinite;
+}
+
+.noor-guide-widget:hover .noor-guide-avatar-wrap {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 8px 22px rgba(107, 38, 73, 0.24);
+}
+
+.noor-guide-avatar-img {
+  width: 40px;
+  height: 44px;
+  object-fit: contain;
+  object-position: top center;
+  border-radius: 0 0 50% 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.noor-guide-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.noor-guide-avatar-wrap.speaking .noor-guide-status-dot {
+  background: #f59e0b;
+  animation: guideDotPulse 1.2s ease-in-out infinite;
+}
+
+.noor-guide-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.noor-guide-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: #4c1d34;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.noor-guide-sub {
+  font-size: 11px;
+  color: #8c7582;
+  font-weight: 600;
+}
+
+/* Floating / Breathing Animation */
+@keyframes guideAvatarBreathe {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes guideDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+
+/* Proactive Speech Bubble */
+.noor-guide-bubble {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  width: 310px;
+  max-width: 88vw;
+  background: #ffffff;
+  border: 1px solid #ebd3e0;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 32px rgba(92, 34, 60, 0.16);
+  z-index: 1000;
+  animation: guideBubbleSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  color: var(--guide-ink);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@keyframes guideBubbleSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.noor-guide-bubble:before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  right: 22px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-left: 1px solid #ebd3e0;
+  border-top: 1px solid #ebd3e0;
+  transform: rotate(45deg);
+}
+
+.noor-guide-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--guide-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.noor-guide-bubble-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.noor-guide-icon-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: #8c7582;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.noor-guide-icon-btn:hover {
+  color: var(--guide-accent);
+  background: #f7eaf0;
+}
+
+.noor-guide-bubble-content {
+  color: #3b202e;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+}
+
+.noor-guide-bubble-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #f3e5ec;
+  font-size: 11px;
+}
+
+.noor-guide-ask-pill {
+  background: var(--guide-accent);
+  color: #ffffff;
+  border: 0;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.noor-guide-ask-pill:hover {
+  opacity: 0.9;
+}
+
+/* Ask AI Drawer Modal */
+.noor-guide-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(33, 14, 23, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.noor-guide-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.noor-guide-drawer {
+  width: 440px;
+  max-width: 100vw;
+  height: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 35px rgba(45, 14, 28, 0.25);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.noor-guide-modal-overlay.open .noor-guide-drawer {
+  transform: translateX(0);
+}
+
+.noor-guide-drawer-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fff7fa 0%, #fbf0f5 100%);
+  border-bottom: 1px solid #ebd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.noor-guide-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.noor-guide-drawer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f7dce8;
+  border: 2px solid #ecd3e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.noor-guide-drawer-avatar img {
+  width: 36px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.noor-guide-drawer-header h3 {
+  margin: 0;
+  font: 800 15px/1.2 'Manrope', sans-serif;
+  color: #4b1d34;
+}
+
+.noor-guide-drawer-header p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #8c7582;
+}
+
+.noor-guide-drawer-close {
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  color: #7d6b75;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.noor-guide-drawer-close:hover {
+  background: #ecd3e0;
+  color: #4b1d34;
+}
+
+/* Prompt Pills */
+.noor-guide-pills {
+  padding: 10px 16px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  border-bottom: 1px solid #f3e5ec;
+  background: #fffcfd;
+}
+
+.noor-guide-pill {
+  white-space: nowrap;
+  background: #f8eef3;
+  color: #5c2441;
+  border: 1px solid #edd3e0;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.noor-guide-pill:hover {
+  background: #ebd0de;
+  transform: translateY(-1px);
+}
+
+/* Chat Messages */
+.noor-guide-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fffdfd;
+}
+
+.noor-guide-msg {
+  max-width: 85%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.noor-guide-msg.assistant {
+  align-self: flex-start;
+  background: #f8eef3;
+  color: #3b1c2b;
+  border: 1px solid #ecd3e0;
+  border-top-left-radius: 4px;
+}
+
+.noor-guide-msg.user {
+  align-self: flex-end;
+  background: var(--guide-accent);
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+
+.noor-guide-msg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* Input Area */
+.noor-guide-drawer-input {
+  padding: 14px 18px;
+  border-top: 1px solid #ebd5e1;
+  background: #ffffff;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.noor-guide-text-box {
+  flex: 1;
+  border: 1px solid #dcc2ce;
+  border-radius: 22px;
+  padding: 10px 16px;
+  font: 13px 'DM Sans', sans-serif;
+  color: #341825;
+  background: #fefbfc;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.noor-guide-text-box:focus {
+  border-color: var(--guide-accent);
+  box-shadow: 0 0 0 3px rgba(107, 38, 73, 0.12);
+}
+
+.noor-guide-send-btn {
+  background: var(--guide-accent);
+  color: #ffffff;
+  border: 0;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.noor-guide-send-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.noor-guide-mic-btn {
+  background: #f8eef3;
+  color: var(--guide-accent);
+  border: 1px solid #edd3e0;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.15s;
+}
+
+.noor-guide-mic-btn.listening {
+  background: #f43f5e;
+  color: #ffffff;
+  border-color: #f43f5e;
+  animation: guideDotPulse 1s infinite;
+}
+
+@media (max-width: 600px) {
+  .noor-guide-drawer {
+    width: 100vw;
+  }
+}

@@ -69,13 +69,14 @@ async function check(viewport){
   if(viewport.width<=760)await page.locator("#ntAttTable .nt-att-mobile-row").first().waitFor({timeout:15000});
   else await page.locator("#ntAttTable tr").first().waitFor({timeout:15000});
   if(!(await page.locator("#ntAttTable").innerText()).includes("Student Example A"))throw Error("Student roster not visible");
+  await page.locator(".nt-advanced-details > summary").click();
   await page.locator("#ntTeacherIntelligence .nti-quick-grid").first().waitFor({timeout:15000});
   if(!(await page.locator("#ntTeacherIntelligence").innerText()).includes("AI Teacher Command Centre"))throw Error("AI Teacher Command Centre missing beneath profile");
   await page.locator("#ntTeacherPlanners #ntpSyllabus").waitFor({timeout:15000});
   await page.locator("#ntTeacherPlanners #ntpDeadlines").waitFor({timeout:15000});
-  const geometry=await page.evaluate(()=>{const photo=document.querySelector('.noor-t4 .nt-photo'),profile=document.querySelector('.noor-t4 .nt-profile'),hub=document.getElementById('ntTeacherIntelligence'),attendance=document.querySelector('.nt-attendance');const s=photo?getComputedStyle(photo):null;return {width:photo?.getBoundingClientRect().width||0,borderRadius:parseFloat(s?.borderTopLeftRadius||'999'),order:profile&&hub&&profile.nextElementSibling===hub,attendance:!!attendance};});
+  const geometry=await page.evaluate(()=>{const photo=document.querySelector('.noor-t4 .nt-photo'),profile=document.querySelector('.noor-t4 .nt-profile'),hub=document.getElementById('ntTeacherIntelligence'),priority=document.querySelector('.nt-priority-section'),attendance=document.querySelector('.nt-priority-grid .nt-attendance');const s=photo?getComputedStyle(photo):null;return {width:photo?.getBoundingClientRect().width||0,borderRadius:parseFloat(s?.borderTopLeftRadius||'999'),order:profile&&priority&&profile.nextElementSibling===priority,attendance:!!attendance,hub:!!hub};});
   if(geometry.width<155||geometry.borderRadius>23)throw Error("Teacher profile is not a large rectangular portrait: "+JSON.stringify(geometry));
-  if(!geometry.order||!geometry.attendance)throw Error("Profile / Command Centre / Attendance layout incomplete");
+  if(!geometry.order||!geometry.attendance||!geometry.hub)throw Error("Profile / Command Centre / Attendance layout incomplete");
   const bounds=await page.locator(".noor-t4").boundingBox();
   if(bounds?.width>viewport.width+25)throw Error("Teacher layout overflows screen: "+bounds?.width+" > "+viewport.width);
   await page.locator("#ntEditProfile").click();
@@ -84,7 +85,7 @@ async function check(viewport){
   await page.locator("#ntEditTimetable").click();
   await page.locator(".nt4-dialog input[name='subject_name']").waitFor();
   await page.locator(".nt4-overlay [data-close]").first().click();
-  await page.locator(".noor-t4 [data-link='paper-generator']").first().click();
+  await page.locator(".noor-t4 [data-action='create-assignment']").first().click();
   await page.locator("#ppForm").waitFor({timeout:15000});
   if(!(await page.locator("#ppForm").innerText()).includes("Paper type"))throw Error("Paper generator not functional");
   if(errors.length)throw Error("Browser exceptions: "+errors.join(" | "));

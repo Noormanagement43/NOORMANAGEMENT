@@ -22,7 +22,7 @@ async function readAll(){
  const jobs={
   classes:db().from('classes').select('id,name').eq('school_id',school).eq('is_active',true),
   sections:db().from('sections').select('id,name,class_id').eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000'),
-  periods:db().from('noor_teacher_periods').select('id,weekday,period_number,start_time,end_time,subject_name,class_label,block_type,section_id,approval_status').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('approval_status','approved').order('weekday').order('start_time'),
+  periods:Promise.resolve({data:[]}),
   subjects:db().from('subjects').select('id,name,class_id').eq('school_id',school),
   notes:db().from('smart_notes').select('id,title,content,subject_id,updated_at,teacher_id').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('status','published').eq('published_to_students',true).order('updated_at',{ascending:false}).limit(150),
   notices:db().from('school_notices').select('id,title,body,starts_at,ends_at,created_at').eq('school_id',school).eq('is_active',true).contains('target_roles',['student']).order('starts_at',{ascending:false}).limit(100),
@@ -43,6 +43,9 @@ async function readAll(){
  data.sessions=[];
  if(sessionIds.length){const z=await db().from('attendance_sessions').select('id,attendance_date,status').in('id',sessionIds).in('status',['submitted','corrected']);if(z.error)errors.push('attendance sessions: '+z.error.message);else data.sessions=z.data||[];}
  const sectionId=me.section_id;
+ // Student can only read their own school/class/section (database RLS enforces access).
+ try{data.periods=await window.NOOR_SCHOOL_TIMETABLE?.studentPeriods?.(me.class_id,sectionId)||[]}
+ catch(e){data.periods=[];errors.push('class timetable: '+(e.message||String(e)))}
  data.assignments=data.assignments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.assessments=data.assessments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.marks=data.results.map(r=>{const a=data.assessments.find(x=>x.id===r.assessment_id && x.status!=='planned');return a?{...r,assessment:a,pct:N(a.max_marks)>0?100*N(r.marks_obtained)/N(a.max_marks):null}:null}).filter(Boolean).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));
@@ -111,7 +114,7 @@ function overview(){
  ].join('')+'</div>');
  const currentDay=new Date().getDay();
  const todays=(data.periods||[]).filter(x=>x.weekday===currentDay).sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time))).slice(0,7);
- const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E(classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge">Approved</span></button>').join('')+'</div>':empty('No approved timetable for today. Your school will publish periods here.');
+ const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E(classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge">'+(x.lesson_topic?'📖 '+E(x.lesson_topic):'Scheduled')+'</span></button>').join('')+'</div>':empty('No approved timetable for today. Your school will publish periods here.');
  const scheduleCard=box('Today’s Schedule',new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'}),scheduleHTML,btn('Full Timetable','student-schedule'));
  const dueHTML=due.length?'<div class="sp-ref-list">'+due.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-homework"><span class="sp-ref-list-icon">▤</span><span><strong>'+E(x.title)+'</strong><small>'+E(subject(x.subject_id)+(x.due_at?' · Due '+dayTime(x.due_at):' · No deadline'))+'</small></span><em>'+(x.due_at&&new Date(x.due_at)<new Date()?'Overdue':'Pending')+'</em></button>').join('')+'</div>':empty('No pending assignments.');
  const resultRows=(data.marks||[]).slice().reverse().slice(0,3);
@@ -156,7 +159,7 @@ function topicBars(m){
 
 function scheduleRows(weekday){
  const rows=(data.periods||[]).filter(x=>x.weekday===weekday).sort((a,b)=>a.start_time.localeCompare(b.start_time));
- return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.block_type||'Class'))).join('')+'</div>':empty('No approved periods recorded for this day.');
+ return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.lesson_topic?'Lesson: '+x.lesson_topic:'Daily topic not entered yet'))).join('')+'</div>':empty('No teacher-assigned periods recorded for this day.');
 }
 function schedule(){
  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -264,7 +267,7 @@ function connectLive(){
  const current=u().id+':'+sid();if(channel&&activeStudent===current)return;
  if(channel){db().removeChannel(channel);channel=null;}
  activeStudent=current;
- const tables=['noor_student_assignments','noor_student_submissions','school_notices','calendar_events','smart_notes','assessment_results','attendance_records'];
+ const tables=['noor_student_assignments','noor_student_submissions','school_notices','calendar_events','smart_notes','assessment_results','attendance_records','noor_class_timetable','noor_school_bell_slots','noor_daily_lesson_topics'];
  const c=db().channel('noor-student-live-'+u().id);
  tables.forEach(table=>c.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+sid()},()=>{
    if(document.visibilityState==='visible')refresh(true);

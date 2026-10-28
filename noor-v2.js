@@ -149,8 +149,14 @@ function renderHome(){
 function groupLabel(id){const x=state.groups.find(v=>v.id===id);if(!x)return'General / not assigned';const parent=state.groups.find(v=>v.id===x.parent_group_id);return parent?parent.name+' · '+x.name:x.name}
 function periodCard(row){
  const mine=canSchedule()&&row.teacher_membership_id===state.membership?.id;
- return '<div class="v2-period-row">'+symbol(row.subject_name)+'<div class="v2-period-content"><b>'+escapeHTML(row.subject_name)+'</b><small>'+escapeHTML(groupLabel(row.academic_group_id))+' · '+escapeHTML(days[row.weekday]||'')+'</small></div><div class="v2-period-time">'+escapeHTML(String(row.start_time).slice(0,5))+'–'+escapeHTML(String(row.end_time).slice(0,5))+'</div>'+
- (mine?'<button type="button" data-edit-period="'+escapeHTML(row.id)+'" class="v2-btn v2-outline">Edit</button>':'')+'</div>';
+ const now=isScheduledNow(row);
+ const context=groupLabel(row.academic_group_id);
+ const teacher=canManage()?' · '+staffName(row):'';
+ return '<div class="v2-period-row'+(now?' v2-period-current':'')+'">'+symbol(row.subject_name)+
+  '<div class="v2-period-content"><b>'+escapeHTML(row.subject_name)+'</b><small>'+escapeHTML(context)+' · '+escapeHTML(days[row.weekday]||'')+escapeHTML(teacher)+'</small>'+
+  (now?'<span class="v2-now-label">● Scheduled now</span>':'')+'</div>'+
+  '<div class="v2-period-time">'+escapeHTML(String(row.start_time).slice(0,5))+'–'+escapeHTML(String(row.end_time).slice(0,5))+'</div>'+
+  (mine?'<button type="button" data-edit-period="'+escapeHTML(row.id)+'" class="v2-btn v2-outline">✎ Edit</button>':'')+'</div>';
 }
 function renderTimetable(){
  const teacher=canSchedule(),mine=state.periods.filter(x=>x.teacher_membership_id===state.membership?.id);
@@ -202,16 +208,19 @@ function showDialog(title,body,onSubmit){
 function openPeriod(row){
  if(!canSchedule())return say('Only teachers and faculty can edit their own timetable.',true);
  const list=state.groups.filter(g=>g.is_active!==false && ['class','section','cohort','tutorial_group','course_group'].includes(g.group_type));
- const groupOptions='<option value="">General lesson / no class</option>'+list.map(g=>'<option value="'+escapeHTML(g.id)+'" '+(g.id===row?.academic_group_id?'selected':'')+'>'+escapeHTML(groupLabel(g.id))+'</option>').join('');
+ if(!list.length){say('A school administrator needs to create a class or section first. After that, teachers can assign all their own periods.','error');return;}
+ if(row&&row.teacher_membership_id!==state.membership.id){say('Only the teacher who created this period can edit it.',true);return;}
+ const groupOptions='<option value="">Choose class or section</option>'+list.map(g=>'<option value="'+escapeHTML(g.id)+'" '+(g.id===row?.academic_group_id?'selected':'')+'>'+escapeHTML(groupLabel(g.id))+'</option>').join('');
  const choice=(value)=>days.map((day,idx)=>'<option value="'+idx+'" '+(Number(value)===idx?'selected':'')+'>'+day+'</option>').join('');
  const body='<div class="v2-form-grid"><label>Day<select name="weekday">'+choice(row?.weekday??new Date().getDay())+'</select></label><label>Period number<input name="period_number" type="number" required min="1" max="20" value="'+escapeHTML(row?.period_number||1)+'"></label>'+
  '<label>Start<input name="start_time" type="time" required value="'+escapeHTML(String(row?.start_time||'09:00').slice(0,5))+'"></label><label>End<input name="end_time" type="time" required value="'+escapeHTML(String(row?.end_time||'09:45').slice(0,5))+'"></label></div>'+
- '<label>Class / Section<select name="academic_group_id">'+groupOptions+'</select></label>'+
+ '<label>Class / Section<select name="academic_group_id" required>'+groupOptions+'</select></label>'+
  '<label>Subject<div class="v2-subject-field"><span id="v2LiveSubject" class="v2-subject-symbol">📚</span><input name="subject_name" required maxlength="140" autocomplete="off" value="'+escapeHTML(row?.subject_name||'')+'" placeholder="Type a subject name"></div></label>'+
  '<label>Room / Lab (optional)<input name="room_label" maxlength="100" value="'+escapeHTML(row?.room_label||'')+'"></label>';
  const d=showDialog(row?'Edit my period':'Add my period',body,async form=>{
   const subjectName=String(form.get('subject_name')||'').trim(),start=String(form.get('start_time')||''),end=String(form.get('end_time')||'');
   if(!subjectName||!start||!end||start>=end)throw Error('Enter a subject and a valid period time range.');
+  if(!form.get('academic_group_id'))throw Error('Choose a class or section so students can receive this timetable.');
   const payload={institution_id:state.institution.id,teacher_membership_id:state.membership.id,academic_group_id:form.get('academic_group_id')||null,
    subject_name:subjectName,weekday:Number(form.get('weekday')),period_number:Number(form.get('period_number')),start_time:start,end_time:end,room_label:form.get('room_label')||null,created_by:state.user.id};
   await window.NOOR_AVATAR_SAFE.ownUser(db,state.user.id);
@@ -224,6 +233,25 @@ function openPeriod(row){
  const live=d.querySelector('#v2LiveSubject');
  const update=()=>{const x=subject(subj.value);live.textContent=x.icon+(x.matched?'':' '+(x.initials||''));live.style.setProperty('--sh',String(x.hue));};
  subj.addEventListener('input',update);update();
+ if(row){
+  const remove=document.createElement('button');remove.type='button';remove.className='v2-btn v2-danger';remove.textContent='🗑 Remove Period';
+  const footer=d.querySelector('footer');footer.prepend(remove);
+  remove.onclick=async()=>{
+   if(!window.confirm('Remove this period from your timetable? It will also disappear from Principal and Student schedules.'))return;
+   remove.disabled=true;
+   try{
+    await window.NOOR_AVATAR_SAFE.ownUser(db,state.user.id);
+    const {data,error}=await db.from('teacher_timetable_periods').delete()
+      .eq('id',row.id).eq('institution_id',state.institution.id)
+      .eq('teacher_membership_id',state.membership.id).select('id').single();
+    if(error||data?.id!==row.id)throw error||Error('No matching period was removed.');
+    d.close();
+    await reloadSchool();renderCurrent();
+    say('Your period was removed. Shared schedules will update automatically.');
+   }catch(error){d.querySelector('#v2DialogStatus').textContent=err(error)}
+   finally{remove.disabled=false}
+  };
+ }
 }
 function newGroup(type,existing=null){
  if(!canManage())return say('Only authorised school managers can edit classes.',true);

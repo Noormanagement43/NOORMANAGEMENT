@@ -3,7 +3,7 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id), A=()=>window.NOOR_AI_APP||{}, E=s=>(A().escapeHtml||((x)=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))))(s??'');
-const principal=()=>['owner','principal'].includes(A().profile?.role)&&A().profile?.status==='active'&&A().school?.verification_status==='verified'&&A().school?.account_status==='active'&&A().school?.is_active===true;
+const principal=()=>['owner','principal','manager'].includes(A().profile?.role)&&A().profile?.status==='active'&&A().school?.verification_status==='verified'&&A().school?.account_status==='active'&&A().school?.is_active===true;
 const prefKey=()=> 'noor.principal.'+(A().user?.id||A().profile?.id||'preview')+'.'+(A().schoolId||'preview');
 const css=`
 #noor-principal .pd-chart .pd-bar-col:nth-child(7n+1) .pd-bar{background:linear-gradient(180deg,#60a5fa,#2454d4)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+2) .pd-bar{background:linear-gradient(180deg,#58db9a,#0c9b67)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+3) .pd-bar{background:linear-gradient(180deg,#bb8bff,#6e3dcc)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+4) .pd-bar{background:linear-gradient(180deg,#ffd36a,#f39812)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+5) .pd-bar{background:linear-gradient(180deg,#ffaaa4,#ed5d62)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+6) .pd-bar{background:linear-gradient(180deg,#70e1e3,#138fa7)}#noor-principal .pd-chart .pd-bar-col:nth-child(7n+7) .pd-bar{background:linear-gradient(180deg,#e0a0d8,#a54d9a)}

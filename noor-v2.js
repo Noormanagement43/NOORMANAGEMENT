@@ -80,7 +80,7 @@ function shell(body){
  logout.hidden=false;
  root.innerHTML='<div class="v2-layout"><aside class="v2-sidebar"><div class="v2-institution"><span class="v2-logo">✦</span><div><strong>'+escapeHTML(inst?.name||'NOOR')+'</strong><small>'+escapeHTML(inst?.institution_type||'School')+' · '+escapeHTML(caption)+'</small></div></div>'+
  '<nav aria-label="Workspace navigation">'+iconMenu()+'</nav><div class="v2-side-footer">NOOR Management<br>Secure institution workspaces</div></aside>'+
- '<div class="v2-content">'+body+'</div></div><nav class="v2-mobile-nav" aria-label="Phone workspace navigation">'+iconMenu()+'</nav>';
+ '<div class="v2-content"><div class="v2-live-status" id="v2LiveStatus" data-connected="'+(state.realtimeStatus==='SUBSCRIBED'?'yes':'no')+'">'+(state.realtimeStatus==='SUBSCRIBED'?'● Live connected':'◷ Auto-syncing')+'</div>'+body+'</div></div><nav class="v2-mobile-nav" aria-label="Phone workspace navigation">'+iconMenu()+'</nav>';
 }
 function profileHero(){
  const name=pickName(),user=state.user;
@@ -377,9 +377,20 @@ async function bootstrap(){
   await reloadSchool();if(token!==bootstrapId)return;
   renderCurrent();
   if(channel)await db.removeChannel(channel);
-  channel=db.channel('noor-v2-live-'+state.institution.id)
-   .on('postgres_changes',{event:'*',schema:'public',table:'teacher_timetable_periods',filter:'institution_id=eq.'+state.institution.id},async()=>{try{await reloadSchool();renderCurrent()}catch(e){console.warn('Timetable sync failed',e)}})
-   .subscribe();
+  const schoolId=state.institution.id;
+  channel=db.channel('noor-school-periods-'+schoolId)
+   .on('postgres_changes',{event:'*',schema:'public',table:'teacher_timetable_periods',filter:'institution_id=eq.'+schoolId},refreshLive)
+   .on('postgres_changes',{event:'*',schema:'public',table:'academic_groups',filter:'institution_id=eq.'+schoolId},refreshLive)
+   .on('postgres_changes',{event:'*',schema:'public',table:'academic_group_memberships',filter:'institution_id=eq.'+schoolId},refreshLive)
+   .on('postgres_changes',{event:'*',schema:'public',table:'attendance_records',filter:'institution_id=eq.'+schoolId},refreshLive)
+   .subscribe(status=>{
+     state.realtimeStatus=status;
+     const indicator=root.querySelector('#v2LiveStatus');
+     if(indicator){
+       indicator.textContent=status==='SUBSCRIBED'?'● Live connected':'◷ Auto-syncing';
+       indicator.dataset.connected=status==='SUBSCRIBED'?'yes':'no';
+     }
+   });
  }catch(e){console.error('NOOR v2 workspace:',e);root.innerHTML='<section class="v2-panel v2-main-error"><h2>NOOR account needs attention</h2><p>'+escapeHTML(err(e))+'</p>'+button('Retry','refresh',true)+'</section>'}
  finally{loading=false}
 }
@@ -450,7 +461,11 @@ root.addEventListener('submit',async event=>{
  }catch(e){say(err(e),true)}
  finally{if(b)b.disabled=false}
 });
-logout.onclick=async()=>{if(db){await db.auth.signOut();if(channel)await db.removeChannel(channel)}state.user=null;state.membership=null;renderAuth()};
+logout.onclick=async()=>{if(db){await db.auth.signOut();if(channel){await db.removeChannel(channel);channel=null}}state.user=null;state.membership=null;renderAuth()};
+// Keep each dashboard current even after brief network disconnects. Realtime is
+// primary; this visibility-aware refresh covers missed DELETE changes.
+setInterval(()=>{if(state.membership&&!document.hidden)refreshLive()},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.membership)refreshLive()});
 $('#v2Theme').onclick=()=>{
  const all=['pastel-aurora','linen-pearl','porcelain-blue','rose-whisper','rose-gold'];
  const now=document.documentElement.dataset.noorTheme;

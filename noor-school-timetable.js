@@ -65,7 +65,7 @@ function dialog(title,body,onSubmit){
  const form=overlay.querySelector('form');
  form.onsubmit=async e=>{
    e.preventDefault();const b=form.querySelector('button[type=submit]');b.disabled=true;
-   try{const completed=await onSubmit(new FormData(form));if(completed===false){button.disabled=false;return;}close();if(isTeacher())await mountTeacher();if(isLeader())await mountPrincipal();window.NOOR_AI_APP?.toast?.('Saved to your school records.','success')}
+   try{const completed=await onSubmit(new FormData(form));if(completed===false){b.disabled=false;return;}close();if(isTeacher())await mountTeacher();if(isLeader())await mountPrincipal();window.NOOR_AI_APP?.toast?.('Saved to your school records.','success')}
    catch(error){overlay.querySelector('#nstoError').textContent=error.message||String(error);b.disabled=false}
  };
  return overlay;

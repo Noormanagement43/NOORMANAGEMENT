@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS public.noor_class_timetable (
 );
 -- No double-booking a teacher or a school section in the same period.
 CREATE UNIQUE INDEX IF NOT EXISTS noor_teacher_weekday_period_only_one
- ON public.noor_class_timetable(teacher_id,weekday,period_number) WHERE is_active;
+ ON public.noor_class_timetable(school_id,teacher_id,weekday,period_number) WHERE is_active;
 CREATE UNIQUE INDEX IF NOT EXISTS noor_class_section_weekday_period_only_one
  ON public.noor_class_timetable(school_id,class_id,COALESCE(section_id,'00000000-0000-0000-0000-000000000000'::uuid),weekday,period_number)
  WHERE is_active;

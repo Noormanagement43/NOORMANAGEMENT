@@ -88,19 +88,62 @@ function profileHero(){
  '<div class="v2-profile-details"><span class="v2-kicker">'+escapeHTML(state.membership?.role.replaceAll('_',' ')||'Member')+'</span><h2>'+escapeHTML(name)+'</h2><p>'+escapeHTML(user?.email||'')+'</p><p>'+escapeHTML(state.institution?.name||'')+'</p>'+button('Edit my profile','profile',false)+'</div>'+
  '<div class="v2-profile-note"><span>❦</span><blockquote>Better learning begins with thoughtful teaching.</blockquote></div></div>';
 }
-function renderHome(){
- const all=state.groups,periods=state.periods;const classes=all.filter(g=>g.group_type==='class'&&g.is_active!==false),sections=all.filter(g=>g.group_type==='section'&&g.is_active!==false);
- const total=periods.length,own=periods.filter(p=>p.teacher_membership_id===state.membership.id).length;
- shell(titleBlock('Good morning, '+pickName(),'SCHOOL WORKSPACE · LIVE RECORDS','All counts below are read from your active school records, not demo data.')+
+function studentAttendanceStats(){
+ const all=state.attendance||[];
+ const counts={present:0,absent:0,late:0,leave:0};
+ for(const row of all)if(Object.prototype.hasOwnProperty.call(counts,row.attendance_status))counts[row.attendance_status]++;
+ const rate=all.length?Math.round((counts.present+counts.late)/all.length*100):null;
+ return {total:all.length,counts,rate};
+}
+function renderStudentHome(){
+ const classes=viewGroups().filter(g=>g.group_type==='class'),sections=viewGroups().filter(g=>g.group_type==='section');
+ const stats=studentAttendanceStats(),periods=state.periods;
+ shell(titleBlock('My Learning Dashboard','MY SCHOOL · LIVE RECORDS','Your own classes, teacher timetable and saved academic progress are updated from the school database.')+
  profileHero()+
- '<div class="v2-metrics"><div class="v2-metric v2-blue"><span>📘</span><small>Active Classes</small><strong>'+classes.length+'</strong><p>Real academic groups</p></div>'+
+ '<div class="v2-metrics">'+
+ '<div class="v2-metric v2-blue"><span>📘</span><small>My Classes</small><strong>'+classes.length+'</strong><p>Assigned school classes</p></div>'+
+ '<div class="v2-metric v2-green"><span>▦</span><small>My Sections</small><strong>'+sections.length+'</strong><p>Verified memberships</p></div>'+
+ '<div class="v2-metric v2-rose"><span>◷</span><small>Weekly Lessons</small><strong>'+periods.length+'</strong><p>Shared by your teachers</p></div>'+
+ '<div class="v2-metric v2-lilac"><span>✦</span><small>Recorded Attendance</small><strong>'+(stats.rate===null?'—':stats.rate+'%')+'</strong><p>'+(stats.total?stats.total+' actual attendance marks':'Awaiting attendance marks')+'</p></div>'+
+ '</div>'+
+ '<div class="v2-two-cols"><section class="v2-panel"><header><div><span class="v2-kicker">MY CLASSROOM</span><h2>My Teacher Timetable</h2></div>'+button('View full timetable →','timetable',true)+'</header>'+
+ (periods.length?periods.slice(0,5).map(periodCard).join(''):noData('Once your school adds you to a class and teachers publish periods, they will appear here.'))+'</section>'+
+ '<section class="v2-panel"><header><div><span class="v2-kicker">PERSONAL PROGRESS</span><h2>My Attendance</h2></div>'+button('View progress →','progress')+'</header>'+
+ (stats.total?'<div class="v2-student-progress"><strong>'+stats.rate+'%</strong><span>Attendance from '+stats.total+' recorded entries</span><div class="v2-progress-track"><i style="width:'+stats.rate+'%"></i></div><small>Present: '+stats.counts.present+' · Late: '+stats.counts.late+' · Absent: '+stats.counts.absent+' · Leave: '+stats.counts.leave+'</small></div>':noData('Your teachers have not submitted attendance data for your account yet.'))+
+ '</section></div>');
+}
+function renderProgress(){
+ if(!isStudent())return renderHome();
+ const stats=studentAttendanceStats();
+ const recent=(state.attendance||[]).slice(0,30);
+ shell(titleBlock('My Academic Progress','STUDENT RECORDS','Attendance figures are calculated only from your own submitted school records. Marks will appear when verified grading is connected.')+
+ '<div class="v2-metrics">'+
+ '<div class="v2-metric v2-green"><span>✓</span><small>Present</small><strong>'+stats.counts.present+'</strong><p>Recorded attendances</p></div>'+
+ '<div class="v2-metric v2-blue"><span>◷</span><small>Late</small><strong>'+stats.counts.late+'</strong><p>Recorded attendances</p></div>'+
+ '<div class="v2-metric v2-rose"><span>○</span><small>Absent</small><strong>'+stats.counts.absent+'</strong><p>Recorded attendances</p></div>'+
+ '<div class="v2-metric v2-lilac"><span>▥</span><small>Attendance Rate</small><strong>'+(stats.rate===null?'—':stats.rate+'%')+'</strong><p>'+(stats.total?stats.total+' submitted marks':'No submitted marks')+'</p></div>'+
+ '</div><div class="v2-two-cols"><section class="v2-panel"><header><h2>Recent Attendance</h2></header>'+
+ (recent.length?recent.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(x.attendance_status[0].toUpperCase()+x.attendance_status.slice(1))+'</strong><small>'+dateTime(x.marked_at)+'</small></div>').join(''):noData('No attendance marks are saved for this account yet.'))+'</section>'+
+ '<section class="v2-panel"><h2>Subject-wise Marks</h2>'+noData('Verified subject marks are not available in this school database yet. No percentages are invented.')+
+ '<p class="v2-panel-note">Your teacher’s timetable is available under My Timetable and changes automatically when saved.</p>'+
+ button('My Timetable →','timetable',true)+'</section></div>');
+}
+function renderHome(){
+ if(isStudent())return renderStudentHome();
+ const all=state.groups,periods=state.periods;
+ const classes=all.filter(g=>g.group_type==='class'&&g.is_active!==false),sections=all.filter(g=>g.group_type==='section'&&g.is_active!==false);
+ const total=periods.length,own=periods.filter(p=>p.teacher_membership_id===state.membership.id).length;
+ const scheduledNow=periods.filter(isScheduledNow);
+ shell(titleBlock(canManage()?'School Dashboard':'My Teaching Dashboard','SCHOOL WORKSPACE · LIVE RECORDS','This dashboard uses real school data. Timetable changes sync across authorised accounts.')+
+ profileHero()+
+ '<div class="v2-metrics"><div class="v2-metric v2-blue"><span>📘</span><small>Active Classes</small><strong>'+classes.length+'</strong><p>Actual academic groups</p></div>'+
  '<div class="v2-metric v2-green"><span>🌿</span><small>Sections</small><strong>'+sections.length+'</strong><p>In this institution</p></div>'+
  '<div class="v2-metric v2-rose"><span>◷</span><small>Weekly Periods</small><strong>'+total+'</strong><p>Saved timetable entries</p></div>'+
- '<div class="v2-metric v2-lilac"><span>✎</span><small>My Periods</small><strong>'+own+'</strong><p>Teacher-owned lessons</p></div></div>'+
- '<div class="v2-two-cols"><section class="v2-panel"><header><div><span class="v2-kicker">SCHEDULE</span><h2>'+(canManage()?'School Teaching Timetable':'My Teaching Timetable')+'</h2></div>'+button('Open Timetable →','timetable',true)+'</header>'+
- (canSchedule()?periods.filter(p=>p.teacher_membership_id===state.membership.id).slice(0,4).map(periodCard).join('')||noData('No lessons created yet. Add your first period without waiting for Principal assignment.'):periods.slice(0,4).map(periodCard).join('')||noData('No published teacher periods in your school yet.'))+'</section>'+
+ '<div class="v2-metric v2-lilac"><span>✦</span><small>'+(canManage()?'Scheduled Right Now':'My Periods')+'</small><strong>'+(canManage()?scheduledNow.length:own)+'</strong><p>'+(canManage()?'Based on timetable times':'Personally managed lessons')+'</p></div></div>'+
+ '<div class="v2-two-cols"><section class="v2-panel"><header><div><span class="v2-kicker">SCHEDULE · LIVE UPDATES</span><h2>'+(canManage()?'School Teaching Timetable':'My Teaching Timetable')+'</h2></div>'+button('Open Timetable →','timetable',true)+'</header>'+
+ (periods.length?periods.filter(p=>isScheduledNow(p)).concat(periods.filter(p=>!isScheduledNow(p))).slice(0,5).map(periodCard).join(''):noData(canSchedule()?'No lessons yet. Create your own timetable without waiting for Principal assignment.':'No teacher periods saved in this school yet.'))+'</section>'+
  '<section class="v2-panel"><header><div><span class="v2-kicker">ACADEMICS</span><h2>Classes & Sections</h2></div>'+button('Explore →','classes')+'</header>'+
- (classes.length?classes.slice(0,6).map(c=>'<div class="v2-list-line"><strong>'+escapeHTML(c.name)+'</strong><small>'+sections.filter(s=>s.parent_group_id===c.id).length+' sections</small></div>').join(''):noData('No academic classes created in this database yet.'))+
+ (classes.length?classes.slice(0,6).map(c=>'<div class="v2-list-line"><strong>'+escapeHTML(c.name)+'</strong><small>'+sections.filter(x=>x.parent_group_id===c.id).length+' sections</small></div>').join(''):noData('No academic classes created in the school database yet.'))+
  '</section></div>');
 }
 function groupLabel(id){const x=state.groups.find(v=>v.id===id);if(!x)return'General / not assigned';const parent=state.groups.find(v=>v.id===x.parent_group_id);return parent?parent.name+' · '+x.name:x.name}

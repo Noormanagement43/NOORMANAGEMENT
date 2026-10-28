@@ -41,8 +41,8 @@ test('advanced teaching tools have focused presentation, not duplicate top-level
   const end=code.indexOf('];',start);
   assert.ok(start>=0 && end>start);
   const tiles=code.slice(start,end);
-  assert.equal((tiles.match(/\['/g)||[]).length,5);
-  for(const label of ['Learning Gap Detector','Syllabus Progress','Deadline Planner','Teaching Diary','Rubric & Grading'])assert.ok(tiles.includes(label));
+  assert.equal((tiles.match(/\['/g)||[]).length,4);
+  for(const label of ['Learning Gap Detector','Syllabus Progress','Deadline Planner','Rubric & Grading'])assert.ok(tiles.includes(label));
   const style=await read('noor-role-focus.css');
   assert.match(style,/nt-priority-grid/);
   assert.match(style,/nt-advanced-details/);

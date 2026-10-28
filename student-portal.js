@@ -75,18 +75,14 @@ function calGrid(year,month,attendance=false){
 function miniCalendar(){const now=new Date(),mn=now.getMonth(),y=now.getFullYear();return box('My Calendar','School events, assessments and deadlines',calGrid(y,mn),btn('Full calendar','student-calendar'))}
 
 async function uploadStudentPhoto(e){
-  const f=e.target.files?.[0],a=app();if(!f)return;
-  if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>3*1024*1024){a.toast?.('Choose a JPG, PNG or WebP photo under 3 MB.','error');e.target.value='';return}
-  try{
-    const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[f.type],path=a.user.id+'/student-profile.'+ext;
-    const upload=await a.db.storage.from('student-photos').upload(path,f,{upsert:true,contentType:f.type,cacheControl:'60'});
-    if(upload.error)throw upload.error;
-    await a.db.from('profiles').update({avatar_path:path}).eq('id',a.user.id).eq('school_id',a.schoolId);
-    const url=await a.db.storage.from('student-photos').createSignedUrl(path,900);
-    a.profile.avatar_path=path;a.profile.avatar_url=url.data?.signedUrl||'';a.toast?.('Profile photo updated successfully.','success');
-    overview();
-  }catch(err){a.toast?.('Photo update failed: '+err.message,'error')}
-  finally{e.target.value=''}
+ const file=e.target.files?.[0],a=app();if(!file)return;
+ try{
+  const result=await window.NOOR_AVATAR_SAFE.uploadOwn({client:a.db,userId:a.user?.id,profile:a.profile,schoolId:a.schoolId,file});
+  a.profile.avatar_url=result.avatar_url;
+  a.toast?.('Your own profile photo has been saved.','success');
+  overview();
+ }catch(err){a.toast?.('Photo update failed: '+err.message,'error')}
+ finally{e.target.value=''}
 }
 
 function overview(){
@@ -319,13 +315,20 @@ document.addEventListener('submit',async e=>{
   if(v('url')&&!/^https:\/\//i.test(v('url')))throw Error('Evidence link must use https.');
   const r=await db().from('noor_student_portfolio').insert({school_id:sid(),student_id:u().id,title:v('title'),description:v('description'),evidence_url:v('url')||null});if(r.error)throw r.error;output='Portfolio item saved.';
  }else if(f.id==='spProfileForm'){
+  const currentId=u()?.id;
+  if(!currentId||p()?.id!==currentId)throw Error('You cannot edit another account’s profile.');
+  await window.NOOR_AVATAR_SAFE.ownUser(db(),currentId);
   const file=f.elements.photo?.files?.[0];
   const changes={mobile_number:v('phone')||null,parent_name:v('parent')||null,parent_phone:v('parentphone')||null,city_or_area:v('city')||null,residential_address:v('address')||null};
-  if(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw Error('Photo must be JPG, PNG or WebP under 5 MB.');
-   const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type],path=u().id+'/profile-'+crypto.randomUUID()+'.'+ext;
-   const uploaded=await db().storage.from('student-photos').upload(path,file,{upsert:false,contentType:file.type});if(uploaded.error)throw uploaded.error;changes.avatar_path=path;}
-  const r=await db().from('profiles').update(changes).eq('id',u().id).select('*').single();if(r.error)throw r.error;
-  Object.assign(p(),r.data);if(r.data.avatar_path){const signed=await db().storage.from('student-photos').createSignedUrl(r.data.avatar_path,3600);p().avatar_url=signed.data?.signedUrl||'';}
+  if(file){
+   const saved=await window.NOOR_AVATAR_SAFE.uploadOwn({client:db(),userId:currentId,profile:p(),schoolId:app().schoolId,file});
+   p().avatar_url=saved.avatar_url;
+  }
+  await window.NOOR_AVATAR_SAFE.ownUser(db(),currentId);
+  const r=await db().from('profiles').update(changes).eq('id',currentId).eq('school_id',app().schoolId).select('*').single();
+  if(r.error||r.data?.id!==currentId)throw r.error||Error('Profile identity changed during save.');
+  Object.assign(p(),r.data);
+  if(r.data.avatar_path){const signed=await db().storage.from('student-photos').createSignedUrl(r.data.avatar_path,900);p().avatar_url=signed.data?.signedUrl||'';}
   output='Student profile updated.';
  }
  await readAll();const route=f.closest('.view')?.id?.replace('view-','');if(route==='overview')overview();else await run(route);app().toast?.(output,'success');

@@ -72,3 +72,44 @@ test('new legacy project schema is safe, scoped and not a replacement login/proj
  assert.doesNotMatch(sql,/DROP TABLE|TRUNCATE|DELETE FROM public|SECURITY DEFINER/);
  assert.match(sql,/ALTER PUBLICATION supabase_realtime ADD TABLE/);
 });
+
+test('Principal adds, edits and safely removes any numbered bell period; teachers never set school hours',async()=>{
+ const [module,css,sql,teacher]=await Promise.all([
+  get('noor-school-timetable.js'),get('noor-school-timetable.css'),
+  get('supabase/migrations/20261028203000_school_bell_teacher_owned_timetable.sql'),
+  get('teacher-reference.js')
+ ]);
+ assert.match(module,/async function openSchoolTimes\(\)/);
+ assert.match(module,/id="nstoAddBell"/);
+ assert.match(module,/data-nsto-remove-bell/);
+ assert.match(module,/school bell times are fixed/i);
+ assert.match(module,/period_number:n,start_time:start,end_time:end,is_active:true/);
+ assert.match(module,/\.update\(\{is_active:false/);
+ assert.match(module,/\.from\('noor_class_timetable'\)[\s\S]*?\.in\('period_number',removed\)/);
+ assert.match(module,/records will NOT be deleted/);
+ assert.match(module,/window\.confirm\(warning\)/);
+ assert.match(module,/nextSchoolDate|nextLessonDate/);
+ assert.doesNotMatch(module,/Array\.from\(\{length:Math\.max\(8/);
+ assert.doesNotMatch(module,/Teacher will be assigned by principal|principal_teacher_assignment/);
+ assert.match(css,/\.nsto-add-bell/);
+ assert.match(css,/\.nsto-remove-bell/);
+ assert.match(sql,/period_number smallint NOT NULL CHECK \(period_number BETWEEN 1 AND 100\)/);
+ assert.match(sql,/is_active boolean NOT NULL DEFAULT true/);
+ assert.match(sql,/b\.is_active/);
+ assert.match(teacher,/NOOR_SCHOOL_TIMETABLE\?\.openTeacherEditor/);
+});
+
+test('Archiving a bell slot never deletes class assignments, but hides inactive school periods from student & principal',async()=>{
+ const [module,sql]=await Promise.all([
+  get('noor-school-timetable.js'),
+  get('supabase/migrations/20261028203000_school_bell_teacher_owned_timetable.sql')
+ ]);
+ assert.match(module,/async function loadBells\(\{includeArchived=false\}=\{\}\)/);
+ assert.match(module,/if\(!includeArchived\)query=query\.eq\('is_active',true\)/);
+ assert.match(module,/const activeRows=sorted\.filter\(x=>x\.bell\)/);
+ assert.match(module,/bellMap\.has\(Number\(x\.period_number\)\)/);
+ assert.match(module,/bmap\.has\(Number\(x\.period_number\)\)/);
+ assert.match(module,/paused because the Principal removed their bell slot/);
+ assert.doesNotMatch(module,/\.from\('noor_class_timetable'\)\.delete\(\)/);
+ assert.doesNotMatch(sql,/DROP TABLE|TRUNCATE|DELETE FROM public|SECURITY DEFINER/);
+});

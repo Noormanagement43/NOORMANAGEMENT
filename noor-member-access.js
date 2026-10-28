@@ -8,7 +8,7 @@
   const app = () => window.NOOR_AI_APP;
   const isPrincipal = () => {
     const a=app();
-    return Boolean(a?.db && a.schoolId && a.user && ['owner','principal'].includes(a.profile?.role) &&
+    return Boolean(a?.db && a.schoolId && a.user && ['owner','principal','manager'].includes(a.profile?.role) &&
       a.profile?.status==='active' && a.school?.verification_status==='verified' &&
       a.school?.account_status==='active' && a.school?.is_active);
   };

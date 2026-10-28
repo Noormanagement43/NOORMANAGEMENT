@@ -43,7 +43,7 @@ test('search routes to actual authorised nav entries; demo hub cannot rewrite sc
  assert.match(html,/id="noorReferenceNavSearch"/);
  assert.match(html,/noor-dashboard-navigation\.js/);
  assert.match(html,/noor-dashboard-navigation\.css/);
- assert.match(html,/select\.disabled=true/);
+ assert.doesNotMatch(html,/id="schoolHubSwitcher"|setupSchoolHubSwitcher/);
  assert.doesNotMatch(html,/Switched to AL Noor Demo Hub|sch-alnoor-2026/);
  assert.doesNotThrow(()=>new Script(script));
  assert.match(script,/nav\.querySelectorAll\('button\[data-view\]'\)/);

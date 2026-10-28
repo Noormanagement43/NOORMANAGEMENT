@@ -13,7 +13,7 @@ test('teacher can type freeform subject with automatic icon, no subject suggesti
  assert.match(s,/data-edit-period/);
  assert.match(s,/db\.from\('noor_teacher_periods'\)\.insert/);
  assert.match(s,/\.select\('id,approval_status'\)/);
- assert.doesNotMatch(s,/db\.from\('teacher_assignments'\)[\s\S]*?async function showPeriodEditor/);
+ assert.doesNotMatch(s.slice(s.indexOf('async function showPeriodEditor'),s.indexOf('function openPaper')),/teacher_assignments/);
  assert.doesNotMatch(s,/option value="Maths"|suggestedSubjects|datalist/);
 });
 

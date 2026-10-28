@@ -11,8 +11,9 @@ const icons=window.NOOR_SUBJECT_ICONS;
 const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const managementRoles=['principal','school_admin','university_admin','academic_admin'];
 const teacherRoles=['teacher','faculty'];
-let db=null,authMode='signin',state={user:null,profile:null,groups:[],periods:[],memberships:[],institution:null,membership:null,tab:'home',photoUrl:null};
-let channel=null,bootstrapId=0,loading=false;
+const studentRoles=['student','university_student'];
+let db=null,authMode='signin',state={user:null,profile:null,groups:[],periods:[],memberships:[],institution:null,membership:null,tab:'home',photoUrl:null,attendance:[],enrollments:[],staffNames:{}};
+let channel=null,bootstrapId=0,loading=false,liveRefreshing=false;
 function say(message,error=false){toast.textContent=message;toast.hidden=false;toast.dataset.error=error?'yes':'no';setTimeout(()=>{if(toast.textContent===message)toast.hidden=true},5200)}
 function err(error){return error?.message||String(error)||'An unexpected error occurred.'}
 function button(text,action,primary=false){return '<button type="button" class="v2-btn '+(primary?'v2-primary':'v2-outline')+'" data-action="'+action+'">'+text+'</button>'}
@@ -20,13 +21,34 @@ function titleBlock(title,kicker='',description=''){return '<div class="v2-title
 function activeUserId(){return state.user?.id}
 function canManage(){return managementRoles.includes(state.membership?.role)}
 function canSchedule(){return teacherRoles.includes(state.membership?.role)}
+function isStudent(){return studentRoles.includes(state.membership?.role)}
+function schoolClock(){
+ const tz=state.institution?.timezone||'Asia/Kolkata';
+ try{
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:tz,weekday:'long',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+  const find=k=>parts.find(p=>p.type===k)?.value||'';
+  return {weekday:days.indexOf(find('weekday')),time:find('hour')+':'+find('minute')};
+ }catch{return{weekday:new Date().getDay(),time:String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0')}}
+}
+function isScheduledNow(row){
+ const clock=schoolClock();
+ return clock.weekday===Number(row.weekday)&&String(row.start_time).slice(0,5)<=clock.time&&String(row.end_time).slice(0,5)>clock.time;
+}
+function staffName(row){return state.staffNames?.[row.teacher_membership_id]||'Teacher'}
+function viewGroups(){
+ if(!isStudent())return state.groups;
+ const assigned=new Set(state.enrollments.map(m=>m.group_id));
+ const children=state.groups.filter(g=>assigned.has(g.id));
+ for(const g of children)if(g.parent_group_id)assigned.add(g.parent_group_id);
+ return state.groups.filter(g=>assigned.has(g.id));
+}
 function noData(text){return '<div class="v2-empty"><span aria-hidden="true">☁️</span><p>'+escapeHTML(text)+'</p></div>'}
 function subject(name){return icons?.display(name)||{icon:'📚',tone:'general',hue:230,initials:'?',matched:false}}
 function symbol(name){const x=subject(name);return '<span class="v2-subject-symbol" style="--sh:'+x.hue+'" title="'+escapeHTML(x.label||name)+'">'+x.icon+(x.matched?'':'<small>'+escapeHTML(x.initials||'?')+'</small>')+'</span>'}
 function renderAuth(){
  state.tab='home';logout.hidden=true;
- root.innerHTML='<div class="v2-auth-shell"><section class="v2-auth-showcase"><div class="v2-kicker">NEW SUPABASE · VERIFIED ROLE ACCESS</div><h1>Inspire learning.<br><em>Organise everything.</em></h1><p>NOOR for schools and universities. Every account has its own picture, timetable, class records and permissions.</p><div class="v2-showcase-art"><span>✦</span><span>📘</span><span>🌿</span><span>🧮</span></div></section>'+
- '<section class="v2-panel v2-auth-card"><h2>'+(authMode==='signup'?'Create NOOR account':'Welcome to NOOR')+'</h2><p>Sign in to the new NOOR Management Supabase project.</p>'+
+ root.innerHTML='<div class="v2-auth-shell"><section class="v2-auth-showcase"><div class="v2-kicker">SECURE LOGIN · SCHOOL & UNIVERSITY</div><h1>Inspire learning.<br><em>Organise everything.</em></h1><p>NOOR for schools and universities. Every account has its own picture, timetable, class records and permissions.</p><div class="v2-showcase-art"><span>✦</span><span>📘</span><span>🌿</span><span>🧮</span></div></section>'+
+ '<section class="v2-panel v2-auth-card"><h2>'+(authMode==='signup'?'Create NOOR account':'Welcome to NOOR')+'</h2><p>Sign in to your NOOR school or university account.</p>'+
  '<form id="v2AuthForm" class="v2-form">'+(authMode==='signup'?'<label>Full name<input name="name" required autocomplete="name" maxlength="120"></label>':'')+
  '<label>Email<input name="email" type="email" required autocomplete="email"></label><label>Password<input name="password" type="password" required minlength="8" autocomplete="'+(authMode==='signin'?'current-password':'new-password')+'"></label>'+
  '<button class="v2-btn v2-primary v2-full" type="submit">'+(authMode==='signin'?'Sign in securely':'Register account')+'</button></form>'+
@@ -35,20 +57,21 @@ function renderAuth(){
 }
 function renderOnboarding(){
  logout.hidden=false;
- root.innerHTML=titleBlock('Welcome to your NEW NOOR workspace','ACCOUNT CONFIRMED','This connected project has no active institution membership for your signed-in account.')+
+ root.innerHTML=titleBlock('Welcome to NOOR','ACCOUNT CONFIRMED','Your account does not have an active school or university membership yet.')+
  '<div class="v2-onboard-grid"><section class="v2-panel"><h2>Register your institution</h2><p>If this is a new school or university, create it here. Its Principal account activates immediately.</p>'+
  '<form id="v2CreateInstitution" class="v2-form"><label>School / University name<input name="name" maxlength="160" required placeholder="Institution official name"></label>'+
  '<label>Institution type<select name="type"><option value="school">School</option><option value="university">University / College</option></select></label>'+
  '<label>Unique short ID<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" required placeholder="example-school"></label>'+
  '<button class="v2-btn v2-primary" type="submit">Create institution & open dashboard</button></form></section>'+
- '<section class="v2-panel v2-guide"><span class="v2-guide-icon">🔐</span><h2>Already cloned your school?</h2><p>There are currently no active memberships in this connected Supabase project. Sign in to the project that holds your imported schools, or verify the imported membership records.</p><p>We will not invent classes, students or attendance to fill the dashboard.</p>'+button('Re-check connected data','refresh',true)+'</section></div>';
+ '<section class="v2-panel v2-guide"><span class="v2-guide-icon">🔐</span><h2>Already cloned your school?</h2><p>If your school already exists, ask its administrator to invite or activate your account. Only your authorised institution will appear here.</p><p>We will not invent classes, students or attendance to fill the dashboard.</p>'+button('Re-check connected data','refresh',true)+'</section></div>';
 }
 function pickName(){return state.profile?.full_name||state.user?.email?.split('@')[0]||'NOOR member'}
 function dateTime(t){return t?new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):'—'}
 function iconMenu(){return [
  ['home','⌂','Dashboard'],
- ['timetable','◷','Timetable'],
- ['classes','▦','Classes'],
+ ['timetable','◷',isStudent()?'My Timetable':canSchedule()?'My Timetable':'School Timetable'],
+ ...(isStudent()?[['progress','▥','My Progress']]:[]),
+ ['classes','▦',isStudent()?'My Classes':'Classes'],
  ['profile','◉','My Profile']
  ].map(([id,ico,label])=>'<button type="button" data-tab="'+id+'" class="'+(id===state.tab?'active':'')+'"><span>'+ico+'</span><small>'+label+'</small></button>').join('')}
 function shell(body){
@@ -56,7 +79,7 @@ function shell(body){
  const caption=role.replaceAll('_',' ').replace(/\b[a-z]/g,c=>c.toUpperCase());
  logout.hidden=false;
  root.innerHTML='<div class="v2-layout"><aside class="v2-sidebar"><div class="v2-institution"><span class="v2-logo">✦</span><div><strong>'+escapeHTML(inst?.name||'NOOR')+'</strong><small>'+escapeHTML(inst?.institution_type||'School')+' · '+escapeHTML(caption)+'</small></div></div>'+
- '<nav aria-label="Workspace navigation">'+iconMenu()+'</nav><div class="v2-side-footer">New NOOR Management<br>Secure institution workspaces</div></aside>'+
+ '<nav aria-label="Workspace navigation">'+iconMenu()+'</nav><div class="v2-side-footer">NOOR Management<br>Secure institution workspaces</div></aside>'+
  '<div class="v2-content">'+body+'</div></div><nav class="v2-mobile-nav" aria-label="Phone workspace navigation">'+iconMenu()+'</nav>';
 }
 function profileHero(){
@@ -68,13 +91,13 @@ function profileHero(){
 function renderHome(){
  const all=state.groups,periods=state.periods;const classes=all.filter(g=>g.group_type==='class'&&g.is_active!==false),sections=all.filter(g=>g.group_type==='section'&&g.is_active!==false);
  const total=periods.length,own=periods.filter(p=>p.teacher_membership_id===state.membership.id).length;
- shell(titleBlock('Good morning, '+pickName(),'NEW NOOR · LIVE DATABASE','All counts below are read from your active school records, not demo data.')+
+ shell(titleBlock('Good morning, '+pickName(),'SCHOOL WORKSPACE · LIVE RECORDS','All counts below are read from your active school records, not demo data.')+
  profileHero()+
  '<div class="v2-metrics"><div class="v2-metric v2-blue"><span>📘</span><small>Active Classes</small><strong>'+classes.length+'</strong><p>Real academic groups</p></div>'+
  '<div class="v2-metric v2-green"><span>🌿</span><small>Sections</small><strong>'+sections.length+'</strong><p>In this institution</p></div>'+
  '<div class="v2-metric v2-rose"><span>◷</span><small>Weekly Periods</small><strong>'+total+'</strong><p>Saved timetable entries</p></div>'+
  '<div class="v2-metric v2-lilac"><span>✎</span><small>My Periods</small><strong>'+own+'</strong><p>Teacher-owned lessons</p></div></div>'+
- '<div class="v2-two-cols"><section class="v2-panel"><header><div><span class="v2-kicker">SCHEDULE</span><h2>My Teaching Timetable</h2></div>'+button('Open Timetable →','timetable',true)+'</header>'+
+ '<div class="v2-two-cols"><section class="v2-panel"><header><div><span class="v2-kicker">SCHEDULE</span><h2>'+(canManage()?'School Teaching Timetable':'My Teaching Timetable')+'</h2></div>'+button('Open Timetable →','timetable',true)+'</header>'+
  (canSchedule()?periods.filter(p=>p.teacher_membership_id===state.membership.id).slice(0,4).map(periodCard).join('')||noData('No lessons created yet. Add your first period without waiting for Principal assignment.'):periods.slice(0,4).map(periodCard).join('')||noData('No published teacher periods in your school yet.'))+'</section>'+
  '<section class="v2-panel"><header><div><span class="v2-kicker">ACADEMICS</span><h2>Classes & Sections</h2></div>'+button('Explore →','classes')+'</header>'+
  (classes.length?classes.slice(0,6).map(c=>'<div class="v2-list-line"><strong>'+escapeHTML(c.name)+'</strong><small>'+sections.filter(s=>s.parent_group_id===c.id).length+' sections</small></div>').join(''):noData('No academic classes created in this database yet.'))+
@@ -90,14 +113,14 @@ function renderTimetable(){
  const teacher=canSchedule(),mine=state.periods.filter(x=>x.teacher_membership_id===state.membership?.id);
  const selected=teacher?mine:state.periods;
  const grouped=days.map((label,day)=>({label,rows:selected.filter(x=>x.weekday===day)}));
- shell(titleBlock('My Weekly Timetable','FLEXIBLE TEACHER WORKSPACE','Teachers create and edit their own lessons. No Principal approval step is required.')+
- '<div class="v2-title-action">'+(teacher?button('+ Add Period','add-period',true):'<span class="v2-pill">School timetable · view only</span>')+'</div>'+
+ shell(titleBlock(teacher?'My Weekly Timetable':isStudent()?'My Class Timetable':'School Teaching Timetable',teacher?'MY TEACHING SCHEDULE':isStudent()?'MY CLASSROOM':'SCHOOL SCHEDULE',teacher?'Create, edit or remove your own lessons. No Principal approval step is required.':isStudent()?'Your class and section timetable updates automatically when teachers change their periods.':'View teachers’ school timetables live. Each teacher manages their own periods.')+
+ '<div class="v2-title-action">'+(teacher?button('+ Add Period','add-period',true):'<span class="v2-pill">Read-only live schedule</span>')+'</div>'+
  '<div class="v2-timetable-grid">'+grouped.map(d=>'<section class="v2-panel v2-day"><header><h2>'+d.label+'</h2><span class="v2-pill">'+d.rows.length+' periods</span></header>'+
  (d.rows.length?d.rows.map(periodCard).join(''):noData('No saved periods'))+'</section>').join('')+'</div>');
 }
 function renderClasses(){
- const classes=state.groups.filter(x=>x.group_type==='class'),sections=state.groups.filter(x=>x.group_type==='section');
- shell(titleBlock('Classes & Sections','ACADEMIC MANAGEMENT','All entries are real, school-scoped academic groups.')+
+ const allowed=viewGroups();const classes=allowed.filter(x=>x.group_type==='class'),sections=allowed.filter(x=>x.group_type==='section');
+ shell(titleBlock(isStudent()?'My Classes & Sections':'Classes & Sections','ACADEMIC MANAGEMENT',isStudent()?'Only your assigned classes and sections appear here.':'All entries are real, school-scoped academic groups.')+
  '<div class="v2-title-action">'+(canManage()?button('+ Create Class','new-class',true)+button('+ Add Section','new-section'):'' )+'</div>'+
  '<div class="v2-two-cols"><section class="v2-panel"><h2>Classes · '+classes.length+'</h2>'+
  (classes.length?classes.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(x.name)+'</strong><small>'+sections.filter(y=>y.parent_group_id===x.id).length+' sections</small>'+(canManage()?'<button class="v2-btn v2-outline" type="button" data-edit-group="'+escapeHTML(x.id)+'">Edit</button>':'')+'</div>').join(''):noData('Your school has no created classes.'))+'</section>'+
@@ -114,7 +137,7 @@ function renderProfile(){
  '<p>Your institution: <b>'+escapeHTML(state.institution?.name)+'</b></p><p>Role: <b>'+escapeHTML(state.membership?.role)+'</b></p><p>Signed in as: <b>'+escapeHTML(state.user?.email)+'</b></p></section></div>');
 }
 function renderCurrent(){
- switch(state.tab){case'timetable':renderTimetable();break;case'classes':renderClasses();break;case'profile':renderProfile();break;default:renderHome()}
+ switch(state.tab){case'timetable':renderTimetable();break;case'classes':renderClasses();break;case'profile':renderProfile();break;case'progress':if(isStudent())renderProgress();else renderHome();break;default:renderHome()}
 }
 function showDialog(title,body,onSubmit){
  const existing=$('#v2Dialog');if(existing)existing.remove();
@@ -200,7 +223,7 @@ async function reloadSchool(){
 async function bootstrap(){
  if(loading)return;const token=++bootstrapId;loading=true;
  try{
-  if(!db){root.innerHTML='<p class="v2-error">The new Supabase library did not load. Check your connection.</p>';return}
+  if(!db){root.innerHTML='<p class="v2-error">The school connection did not load. Check your internet connection.</p>';return}
   const auth=await db.auth.getUser();if(token!==bootstrapId)return;
   if(auth.error||!auth.data?.user){state={user:null,profile:null,groups:[],periods:[],memberships:[],institution:null,membership:null,tab:'home',photoUrl:null};renderAuth();return}
   const user=auth.data.user;state.user=user;logout.hidden=false;
@@ -225,7 +248,7 @@ async function bootstrap(){
   channel=db.channel('noor-v2-live-'+state.institution.id)
    .on('postgres_changes',{event:'*',schema:'public',table:'teacher_timetable_periods',filter:'institution_id=eq.'+state.institution.id},async()=>{try{await reloadSchool();renderCurrent()}catch(e){console.warn('Timetable sync failed',e)}})
    .subscribe();
- }catch(e){console.error('NOOR v2 workspace:',e);root.innerHTML='<section class="v2-panel v2-main-error"><h2>New NOOR account needs attention</h2><p>'+escapeHTML(err(e))+'</p>'+button('Retry','refresh',true)+'</section>'}
+ }catch(e){console.error('NOOR v2 workspace:',e);root.innerHTML='<section class="v2-panel v2-main-error"><h2>NOOR account needs attention</h2><p>'+escapeHTML(err(e))+'</p>'+button('Retry','refresh',true)+'</section>'}
  finally{loading=false}
 }
 async function submitAuth(form){
@@ -317,5 +340,5 @@ try{
   }
  });
  bootstrap();
-}catch(error){root.innerHTML='<section class="v2-panel v2-main-error"><h2>NOOR new database connection is unavailable</h2><p>'+escapeHTML(err(error))+'</p></section>'}
+}catch(error){root.innerHTML='<section class="v2-panel v2-main-error"><h2>NOOR connection is unavailable</h2><p>'+escapeHTML(err(error))+'</p></section>'}
 })();

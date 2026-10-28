@@ -1,6 +1,6 @@
 # NOOR AI Supabase migrations
 
-Project: `npzedchxfurcphvpjock` (Mumbai region). Do not point these changes at Cozy & Co or another project.
+Project: `ayrryemawwplguaauxij` (Mumbai region). Do not point these changes at Cozy & Co or another project.
 
 ## Applied on the existing project
 

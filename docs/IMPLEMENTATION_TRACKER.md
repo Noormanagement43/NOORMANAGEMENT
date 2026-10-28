@@ -5,7 +5,7 @@ Last updated: 2026-10-18 (current live verification; see the newest section at t
 This tracker separates live database work from frontend features that are still prototypes or awaiting end-to-end tests.
 
 ## Dedicated project
-- [x] Created and verified the separate Supabase project NOOR-AI (npzedchxfurcphvpjock) in the Mumbai region.
+- [x] Created and verified the separate Supabase project NOOR-AI (ayrryemawwplguaauxij) in the Mumbai region.
 - [x] Confirmed project state ACTIVE_HEALTHY.
 - [x] Connected the unified frontend to the project using a browser-safe publishable key.
 - [!] Historical 2026-10-16 clean-advisor claim is superseded: see the 2026-10-18 security review at the end of this tracker.
@@ -86,7 +86,7 @@ Current honest status: the dedicated database and operational schema foundations
 
 ## Task 5 + Task 6 integration update — 16 October 2026
 
-This work extends the existing NOOR AI application and its existing Supabase project `npzedchxfurcphvpjock`; it does not create a second app or project.
+This work extends the existing NOOR AI application and its existing Supabase project `ayrryemawwplguaauxij`; it does not create a second app or project.
 
 ### Implemented in the current codebase
 

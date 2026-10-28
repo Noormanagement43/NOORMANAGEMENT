@@ -1,5 +1,5 @@
 -- NOOR AI: assessment context validation, owner-safe invitation lifecycle and FK indexes.
--- Intended for the already-migrated NOOR AI project npzedchxfurcphvpjock.
+-- Intended for the already-migrated NOOR AI project ayrryemawwplguaauxij.
 -- Apply through reviewed Supabase migration tooling; all operations are additive/idempotent.
 create or replace function private.noor_guard_invitation_role()
 returns trigger language plpgsql security definer set search_path=''

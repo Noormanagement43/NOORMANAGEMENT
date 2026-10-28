@@ -1,5 +1,6 @@
 /* Browser-safe settings only. All Gemini/Brevo secrets belong in Supabase Edge Function secrets. */
-window.NOOR_CONFIG={
-  SUPABASE_URL:"https://npzedchxfurcphvpjock.supabase.co",
-  SUPABASE_PUBLISHABLE_KEY:"sb_publishable_wiKMi6qiXLXtY1Z98ZIiRg_Eg7RMxxG"
+window.NOOR_CONFIG = {
+  SUPABASE_URL: "https://ayrryemawwplguaauxij.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_2e16MAulIE1locqlRov9iQ_VWtCjwOG",
+  GEMINI_API_KEY: (typeof localStorage !== 'undefined' ? localStorage.getItem('noor_gemini_api_key') : '') || ""
 };

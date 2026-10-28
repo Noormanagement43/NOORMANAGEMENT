@@ -1,5 +1,5 @@
 -- NOOR AI School Command Centre. Additive extension of existing school records.
--- Applied to dedicated project npzedchxfurcphvpjock as migration school_command_centre.
+-- Applied to dedicated project ayrryemawwplguaauxij as migration school_command_centre.
 begin;
 alter table public.school_tasks
  add column if not exists starts_at timestamptz,

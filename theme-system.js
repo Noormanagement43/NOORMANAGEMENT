@@ -2,16 +2,15 @@
 (() => {
   "use strict";
   const THEMES = [
-    { id:"rose-gold", name:"Rose Gold", desc:"Signature berry, blush and warm gold.", primary:"#54243b", accent:"#d6b174", canvas:"#fff8f5", card:"#fffdfb", ink:"#2c2027" },
-    { id:"pearl-ivory", name:"Pearl Ivory", desc:"Quiet neutral luxury for focused work.", primary:"#5a5148", accent:"#b58a4a", canvas:"#f8f6f1", card:"#fffefa", ink:"#282522" },
-    { id:"ocean-blue", name:"Ocean Blue", desc:"Calm navy with crisp blue highlights.", primary:"#244d78", accent:"#d6aa67", canvas:"#f2f7fc", card:"#fcfeff", ink:"#1d2b3c" },
-    { id:"sage-garden", name:"Sage Garden", desc:"Soft botanical greens and warm neutrals.", primary:"#365d4c", accent:"#c6a168", canvas:"#f4f8f2", card:"#fdfffb", ink:"#24342b" },
-    { id:"lavender-mist", name:"Lavender Mist", desc:"Gentle lilac, muted violet and pearl.", primary:"#62508a", accent:"#c7a66f", canvas:"#f8f6fd", card:"#fffefe", ink:"#302943" },
-    { id:"teal-glass", name:"Teal Glass", desc:"Fresh teal with a modern glass-like finish.", primary:"#176b70", accent:"#cba56a", canvas:"#f0f9f8", card:"#fbffff", ink:"#19383a" },
-    { id:"sandstone", name:"Sandstone", desc:"Earthy caramel, stone and cream.", primary:"#79543c", accent:"#c99b5a", canvas:"#faf4ec", card:"#fffdf8", ink:"#37291f" },
-    { id:"midnight-luxe", name:"Midnight Luxe", desc:"Premium dark surfaces with soft lilac glow.", primary:"#b08adf", accent:"#dfbd82", canvas:"#100e17", card:"#191622", ink:"#f2edf8" }
+    { id:"pastel-aurora",name:"Pastel Aurora",desc:"Peach, lavender, powder blue and rose from your first reference.",primary:"#4B6B8B",accent:"#E7C8D6",canvas:"#fff5f4",card:"#fffefa",ink:"#1B2A44" },
+    { id:"linen-pearl",name:"Linen Pearl",desc:"Elegant pearl, warm beige and muted slate from your second reference.",primary:"#4B6382",accent:"#E3C39D",canvas:"#faf8f4",card:"#fffdfa",ink:"#071739" },
+    { id:"porcelain-blue",name:"Blue & White",desc:"Clean white, soft sky and professional navy.",primary:"#3667A0",accent:"#A7C4D9",canvas:"#f3f9ff",card:"#ffffff",ink:"#183559" },
+    { id:"rose-whisper",name:"Rose Whisper",desc:"Gentle blush, champagne and lavender-grey.",primary:"#9B6F91",accent:"#E7C8D6",canvas:"#fff8fb",card:"#ffffff",ink:"#453554" },
+    { id:"rose-gold",name:"Burgundy & Ivory",desc:"Signature wine, rose gold and luminous ivory.",primary:"#6B0F1A",accent:"#D6B174",canvas:"#fff8f5",card:"#fffdfb",ink:"#301d25" },
+    { id:"ocean-blue",name:"Deep Ocean",desc:"Blue leadership palette on crisp light surfaces.",primary:"#174A72",accent:"#A7C4D9",canvas:"#f2f7fc",card:"#ffffff",ink:"#172a38" },
+    { id:"sage-garden",name:"Forest & Sage",desc:"Deep green accents and restful pale sage.",primary:"#315B45",accent:"#A4B5C4",canvas:"#f5faf6",card:"#fffefb",ink:"#203126" }
   ];
-  const DEFAULT = { theme_key:"rose-gold", font_scale:"normal", reduced_motion:false };
+  const DEFAULT = { theme_key:"pastel-aurora", font_scale:"normal", reduced_motion:false };
   let prefs = { ...DEFAULT }, mounted = null, activeUserId = null, saveTimer = null, loading = false;
   const app = () => window.NOOR_AI_APP || {};
   const $ = (root, selector) => root?.querySelector(selector);
@@ -24,6 +23,7 @@
   function apply() {
     const theme = THEMES.some(t => t.id === prefs.theme_key) ? prefs.theme_key : DEFAULT.theme_key;
     document.documentElement.dataset.noorTheme = theme;
+    try{localStorage.setItem("noor.login-theme",theme);}catch{}
     document.documentElement.dataset.noorFont = ["small","normal","large"].includes(prefs.font_scale) ? prefs.font_scale : "normal";
     document.documentElement.classList.toggle("noor-reduced-motion", Boolean(prefs.reduced_motion));
     if (mounted) renderSelected();
@@ -118,7 +118,7 @@
       '<div class="noor-theme-field"><label for="noorFontScale">Text size</label><select id="noorFontScale"><option value="small">Compact</option><option value="normal">Standard</option><option value="large">Comfortable / Large</option></select></div>' +
       '<div class="noor-theme-field"><label>Motion</label><label class="noor-theme-check"><input type="checkbox" id="noorReducedMotion"> Reduce animations</label></div>' +
       '<div class="noor-theme-field"><label>Personal settings</label><div class="noor-theme-caption">Preferences follow your account when account sync is available.</div></div>' +
-      '</div><div class="noor-theme-actions"><button class="noor-theme-reset" type="button" id="noorResetAppearance">Reset to Rose Gold</button><span class="noor-theme-caption">Sound controls are below in Sound &amp; Feel. Your sound volume and theme remain separate.</span></div></section>';
+      '</div><div class="noor-theme-actions"><button class="noor-theme-reset" type="button" id="noorResetAppearance">Reset to Pastel Aurora</button><span class="noor-theme-caption">Sound controls are below in Sound &amp; Feel. Your sound volume and theme remain separate.</span></div></section>';
     container.querySelectorAll("[data-theme-choice]").forEach(button => button.addEventListener("click", () => {
       prefs.theme_key = button.dataset.themeChoice;
       scheduleSave();
@@ -130,6 +130,7 @@
     status(app().user?.id ? "Your account appearance preferences." : "Sign in to sync appearance preferences.", "info");
   }
   window.NOOR_THEME_SETTINGS = { mount, loadForCurrentUser, getPreferences:() => ({ ...prefs }), apply };
+  try{const startup=localStorage.getItem('noor.login-theme');document.documentElement.dataset.noorTheme=THEMES.some(t=>t.id===startup)?startup:DEFAULT.theme_key;}catch{document.documentElement.dataset.noorTheme=DEFAULT.theme_key;}
   window.addEventListener("storage", event => {
     if (event.key !== localKey(app().user?.id) || !event.newValue) return;
     try { prefs = { ...DEFAULT, ...JSON.parse(event.newValue) }; apply(); } catch {}

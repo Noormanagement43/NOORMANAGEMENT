@@ -412,7 +412,7 @@ async function showStudentDashboard(studentId){
 
 function editProfile(){
   const p=a().profile;
-  form('Edit principal profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
+  form('Edit my school profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
     const {data,error}=await a().db.from('profiles').update(values).eq('id',a().user.id).select('full_name,mobile_number,city_or_area').single();
     if(error)throw error;
     Object.assign(a().profile,data);
@@ -834,12 +834,14 @@ async function refresh(){
       metric('Active Classes Now',res.periods.error||res.runs.error?'—':active,'Teacher started · within scheduled time','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
-    q('#pd-greeting').textContent=`${h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}, Principal ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
+    const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
+    const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
+    q('#pd-greeting').textContent=`${h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
     
     q('#pd-profile').innerHTML=`<button class="pd-photo" data-route="profile" aria-label="Change profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</button>
       <div class="pd-profile-info">
-        <h2>${e(p.full_name||'Principal')}</h2>
-        <b>Principal & School Leadership</b>
+        <h2>${e(p.full_name||leadershipLabel)}</h2>
+        <b>${e(leadershipLabel)} · School Leadership</b>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||school?.address||'School Campus')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>

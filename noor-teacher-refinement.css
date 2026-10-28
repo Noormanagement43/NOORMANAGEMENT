@@ -1,0 +1,54 @@
+/* Teacher screenshot polish: large rectangular portrait is intentionally untouched.
+   Four SMALL, colourful daily action buttons sit directly under the quote as requested.
+ */
+#workspace.noor-teacher-activated .noor-t4 .nt-profile{grid-template-columns:clamp(155px,15vw,190px) minmax(0,1fr) minmax(220px,275px);gap:clamp(12px,1.6vw,24px);align-items:center}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote{padding:14px 12px;gap:6px;justify-content:start;min-width:0;overflow:visible}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote:before{font-size:45px;line-height:28px;opacity:.5}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote p{font-size:clamp(15px,1.5vw,18px);line-height:1.34;margin:4px 0;max-width:100%}
+#workspace.noor-teacher-activated .nt-quote-actions.nt-card{margin:7px 0 0;padding:10px;background:color-mix(in srgb,var(--paper,#fff) 90%,transparent)!important;border-radius:14px;border:1px solid var(--line,#ecd9df)!important;box-shadow:0 7px 18px #65274316;width:100%;min-width:0;position:relative;z-index:1}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-card-head{margin:0 0 7px;min-height:0}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-card-head h2{font-family:'Playfair Display',Georgia,serif!important;font-size:13px!important;margin:0}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions .nt-3d-quick-btn{min-height:61px!important;padding:7px 6px!important;border-radius:10px!important;flex-direction:row!important;justify-content:start!important;align-items:center!important;gap:7px!important;text-align:left}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions .nt-quick-icon{display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;font-size:18px;border-radius:8px}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions .nt-quick-text b{font-size:9.5px;line-height:1.22;color:var(--ink)}
+#workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions .nt-quick-text small{font-size:8px;line-height:1.2}
+#workspace.noor-teacher-activated .nt-priority-section{margin:10px 0 16px}
+#workspace.noor-teacher-activated .nt-priority-heading{margin-bottom:8px}
+#workspace.noor-teacher-activated .nt-priority-grid{grid-template-columns:minmax(0,1fr)!important}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance{max-width:none;padding:15px 19px;background:var(--paper,#fff)!important}
+#workspace.noor-teacher-activated .nt-priority-grid>.nt-attendance .nt-card-head{margin-bottom:9px}
+#workspace.noor-teacher-activated .nt-attendance-entry{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:13px 10px;border-radius:13px;background:linear-gradient(108deg,color-mix(in srgb,var(--ui-kpi2,#70babc) 15%,white),color-mix(in srgb,var(--ui-kpi5,#f4d1bd) 10%,white));border:1px solid var(--line,#ecd6dc)}
+#workspace.noor-teacher-activated .nt-attendance-entry>.nt-attendance-symbol{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--ui-kpi2,#4d9e83);color:white;font:800 25px Georgia;box-shadow:0 7px 14px #3968572b}
+#workspace.noor-teacher-activated .nt-attendance-entry>div:nth-child(2){flex:1;min-width:175px}
+#workspace.noor-teacher-activated .nt-attendance-entry b{color:var(--ink);font:750 14px Inter,system-ui}
+#workspace.noor-teacher-activated .nt-attendance-entry p{color:var(--muted);font-size:11px;margin:3px 0 0;line-height:1.5}
+#workspace.noor-teacher-activated .nt-attendance-entry button{white-space:nowrap;padding:11px 15px;border-radius:11px;font-size:12px}
+#workspace.noor-teacher-activated .nt-columns{margin:14px 0 15px;gap:15px}
+#workspace.noor-teacher-activated .nt-columns .nt-card{border-radius:17px;overflow:hidden;box-shadow:0 8px 28px #31233013}
+#workspace.noor-teacher-activated .nt-timeline{border-left:2px solid color-mix(in srgb,var(--rose,#ad7391) 28%,white);margin-top:13px}
+#workspace.noor-teacher-activated .nt-timeline .nt-period{background:linear-gradient(115deg,var(--paper,#fff),color-mix(in srgb,var(--ui-kpi5,#efc9d4) 10%,white));border-color:var(--line,#ecdee4);padding:13px 11px;border-radius:13px}
+#workspace.noor-teacher-activated .nt-timeline .nt-period:nth-child(3n+2){background:linear-gradient(110deg,var(--paper,#fff),color-mix(in srgb,var(--ui-kpi4,#c9b7db) 14%,white))}
+#workspace.noor-teacher-activated .nt-timeline .nt-period:nth-child(3n+3){background:linear-gradient(110deg,var(--paper,#fff),color-mix(in srgb,var(--ui-kpi2,#b5dace) 13%,white))}
+#workspace.noor-teacher-activated .nt-timeline .nt-period:before{background:var(--rose,#a76988);box-shadow:0 0 0 3px var(--paper,#fff)}
+#workspace.noor-teacher-activated #ntTeacherIntelligence .nti-title h2{font-family:'Playfair Display',Georgia,serif!important}
+#workspace.noor-teacher-activated .nt-advanced-details>summary{border-color:var(--line,#e8dadf)}
+/* No chatbot / floating assistant while the user has disabled Gemini and voice. */
+#noorAISafeLauncher,#noorAIModal,.noor-ai-v2-launcher,.noor-ai-v2-backdrop,#ntOpenJinni,#pd-ai-assistant,.noor-cartoon-mascot{display:none!important}
+@media(max-width:980px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile{grid-template-columns:clamp(145px,21%,185px) minmax(0,1fr)}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,.78fr) minmax(205px,1.22fr);gap:6px 16px;min-height:120px;align-items:start}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote p{grid-column:1;margin:3px 0}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote>div:not(.nt-quote-actions){grid-column:1}
+ #workspace.noor-teacher-activated .nt-quote-actions.nt-card{grid-column:2;grid-row:1/4;margin:0}
+}
+@media(max-width:650px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile{grid-template-columns:minmax(102px,33%) minmax(0,1fr)!important;gap:11px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote{grid-template-columns:1fr;grid-column:1/-1}
+ #workspace.noor-teacher-activated .noor-t4 .nt-quote p{font-size:15px}
+ #workspace.noor-teacher-activated .nt-quote-actions.nt-card{grid-column:1;grid-row:auto;margin-top:7px}
+ #workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #workspace.noor-teacher-activated .nt-quote-actions .nt-refined-actions .nt-3d-quick-btn{min-height:52px!important;padding:7px}
+ #workspace.noor-teacher-activated .nt-attendance-entry{gap:9px;padding:10px}
+ #workspace.noor-teacher-activated .nt-attendance-entry button{width:100%}
+}

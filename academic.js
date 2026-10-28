@@ -536,9 +536,9 @@ function exportDirectory(){const a=state.directoryRows||[];if(!a.length){msg('No
 function download(body,name){const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function renderStaff(){
  if(!leader()&&!(await permit('manage_staff'))){$('view-staff-management').innerHTML=shell('Management','Access restricted','Staff operations require an authorized school role.',empty('Your current role cannot manage staff.'));return;}
- const body='<div class="acad-grid"><section class="acad-panel"><h3>Secure staff invitation</h3><p>Token hash is stored; raw invitation is sent once. Principal, Manager, Teacher or Student can be invited. Ownership cannot be claimed by a role picker.</p><form id="inviteForm" class="acad-form"><div class="field"><label for="inviteRole">Role *</label><select id="inviteRole"><option value="principal">Principal</option><option value="manager">Manager</option><option value="teacher">Teacher</option><option value="student">Student</option></select></div>'+field('inviteEmail','Email (recommended)','email',false)+field('inviteName','Name','text',false)+ '<div class="field"><label for="inviteExpiry">Expires in</label><select id="inviteExpiry"><option value="1">1 day</option><option value="3">3 days</option><option selected value="7">7 days</option><option value="14">14 days</option></select></div>'+btn('makeInvite','Create invitation')+'</form><div id="inviteStatus" style="display:none"></div><div id="inviteLinkBox"></div></section><section class="acad-panel"><h3>School Secret Code</h3><p>Generated randomly; hash only is stored. Rotating it invalidates the old secret. It is not a master password.</p>'+btn('rotateSecret','Rotate secret code','gold')+'<div id="secretStatus" style="display:none"></div><div id="secretOnce"></div><hr class="divider"><h3>Manager permissions</h3><div id="permissionsBox">'+empty('Loading permission grants…')+'</div></section></div><section class="acad-panel"><div class="acad-toolbar"><div><h3>Memberships / staff status</h3><p>Removing staff revokes membership and teacher assignments but preserves academic history.</p></div>'+btn('refreshStaff','Refresh')+'</div><div id="staffStatus" style="display:none"></div><div id="staffRows"></div></section><section class="acad-panel"><h3>Recent administrative audit log</h3><div id="staffAudit"></div></section>';
+ const body='<div class="acad-grid"><section class="acad-panel"><h3>Secure staff invitation</h3><p>Token hash is stored; raw invitation is sent once. Principal, Manager, Teacher or Student can be invited. Ownership cannot be claimed by a role picker.</p><form id="inviteForm" class="acad-form"><div class="field"><label for="inviteRole">Role *</label><select id="inviteRole"><option value="principal">Principal</option><option value="manager">Manager</option><option value="teacher">Teacher</option><option value="student">Student</option></select></div>'+field('inviteEmail','Email (recommended)','email',false)+field('inviteName','Name','text',false)+ '<div class="field"><label for="inviteExpiry">Expires in</label><select id="inviteExpiry"><option value="1">1 day</option><option value="3">3 days</option><option selected value="7">7 days</option><option value="14">14 days</option></select></div>'+btn('makeInvite','Create invitation')+'</form><div id="inviteStatus" style="display:none"></div><div id="inviteLinkBox"></div></section><section class="acad-panel"><h3>School Secret Code</h3><p>Generated randomly; hash only is stored. Rotating it invalidates the old secret. It is not a master password.</p>'+btn('rotateSecret','Rotate secret code','gold')+'<div id="secretStatus" style="display:none"></div><div id="secretOnce"></div><hr class="divider"><h3>Manager permissions</h3><div id="permissionsBox">'+empty('Loading permission grants…')+'</div></section></div><section class="acad-panel"><div class="acad-toolbar"><div><h3>Recent administrative activity</h3><p>School-scoped changes, with safe summaries and no raw credentials.</p></div>'+btn('refreshAdminAudit','↻ Refresh activity','alt')+'</div><div id="staffAudit" role="status"></div></section>';
  $('view-staff-management').innerHTML=shell('School leadership','Access & Staff Management','Invitations, least-privilege Manager access, staff removal / reactivation and school-specific administrative history.',body);
- $('inviteForm').onsubmit=createInvite;$('rotateSecret').onclick=rotateSecret;$('refreshStaff').onclick=()=>{loadStaff();loadPermissions();};if(!['creator','owner'].includes(role())){[...$('inviteRole').options].forEach(o=>{if(['principal','manager'].includes(o.value))o.disabled=true;});$('inviteRole').value='teacher';}await loadPermissions();await loadStaff();
+ $('inviteForm').onsubmit=createInvite;$('rotateSecret').onclick=rotateSecret;$('refreshAdminAudit').onclick=loadStaff;if(!['creator','owner'].includes(role())){[...$('inviteRole').options].forEach(o=>{if(['principal','manager'].includes(o.value))o.disabled=true;});$('inviteRole').value='teacher';}await loadPermissions();await loadStaff();
 }
 async function createInvite(e){
  e.preventDefault();try{if(!(await permit('manage_invites')))throw new Error('Your role cannot create invitations.');const r=val('inviteRole');if(!['principal','manager','teacher','student'].includes(r))throw new Error('Invalid invite role.');
@@ -569,17 +569,23 @@ async function loadPermissions(){
  }catch(e){status('permStatus',err(e),'error');}};
 }
 async function loadStaff(){
- const box=$('staffRows');if(!box)return;const q=await db().from('school_memberships').select('id,user_id,role,status,username,employee_id,joined_at,removed_at,removal_reason').eq('school_id',sid()).order('created_at',{ascending:false}).limit(500);
- if(q.error){box.innerHTML=notice('staffLoadErr',err(q.error),'error');return;}
- const mem=q.data||[],ids=mem.map(x=>x.user_id);let users=[];
- if(ids.length){const r=await db().from('profiles').select('id,full_name,email,role,status').in('id',ids);if(r.error){box.innerHTML=notice('staffProfilesErr',err(r.error),'error');return;}users=r.data||[];}
- box.innerHTML=table(['Member','Role','School membership','History','Action'],mem.map(m=>{const x=users.find(v=>v.id===m.user_id)||{};
- return '<tr><td><b>'+E(x.full_name||m.username||'Member')+'</b><div class="acad-muted">'+E(x.email||'')+'</div></td><td>'+E(m.role)+'</td><td>'+E(m.status)+'</td><td>'+E(m.joined_at?new Date(m.joined_at).toLocaleDateString():'—')+(m.removed_at?'<div>Removed '+E(new Date(m.removed_at).toLocaleDateString())+'</div>':'')+'</td><td>'+(m.status==='active'&&m.role!=='owner'&&m.user_id!==u().id?'<button class="acad-btn danger" type="button" data-remove="'+E(m.id)+'" data-name="'+E(x.full_name||m.username||'member')+'">Remove</button>':m.status==='removed'?'<button class="acad-btn alt" type="button" data-reactivate="'+E(m.id)+'">Reactivate</button>':'—')+'</td></tr>';
- }));
- box.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeMember(b.dataset.remove,b.dataset.name));
- box.querySelectorAll('[data-reactivate]').forEach(b=>b.onclick=()=>reactivateMember(b.dataset.reactivate));
- const a=await db().from('administrative_audit_logs').select('action,reason,metadata,created_at').eq('school_id',sid()).order('created_at',{ascending:false}).limit(30);
- $('staffAudit').innerHTML=a.error?notice('auditLoadErr',err(a.error),'error'):table(['Time','Action','Reason','Context'],(a.data||[]).map(x=>'<tr><td>'+E(new Date(x.created_at).toLocaleString())+'</td><td>'+E(x.action)+'</td><td>'+E(x.reason||'—')+'</td><td><code>'+E(JSON.stringify(x.metadata||{}))+'</code></td></tr>'));
+ const box=$('staffAudit');if(!box||!sid())return;
+ box.innerHTML='<div class="acad-muted">Loading verified school activity…</div>';
+ const q=await db().from('administrative_audit_logs')
+   .select('action,reason,metadata,created_at').eq('school_id',sid())
+   .order('created_at',{ascending:false}).limit(30);
+ if(q.error){box.innerHTML=notice('auditLoadErr',err(q.error),'error');return;}
+ const events=q.data||[];
+ if(!events.length){box.innerHTML=empty('No recent administrative changes recorded for this school.');return;}
+ const visible=events.map(x=>{
+   const m=x.metadata&&typeof x.metadata==='object'?x.metadata:{};
+   const role=typeof m.role==='string'?m.role:'';
+   const previous=typeof m.previous_status==='string'?m.previous_status:'';
+   const current=typeof m.new_status==='string'?m.new_status:'';
+   const safe=([role?('Role: '+role):'',previous&&current?(previous+' → '+current):''].filter(Boolean).join(' · '))||'School administration';
+   return '<tr><td>'+E(new Date(x.created_at).toLocaleString())+'</td><td><b>'+E(String(x.action||'Change').replaceAll('_',' '))+'</b></td><td>'+E(x.reason||'—')+'</td><td>'+E(safe)+'</td></tr>';
+ });
+ box.innerHTML=table(['Date','Action','Reason','Summary'],visible);
 }
 async function removeMember(id,name){
  const reason=prompt('Remove '+name+' from this school? Historical records stay. Enter reason:');if(reason===null)return;if(!reason.trim()){msg('Reason is required.','error');return;}

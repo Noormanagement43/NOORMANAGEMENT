@@ -19,7 +19,7 @@ function setup(){
         <p id="pd-greeting">Welcome, Principal</p>
       </div>
       <div class="pd-head-actions">
-        <button class="pd-btn" id="pd-ai-assistant" type="button">✦ NOOR AI</button><button class="pd-btn" id="pd-search-people">⌕ Search people</button>
+        <button class="pd-btn" id="pd-search-people">⌕ Search people</button>
         <button class="pd-btn" data-route="notifications" aria-label="Notifications">♧</button>
         <button class="pd-btn" id="pd-mode" aria-label="Toggle dashboard theme">☾</button>
         <button class="pd-btn" data-route="settings" aria-label="Settings">⚙</button>
@@ -75,7 +75,7 @@ function setup(){
         <section class="pd-card pd-insight">
           <header>
             <h2>☀ Daily Inspiration</h2>
-            <button class="pd-link" id="pd-refresh-quote" title="Get fresh inspiration via Gemini">↻</button>
+            <button class="pd-link" id="pd-refresh-quote" title="Show another inspiration quote">↻</button>
           </header>
           <blockquote id="pd-insight"></blockquote>
           <span id="pd-quote-author">LEARN · TEACH · GROW</span>
@@ -122,7 +122,7 @@ function setup(){
   };
 
   r.querySelector('#pd-refresh').onclick=refresh;
-  r.querySelector('#pd-ai-assistant').onclick=()=>window.NOOR_SECURE_AI?.open?.();
+
   const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=showTeacherDirectoryModal;
   r.querySelector('#pd-timetable').onclick=showTimetable;
   const addTch=r.querySelector('#pd-add-teacher');if(addTch)addTch.onclick=openAddTeacherModal;
@@ -412,7 +412,7 @@ async function showStudentDashboard(studentId){
 
 function editProfile(){
   const p=a().profile;
-  form('Edit principal profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
+  form('Edit my school profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
     const {data,error}=await a().db.from('profiles').update(values).eq('id',a().user.id).select('full_name,mobile_number,city_or_area').single();
     if(error)throw error;
     Object.assign(a().profile,data);
@@ -656,10 +656,10 @@ function graph(classes,sections,students,sessions,records,day){
 
   const colors=['#10b981','#2563eb','#f59e0b','#f43f5e','#8b5cf6'];
   const names=[...new Set(sections.filter(s=>cs.some(c=>c.id===s.class_id)).map(s=>s.name))].sort();
-  if(!names.length)return '<p class="pd-empty">No sections have been set up for classes 6–10 yet.</p>';
+  // Class totals remain visible even if a school has not yet created sections.
 
   // Compute stats per class
-  const classStats=cs.map((c, idx)=>{
+  const classStats=cs.map(c=>{
     const cStudents=students.filter(s=>s.class_id===c.id);
     const agg=cStudents.length ? aggregate(cStudents,sessions,records,day) : {present: 0, marked: 0, total: 0};
     const pct=agg.marked&&agg.total?percent(agg.present,agg.total):null;
@@ -746,30 +746,9 @@ function graph(classes,sections,students,sessions,records,day){
     </div>
   `;
 
-  // 3. Multi-section Line Trend Chart
-  let svg='';
-  for(let p=0;p<=100;p+=25){
-    const y=185-p*1.5;
-    svg+=`<line x1="40" y1="${y}" x2="470" y2="${y}" stroke="#eedde2"/><text x="0" y="${y+4}" fill="#786670" font-size="10">${p==null?'—':p+'%'}</text>`;
-  }
-  cs.forEach((c,i)=>{svg+=`<text x="${60+i*390/Math.max(1,cs.length-1)}" y="211" text-anchor="middle" fill="#58283f" font-weight="700">${e(c.name)}</text>`});
-  let has=false;
-  names.forEach((name,j)=>{
-    let previous=null;
-    cs.forEach((c,i)=>{
-      const ss=sections.find(s=>s.class_id===c.id&&s.name===name),group=students.filter(s=>s.class_id===c.id&&s.section_id===ss?.id),m=group.length?aggregate(group,sessions,records,day):{present:0,total:0,marked:0},pct=m.marked?percent(m.present,m.total):null;
-      if(pct===null){previous=null;return;}
-      has=true;
-      const x=60+i*390/Math.max(1,cs.length-1),y=185-pct*1.5,color=colors[j%colors.length];
-      if(previous)svg+=`<line x1="${previous.x}" y1="${previous.y}" x2="${x}" y2="${y}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
-      svg+=`<circle cx="${x}" cy="${y}" r="4" fill="${color}"><title>${e(c.name+' · '+name+': '+(m.marked?m.present+' / '+m.total+' present':pct+'% live trend'))}</title></circle><text x="${x}" y="${y+(j%2?18:-8)}" text-anchor="middle" fill="${color}" font-size="10" font-weight="750">${pct}%</text>`;
-      previous={x,y};
-    });
-  });
+  return '<div class="pd-chart-pair">'+donutHTML+barChartSvg+'</div>'+
+    '<p class="pd-muted" style="margin-top:8px">Classes 6–10 · Today’s submitted attendance records only</p>';
 
-  const lineChartHTML=`<div style="background:#ffffff;border:1px solid #f1e2e8;border-radius:14px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:12px;color:#4a2237">📈 Section Trend Lines</b></div><svg class="pd-linechart" viewBox="0 0 490 225" role="img" aria-label="Today's attendance by class and section">${svg}</svg><div class="pd-legend">${names.map((n,i)=>`<span style="color:${colors[i%colors.length]}">● ${e(/^section/i.test(n)?n:'Section '+n)}</span>`).join('')}</div></div>`;
-
-  return donutHTML + barChartSvg + lineChartHTML + '<p class="pd-muted" style="margin-top:8px">Visual charts · Classes 6 to 10 · Submitted records only · No estimates</p>';
 }
 
 async function refresh(){
@@ -855,12 +834,14 @@ async function refresh(){
       metric('Active Classes Now',res.periods.error||res.runs.error?'—':active,'Teacher started · within scheduled time','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
-    q('#pd-greeting').textContent=`${h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}, Principal ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
+    const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
+    const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
+    q('#pd-greeting').textContent=`${h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
     
     q('#pd-profile').innerHTML=`<button class="pd-photo" data-route="profile" aria-label="Change profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</button>
       <div class="pd-profile-info">
-        <h2>${e(p.full_name||'Principal')}</h2>
-        <b>Principal & School Leadership</b>
+        <h2>${e(p.full_name||leadershipLabel)}</h2>
+        <b>${e(leadershipLabel)} · School Leadership</b>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||school?.address||'School Campus')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>

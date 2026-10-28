@@ -22,18 +22,13 @@ test('School and University class editor has separate loader and editable 1–10
  assert.match(html,/\/\/ Reading the page is read-only/);
 });
 
-test('both principal and teacher can open a shared server-only AI assistant',async()=>{
- const [principal,teacher,assistant,html]=await Promise.all([
-  source('principal-live.js'),source('teacher-reference.js'),source('noor-secure-assistant.js'),source('index.html')
- ]);
- assert.match(principal,/id="pd-ai-assistant"/);
- assert.match(principal,/NOOR_SECURE_AI\?\.open/);
- assert.match(teacher,/id="ntOpenJinni"/);
- assert.match(teacher,/NOOR_SECURE_AI\?\.open/);
- assert.match(html,/noor-secure-assistant\.js/);
- assert.match(assistant,/functions\.invoke\('noor-ai'/);
- assert.doesNotMatch(assistant,/localStorage|Deno\.env|getGeminiKey|noor_brevo_api_key|api\.brevo\.com/);
- assert.doesNotThrow(()=>new Script(assistant));
+test('animated Gemini assistant and fake attendance UI are not loaded',async()=>{
+ const [principal,teacher,html]=await Promise.all([source('principal-live.js'),source('teacher-reference.js'),source('index.html')]);
+ assert.doesNotMatch(principal,/id="pd-ai-assistant"/);
+ assert.doesNotMatch(teacher,/id="ntOpenJinni"/);
+ assert.doesNotMatch(html,/<script src="\.\/noor-secure-assistant\.js/);
+ assert.doesNotMatch(html,/<script src="\.\/noor-cartoon-mascot\.js/);
+ assert.doesNotMatch(html,/<script src="\.\/teacher-reference-attendance\.js/);
 });
 
 test('secrets never leave server-only configuration',async()=>{

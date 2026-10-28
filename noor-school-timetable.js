@@ -298,13 +298,16 @@ async function mountTeacher(){
   const topics=await fetchLessons(rows.filter(x=>x.weekday===week).map(x=>x.id),date);
   const label=row=>ctx.classes.find(c=>c.id===row.class_id)?.name+' · '+(ctx.sections.find(c=>c.id===row.section_id)?.name||'Entire class');
   const sorted=rows.map(x=>({...x,class_label:label(x),bell:byBell.get(Number(x.period_number))})).sort((a,b)=>a.weekday-b.weekday||a.period_number-b.period_number);
+  const suspended=sorted.filter(x=>!x.bell);
+  const activeRows=sorted.filter(x=>x.bell);
   card.innerHTML='<div class="nt-card-head"><div><span class="nt-icon">◷</span><h2>My Weekly Teaching Timetable</h2><p class="nsto-muted">School bell times are fixed by Principal · you own classes, subjects and daily topics.</p></div><button type="button" id="nstoAddPeriod" class="nt-btn primary">+ Assign My Period</button></div>'+
    (!bells.length?'<div class="nsto-warning">Principal needs to set the school bell timetable once before teachers can assign classes.</div>':'')+
+   (suspended.length?'<p class="nsto-warning">'+suspended.length+' previously assigned period(s) are paused because the Principal removed their bell slot. Their records are kept. Select Edit to move a lesson to an active period.</p>':'')+
    '<div class="nsto-list">'+(sorted.length?sorted.map(row=>{
      const topic=topicForRow(row,date,topics),bell=row.bell,time=bell?formatTime(bell.start_time)+'–'+formatTime(bell.end_time):'Bell time missing';
      return '<article class="nsto-item"><div class="nsto-item-icon">'+icon(row.subject_name)+'</div><div class="nsto-item-main"><b>'+esc(row.subject_name)+'</b>'+
        '<small>'+esc(days[row.weekday])+' · Period '+esc(row.period_number)+' · '+esc(time)+'</small><small>'+esc(row.class_label)+'</small>'+
-       (row.weekday===week?'<div class="nsto-topic-note">'+(topic?'📖 '+esc(topic.topic):'Lesson topic not entered today')+'</div>':'')+'</div>'+
+       (!row.bell?'<div class="nsto-topic-note">⏸ School bell slot removed · edit to move this class</div>':row.weekday===week?'<div class="nsto-topic-note">'+(topic?'📖 '+esc(topic.topic):'Lesson topic not entered today')+'</div>':'')+'</div>'+
        '<div class="nsto-actions"><button type="button" data-nsto-topic="'+esc(row.id)+'">✎ Topic</button><button type="button" data-nsto-edit="'+esc(row.id)+'">Edit</button></div></article>';
    }).join(''):'<div class="nsto-empty">No class periods assigned yet. Once the Principal sets school bell times, assign your own subjects and sections here.</div>')+'</div>';
   card.querySelector('#nstoAddPeriod').onclick=()=>openTeacherEditor(null);
@@ -312,7 +315,7 @@ async function mountTeacher(){
   card.querySelectorAll('[data-nsto-topic]').forEach(btn=>btn.onclick=()=>openDailyTopic(sorted.find(x=>x.id===btn.dataset.nstoTopic)));
   const hero=host.querySelector('.nt-hero-stats');
   if(hero){
-    const values=hero.querySelectorAll('.nt-hero-stat-pill b'),todayRows=sorted.filter(x=>x.weekday===week);
+    const values=hero.querySelectorAll('.nt-hero-stat-pill b'),todayRows=activeRows.filter(x=>x.weekday===week);
     if(values[0])values[0].textContent=new Set(todayRows.map(x=>x.class_label)).size.toString()+' class(es)';
     if(values[1])values[1].textContent=todayRows.length.toString();
     if(values[2])values[2].textContent=topics.length+' topics today';
@@ -322,7 +325,7 @@ async function mountTeacher(){
   // Replace legacy period status text derived from Principal assignments with
   // the real teacher-owned timetable and current bell slot.
   const schoolTime=new Date().toTimeString().slice(0,5);
-  const ongoing=sorted.find(x=>x.weekday===week&&x.bell&&formatTime(x.bell.start_time)<=schoolTime&&formatTime(x.bell.end_time)>schoolTime);
+  const ongoing=activeRows.find(x=>x.weekday===week&&formatTime(x.bell.start_time)<=schoolTime&&formatTime(x.bell.end_time)>schoolTime);
   const periodStatus=host.querySelector('.nt-status-list .nt-status-box:nth-child(2)');
   if(periodStatus){
     const heading=periodStatus.querySelector('b'),details=periodStatus.querySelector('small');
@@ -350,7 +353,7 @@ async function principalTable(){
  const names=new Map((people.data||[]).map(x=>[x.id,x.full_name]));
  const bellMap=new Map(bells.map(x=>[Number(x.period_number),x]));
  const date=localDay(),week=new Date().getDay();
- const todayRows=rows.filter(x=>x.weekday===week);
+ const todayRows=rows.filter(x=>x.weekday===week&&bellMap.has(Number(x.period_number)));
  const topics=await fetchLessons(todayRows.map(x=>x.id),date);
  const html=rows.length?rows.filter(x=>x.weekday===week).sort((a,b)=>a.period_number-b.period_number).map(x=>{
   const bell=bellMap.get(Number(x.period_number));
@@ -360,7 +363,7 @@ async function principalTable(){
    '</td><td>'+esc(bell?formatTime(bell.start_time)+'–'+formatTime(bell.end_time):'Not set')+
    '</td><td>'+esc(lesson?.topic||'Not entered yet')+'</td></tr>'
  }).join(''):'';
- return {rows,bells,html,topicCount:topics.length};
+ return {rows:rows.filter(x=>bellMap.has(Number(x.period_number))),bells,html,topicCount:topics.length};
 }
 async function mountPrincipal(){
  const container=document.querySelector('#noor-principal #pd-periods');
@@ -389,7 +392,7 @@ async function showPrincipalSchedule(){
   const [bells,rows,ctx]=await Promise.all([loadBells(),fetchSchoolRows(),loadClassSections()]);
   const times=new Map(bells.map(x=>[Number(x.period_number),x]));
   dialog('School-wide Weekly Timetable','<p class="nsto-muted">Read-only class schedule. Teachers manage their own assignments and daily topics.</p>'+
-   '<div class="nsto-list">'+(rows.length?rows.map(row=>{
+   '<div class="nsto-list">'+(rows.filter(row=>times.has(Number(row.period_number))).length?rows.filter(row=>times.has(Number(row.period_number))).map(row=>{
     const bell=times.get(Number(row.period_number));
     return '<div class="nsto-item"><div class="nsto-item-icon">'+icon(row.subject_name)+'</div><div class="nsto-item-main"><b>'+esc(row.subject_name)+'</b><small>'+esc(days[row.weekday])+' · Period '+esc(row.period_number)+' · '+esc(bell?formatTime(bell.start_time)+'–'+formatTime(bell.end_time):'Bell time not set')+'</small><small>'+esc(ctx.classes.find(x=>x.id===row.class_id)?.name||'')+' · '+esc(ctx.sections.find(x=>x.id===row.section_id)?.name||'')+'</small></div></div>'
    }).join(''):'<p class="nsto-empty">No teacher-assigned class periods yet.</p>')+'</div>',
@@ -407,7 +410,7 @@ async function studentPeriods(classId,sectionId){
  ]);
  if(rows.error)throw rows.error;
  const bmap=new Map(bells.map(x=>[Number(x.period_number),x]));
- const visible=(rows.data||[]).filter(x=>!x.section_id||x.section_id===sectionId);
+ const visible=(rows.data||[]).filter(x=>(!x.section_id||x.section_id===sectionId)&&bmap.has(Number(x.period_number)));
  const date=localDay(),topics=await fetchLessons(visible.filter(x=>x.weekday===new Date().getDay()).map(x=>x.id),date);
  return visible.map(x=>{
   const bell=bmap.get(Number(x.period_number)),topic=topicForRow(x,date,topics);

@@ -7,7 +7,9 @@ const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 test('teacher can type freeform subject with automatic icon, no subject suggestions, and edit weekly periods',async()=>{
  const s=await read('teacher-reference.js');
  assert.doesNotThrow(()=>new Script(s));
- for(const icon of ['🧮','📘','⚗️','🌍','🔬','💻','🎨'])assert.ok(s.includes(icon),'Missing subject icon '+icon);
+ const iconMap=await read('noor-subject-icons.js');
+ for(const icon of ['🧮','📘','⚗️','🌍','🔬','💻','🎨'])assert.ok(iconMap.includes(icon),'Missing subject icon '+icon);
+ assert.match(s,/NOOR_SUBJECT_ICONS\?\.display/);
  assert.match(s,/subjectInput\.addEventListener\('input',updateIcon\)/);
  assert.match(s,/function weeklyTimetableHTML\(periods\)/);
  assert.match(s,/data-edit-period/);

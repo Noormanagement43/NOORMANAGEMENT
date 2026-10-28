@@ -85,7 +85,8 @@
  body:has(#view-principal-studio.active) #noor-principal .pd-charts{grid-template-columns:minmax(0,1fr)!important}
  #workspace.noor-teacher-activated .nt-toolkit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-#workspace #noorMobileNav{display:none}
+body:has(#view-principal-studio.active) #workspace #noorMobileNav,
+#workspace.noor-teacher-activated #noorMobileNav{display:none}
 @media(max-width:760px){
  /* Principal: full-width phone cards; no fixed desktop columns or sideways page. */
  body:has(#view-principal-studio.active) #workspace{min-width:0;max-width:100%;overflow-x:clip}

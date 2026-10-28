@@ -4,19 +4,21 @@ import {readFile} from 'node:fs/promises';
 import {Script} from 'node:vm';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 
-test('teacher can type freeform subject with automatic icon, no subject suggestions, and edit weekly periods',async()=>{
- const s=await read('teacher-reference.js');
- assert.doesNotThrow(()=>new Script(s));
- const iconMap=await read('noor-subject-icons.js');
- for(const icon of ['🧮','📘','⚗️','🌍','🔬','💻','🎨'])assert.ok(iconMap.includes(icon),'Missing subject icon '+icon);
- assert.match(s,/NOOR_SUBJECT_ICONS\?\.display/);
- assert.match(s,/subjectInput\.addEventListener\('input',updateIcon\)/);
- assert.match(s,/function weeklyTimetableHTML\(periods\)/);
- assert.match(s,/data-edit-period/);
- assert.match(s,/db\.from\('noor_teacher_periods'\)\.insert/);
- assert.match(s,/\.select\('id,approval_status'\)/);
- assert.doesNotMatch(s.slice(s.indexOf('async function showPeriodEditor'),s.indexOf('function openPaper')),/teacher_assignments/);
- assert.doesNotMatch(s,/option value="Maths"|suggestedSubjects|datalist/);
+test('teacher uses Principal-defined school bells; teacher owns subjects and daily topics',async()=>{
+ const [teacher,module,icons]=await Promise.all([read('teacher-reference.js'),read('noor-school-timetable.js'),read('noor-subject-icons.js')]);
+ assert.doesNotThrow(()=>new Script(teacher));
+ assert.doesNotThrow(()=>new Script(module));
+ assert.match(teacher,/NOOR_SCHOOL_TIMETABLE\?\.openTeacherEditor/);
+ assert.match(teacher,/NOOR_SCHOOL_TIMETABLE\?\.mountTeacher/);
+ assert.doesNotMatch(teacher.slice(teacher.indexOf('async function showPeriodEditor'),teacher.indexOf('function openPaper')),/teacher_assignments|start_time|end_time|period_number/);
+ assert.match(module,/noor_school_bell_slots/);
+ assert.match(module,/noor_class_timetable/);
+ assert.match(module,/noor_daily_lesson_topics/);
+ assert.match(module,/Remove My Period/);
+ assert.match(module,/School Period/);
+ assert.match(module,/Today.s lesson/);
+ assert.doesNotMatch(module,/new Date\(\).toISOString\(\).slice\(0,10\)/);
+ for(const icon of ['🧮','📘','⚗️','🌍','🔬','💻','🎨'])assert.ok(icons.includes(icon),'Missing subject icon '+icon);
 });
 
 test('teacher optional tools and diary/report icons are at scroll end, not inside profile hero',async()=>{

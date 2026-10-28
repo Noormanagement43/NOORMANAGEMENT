@@ -1,0 +1,96 @@
+/* NOOR reference palettes — COLORS ONLY from user examples; preserve photo sizes/structure.
+   Every page derives its appearance from ONE personal theme selector.
+   Supported: 4 light palettes, burgundy, deep ocean and forest. */
+html[data-noor-theme="pastel-aurora"]{
+ --berry:#4B6B8B;--berry2:#1B2A44;--rose:#C97B7B;--rose-soft:#fae9ef;--rose-line:#efd9e3;
+ --gold:#F6C89F;--gold-soft:#fff3e6;--ink:#1B2A44;--muted:#758199;--canvas:#fff5f4;--paper:#fffefa;
+ --line:#eae3eb;--green:#318970;--green-soft:#e7f7ee;--red:#b95b72;--red-soft:#fff0f2;
+ --ui-main:#fff7f5;--ui-sidebar:#4B6B8B;--ui-sidebar2:#1B2A44;--ui-active:#7599bb;--ui-accent:#E7C8D6;--ui-kpi1:#4B6B8B;--ui-kpi2:#53aaa4;--ui-kpi3:#E99BA5;--ui-kpi4:#AB90CB;--ui-kpi5:#F6C89F;--ui-canvas:#fff7f5
+}
+html[data-noor-theme="linen-pearl"]{
+ --berry:#4B6382;--berry2:#071739;--rose:#A68868;--rose-soft:#f2ede7;--rose-line:#e8dfd5;
+ --gold:#E3C39D;--gold-soft:#f8f1e4;--ink:#071739;--muted:#697b90;--canvas:#faf8f4;--paper:#fffdfa;
+ --line:#e5e0dc;--green:#518b75;--green-soft:#eaf4ed;--red:#b16c70;--red-soft:#f8edec;
+ --ui-main:#faf8f4;--ui-sidebar:#4B6382;--ui-sidebar2:#071739;--ui-active:#8097ab;--ui-accent:#E3C39D;--ui-kpi1:#4B6382;--ui-kpi2:#7898ad;--ui-kpi3:#BA987A;--ui-kpi4:#A4B5C4;--ui-kpi5:#E3C39D;--ui-canvas:#faf8f4
+}
+html[data-noor-theme="porcelain-blue"]{
+ --berry:#3667A0;--berry2:#183559;--rose:#6A92C0;--rose-soft:#eaf4fc;--rose-line:#d5e6f5;
+ --gold:#A7C4D9;--gold-soft:#f0f7ff;--ink:#183559;--muted:#6a83a0;--canvas:#f3f9ff;--paper:#fff;
+ --line:#dde9f4;--green:#228976;--green-soft:#e6f6f1;--red:#a45a72;--red-soft:#fff0f2;
+ --ui-main:#f3f9ff;--ui-sidebar:#3667A0;--ui-sidebar2:#183559;--ui-active:#5e91c4;--ui-accent:#A7C4D9;--ui-kpi1:#376eab;--ui-kpi2:#5cabb8;--ui-kpi3:#9b9cdb;--ui-kpi4:#e5a7ac;--ui-kpi5:#bcd9f2;--ui-canvas:#f3f9ff
+}
+html[data-noor-theme="rose-whisper"]{
+ --berry:#9B6F91;--berry2:#453554;--rose:#B17F9C;--rose-soft:#fff0f5;--rose-line:#f0dce6;
+ --gold:#E7C8D6;--gold-soft:#fff4ed;--ink:#453554;--muted:#90798f;--canvas:#fff8fb;--paper:#fff;
+ --line:#f2e1e8;--green:#43896f;--green-soft:#e9f6ed;--red:#c16f89;--red-soft:#fff0f2;
+ --ui-main:#fff8fb;--ui-sidebar:#9B6F91;--ui-sidebar2:#453554;--ui-active:#be98b7;--ui-accent:#E7C8D6;--ui-kpi1:#9B6F91;--ui-kpi2:#87b9bb;--ui-kpi3:#e5a2b7;--ui-kpi4:#b6a6dd;--ui-kpi5:#ffd4be;--ui-canvas:#fff8fb
+}
+html[data-noor-theme="rose-gold"],html[data-noor-theme="burgundy-crest"]{
+ --ui-main:#fff8f5;--ui-sidebar:#6B0F1A;--ui-sidebar2:#4A0A14;--ui-active:#A14962;--ui-accent:#D6B174;--ui-kpi1:#B91C3C;--ui-kpi2:#A65E2E;--ui-kpi3:#0E8A5F;--ui-kpi4:#1D63B8;--ui-kpi5:#CD8F7D;--ui-canvas:#fff8f5
+}
+html[data-noor-theme="ocean-blue"],html[data-noor-theme="sky-blue"]{
+ --ui-main:#f2f7fc;--ui-sidebar:#174A72;--ui-sidebar2:#0b263d;--ui-active:#367ba4;--ui-accent:#A7C4D9;--ui-kpi1:#367ba4;--ui-kpi2:#46a6b2;--ui-kpi3:#308e7f;--ui-kpi4:#7e94ca;--ui-kpi5:#b8d5e9;--ui-canvas:#f2f7fc
+}
+html[data-noor-theme="sage-garden"],html[data-noor-theme="forest-green"]{
+ --ui-main:#f4f8f2;--ui-sidebar:#315B45;--ui-sidebar2:#183425;--ui-active:#5e8a70;--ui-accent:#A4B5C4;--ui-kpi1:#34765b;--ui-kpi2:#7caa91;--ui-kpi3:#6994a1;--ui-kpi4:#bea985;--ui-kpi5:#d5e9df;--ui-canvas:#f4f8f2
+}
+html[data-noor-theme]{
+ --ui-main:var(--ui-canvas,var(--canvas));--ui-soft:color-mix(in srgb,var(--rose-soft) 75%,var(--paper));
+}
+html[data-noor-theme] body,html[data-noor-theme] #authApp,html[data-noor-theme] #workspace,
+html[data-noor-theme] .main{background:radial-gradient(ellipse at 92% 4%,color-mix(in srgb,var(--rose-soft) 85%,transparent),transparent 41%),var(--ui-main,var(--canvas))!important;color:var(--ink)}
+html[data-noor-theme] #authApp .topline{background:linear-gradient(120deg,var(--ui-sidebar,var(--berry)),var(--ui-sidebar2,var(--berry2)))!important;color:#fff}
+html[data-noor-theme] #authApp .hero{background:radial-gradient(ellipse at 82% 15%,color-mix(in srgb,var(--ui-accent,var(--gold)) 35%,transparent),transparent 44%),linear-gradient(125deg,var(--ui-main,var(--canvas)),var(--paper))!important;color:var(--ink)}
+html[data-noor-theme] #authApp .auth-card,html[data-noor-theme] #authApp .hero-card,
+html[data-noor-theme] .panel,html[data-noor-theme] .acad-panel,
+html[data-noor-theme] .cc-widget,html[data-noor-theme] .class-item{background:var(--paper)!important;border-color:var(--line)!important;color:var(--ink)!important}
+html[data-noor-theme] #workspace .sidebar{background:linear-gradient(158deg,var(--ui-sidebar,var(--berry)),var(--ui-sidebar2,var(--berry2)))!important;color:#fff!important;border-color:color-mix(in srgb,var(--ui-accent,#fff) 22%,transparent)!important}
+html[data-noor-theme] #workspace .sidebar .nav button.active,html[data-noor-theme] #workspace .sidebar .nav-btn.active{background:linear-gradient(105deg,var(--ui-active,var(--rose)),color-mix(in srgb,var(--ui-sidebar,var(--berry)) 65%,#101b36))!important;color:#fff!important;border-color:#ffffff30!important}
+html[data-noor-theme] #workspace .sidebar .nav button:not(.active){color:#f5f3f9!important}
+html[data-noor-theme] #workspace .topbar{background:linear-gradient(103deg,var(--ui-sidebar,var(--berry)),var(--ui-sidebar2,var(--berry2)))!important;border-color:color-mix(in srgb,var(--ui-accent,var(--gold)) 30%,transparent)!important;color:#fff!important}
+html[data-noor-theme] #workspace .topbar :is(.crumb,.crumb b,.small-note,.user-mini b,.user-mini small){color:#f9f5f9!important}
+html[data-noor-theme] #workspace .topbar .noor-ref-search{background:var(--paper)!important;border-color:var(--line)!important}
+html[data-noor-theme] #workspace .topbar .noor-ref-search input{color:var(--ink)!important}
+html[data-noor-theme] #workspace .content{background:transparent!important}
+html[data-noor-theme] :is(.btn.primary,.btn.soft,.ta-primary,.nt-btn.primary,.pd-btn.primary,.acad-btn.primary){background:var(--berry)!important;color:#fff!important;border-color:var(--berry)!important}
+html[data-noor-theme] :is(.btn,.nt-btn,.pd-btn,.acad-btn):focus-visible{outline:3px solid var(--ui-accent,var(--gold));outline-offset:2px}
+html[data-noor-theme] :is(#view-profile,#view-settings,#view-classes) h1{color:var(--ink)}
+/* Principal actual KPI values retain distinct accessible colours from the referenced palette */
+html[data-noor-theme] #noor-principal{--p-bg:var(--ui-main,var(--canvas));--p-card:var(--paper);--p-ink:var(--ink);--p-muted:var(--muted);--p-line:var(--line);--p-berry:var(--berry);color:var(--ink)!important}
+html[data-noor-theme] #noor-principal :is(.pd-head,.pd-card,.pd-profile){color:var(--ink)}
+html[data-noor-theme] #noor-principal .pd-kpi:nth-child(5n+1){--tone:var(--ui-kpi1)!important;background:linear-gradient(140deg,color-mix(in srgb,var(--ui-kpi1) 24%,white),color-mix(in srgb,var(--ui-kpi1) 7%,white))!important;border-color:color-mix(in srgb,var(--ui-kpi1) 23%,white)!important}
+html[data-noor-theme] #noor-principal .pd-kpi:nth-child(5n+2){--tone:var(--ui-kpi2)!important;background:linear-gradient(140deg,color-mix(in srgb,var(--ui-kpi2) 23%,white),color-mix(in srgb,var(--ui-kpi2) 6%,white))!important;border-color:color-mix(in srgb,var(--ui-kpi2) 23%,white)!important}
+html[data-noor-theme] #noor-principal .pd-kpi:nth-child(5n+3){--tone:var(--ui-kpi3)!important;background:linear-gradient(140deg,color-mix(in srgb,var(--ui-kpi3) 24%,white),color-mix(in srgb,var(--ui-kpi3) 6%,white))!important;border-color:color-mix(in srgb,var(--ui-kpi3) 23%,white)!important}
+html[data-noor-theme] #noor-principal .pd-kpi:nth-child(5n+4){--tone:var(--ui-kpi4)!important;background:linear-gradient(140deg,color-mix(in srgb,var(--ui-kpi4) 22%,white),color-mix(in srgb,var(--ui-kpi4) 5%,white))!important;border-color:color-mix(in srgb,var(--ui-kpi4) 23%,white)!important}
+html[data-noor-theme] #noor-principal .pd-kpi :is(small,p,strong){color:var(--ink)!important}
+html[data-noor-theme] #noor-principal .pd-kpi strong{font-weight:850}
+html[data-noor-theme] #noor-principal .pd-kpi .pd-meter i{background:var(--tone,var(--berry))}
+html[data-noor-theme] #noor-principal .pd-profile{background:radial-gradient(circle at 88% 0%,color-mix(in srgb,var(--ui-accent,var(--gold)) 15%,transparent),transparent 51%),var(--paper)!important}
+html[data-noor-theme] #noor-principal .pd-charts .pd-card{background:var(--paper)!important}
+html[data-noor-theme] #noor-principal :is(h1,h2){color:var(--ink)!important}
+html[data-noor-theme] #noor-principal .pd-insight{background:linear-gradient(115deg,color-mix(in srgb,var(--ui-accent,var(--gold)) 14%,white),var(--paper))!important}
+html[data-noor-theme] #noor-principal .pd-chart-pair{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:12px;align-items:stretch}
+html[data-noor-theme] #noor-principal .pd-chart-pair>div{margin:0!important;min-width:0;border:1px solid var(--line)!important;background:var(--paper)!important}
+/* Student layout is intentionally unchanged; only colour primitives adapt. */
+html[data-noor-theme] .sp-reference-dashboard{color:var(--ink)}
+html[data-noor-theme] .sp-reference-dashboard .sp-ref-hero{background:linear-gradient(115deg,var(--paper),color-mix(in srgb,var(--ui-accent,var(--gold)) 12%,white))!important;border-color:var(--line)}
+html[data-noor-theme] .sp-reference-dashboard .sp-card{background:var(--paper)!important;border-color:var(--line)}
+html[data-noor-theme] .sp-reference-dashboard :is(.sp-card-head h2,.sp-ref-student-identity h1){color:var(--ink)!important}
+/* Teacher: photograph dimensions untouched, profile and cards reflect the chosen palette. */
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-profile{background:linear-gradient(110deg,var(--paper),color-mix(in srgb,var(--ui-accent,var(--gold)) 11%,white))!important;border-color:var(--line)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .noor-t4 :is(.nt-head h1,.nt-profile h2,.nt-card h2){color:var(--ink)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-card{border-color:var(--line)!important;background:var(--paper)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(1){background:color-mix(in srgb,var(--ui-kpi2) 15%,white)!important;border-color:color-mix(in srgb,var(--ui-kpi2) 22%,white)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(2){background:color-mix(in srgb,var(--ui-kpi4) 17%,white)!important;border-color:color-mix(in srgb,var(--ui-kpi4) 23%,white)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(3){background:color-mix(in srgb,var(--ui-kpi3) 17%,white)!important;border-color:color-mix(in srgb,var(--ui-kpi3) 22%,white)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-refined-actions .nt-3d-quick-btn:nth-child(4){background:color-mix(in srgb,var(--ui-kpi5) 20%,white)!important;border-color:color-mix(in srgb,var(--ui-kpi5) 29%,white)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-advanced-details{background:var(--paper)!important;border-color:var(--line)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-advanced-details summary{background:linear-gradient(110deg,var(--paper),color-mix(in srgb,var(--ui-accent,var(--gold)) 19%,white))!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-advanced-summary-icon{background:linear-gradient(125deg,var(--berry),var(--rose))!important}
+html[data-noor-theme] #workspace.noor-teacher-activated :is(.nt-priority-heading h2,.nt-advanced-summary-copy b){color:var(--ink)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-priority-grid>.nt-card{background:var(--paper)!important}
+html[data-noor-theme] #workspace.noor-teacher-activated .nt-quote{background:linear-gradient(150deg,color-mix(in srgb,var(--ui-accent,var(--gold)) 19%,white),var(--paper))!important}
+html[data-noor-theme] .noor-theme-panel,.noor-theme-card{background:var(--paper)!important;color:var(--ink)!important}
+html[data-noor-theme] #authApp :is(input,select,textarea){accent-color:var(--berry)}
+@media(max-width:900px){html[data-noor-theme] #noor-principal .pd-chart-pair{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html[data-noor-theme] *{scroll-behavior:auto}}

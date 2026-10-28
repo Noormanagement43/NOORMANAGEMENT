@@ -48,6 +48,6 @@ test('teacher and student login and dashboards remain present; school data untou
  const [teacher,student,config]=await Promise.all([read('teacher-reference.js'),read('student-portal.js'),read('config.js')]);
  assert.match(teacher,/async function showPeriodEditor/);
  assert.match(teacher,/create-assignment/);
- assert.match(student,/My Timetable|My Progress/);
+ assert.match(student,/View Timetable|My Academic Progress/);
  assert.match(config,/SUPABASE_URL/);
 });

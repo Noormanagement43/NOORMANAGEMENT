@@ -3,7 +3,9 @@
 -- Requires schools, profiles, school_memberships, classes and sections, and helpers
 -- private.noor_active_school_access(uuid) / private.has_school_role(uuid,text[]).
 -- Existing teacher_assignments and noor_teacher_periods are NOT modified or deleted.
--- Principal configures school-wide bell times ONCE. Teacher owns subject/section/
+-- Principal configures school-wide bell times ONCE (can edit, add, or archive a slot).
+-- Archiving preserves previously saved teacher lesson records and prevents new
+-- assignment to inactive slots. Teacher owns subject/section/
 -- weekday assignments and date-specific lesson topics. Students are read-only.
 BEGIN;
 
@@ -20,9 +22,10 @@ END $check$;
 
 CREATE TABLE IF NOT EXISTS public.noor_school_bell_slots (
  school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
- period_number smallint NOT NULL CHECK (period_number BETWEEN 1 AND 20),
+ period_number smallint NOT NULL CHECK (period_number BETWEEN 1 AND 100),
  start_time time NOT NULL,
  end_time time NOT NULL,
+ is_active boolean NOT NULL DEFAULT true,
  updated_by uuid REFERENCES auth.users(id),
  updated_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(school_id,period_number),
@@ -87,7 +90,7 @@ BEGIN
  ) THEN RAISE EXCEPTION 'Section must belong to the selected class' USING ERRCODE='23514'; END IF;
  IF NOT EXISTS(
    SELECT 1 FROM public.noor_school_bell_slots b
-   WHERE b.school_id=NEW.school_id AND b.period_number=NEW.period_number
+   WHERE b.school_id=NEW.school_id AND b.period_number=NEW.period_number AND b.is_active
  ) THEN RAISE EXCEPTION 'Principal must configure period bell times first' USING ERRCODE='23514'; END IF;
  NEW.updated_at=now();
  RETURN NEW;
@@ -110,7 +113,10 @@ BEGIN
    NEW.lesson_date IS DISTINCT FROM OLD.lesson_date
  ) THEN RAISE EXCEPTION 'Lesson ownership/date cannot change' USING ERRCODE='42501'; END IF;
  SELECT t.school_id,t.teacher_id,t.weekday,t.is_active INTO plan
- FROM public.noor_class_timetable t WHERE t.id=NEW.timetable_id;
+ FROM public.noor_class_timetable t
+ JOIN public.noor_school_bell_slots b ON b.school_id=t.school_id
+  AND b.period_number=t.period_number AND b.is_active
+ WHERE t.id=NEW.timetable_id;
  IF plan IS NULL OR NOT plan.is_active
     OR plan.school_id IS DISTINCT FROM NEW.school_id
     OR plan.teacher_id IS DISTINCT FROM NEW.teacher_id

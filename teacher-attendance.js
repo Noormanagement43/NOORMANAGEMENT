@@ -61,10 +61,15 @@ async function open(){
  $('#taRows').onclick=e=>{const b=e.target.closest('[data-id][data-status]');if(b)selectMark(b.dataset.id,b.dataset.status);};
  $('#taAllPresent').onclick=()=>{st.students.forEach(x=>{st.marks[x.id]='present'});showStudents();refreshTotals();say('All marked Present. Please review before submission.');};
  $('#taSearch').oninput=showStudents;$('#taSave').onclick=save;$('#taSyncDrafts').onclick=syncDrafts;refreshDrafts();
- const db=a.db,assigned=await db.from('teacher_assignments').select('class_id,section_id').eq('school_id',a.schoolId).eq('teacher_id',a.user.id).eq('is_active',true);
- if(assigned.error){say('Could not load your assigned classes: '+assigned.error.message,true);return;}
- st.assignments=assigned.data||[];
- if(!st.assignments.length){$('#taRows').textContent='No assigned classes yet. Ask the Principal to assign a class/section.';$('#taDayInfo').textContent='No assigned classes';return;}
+ const db=a.db;
+ const [assigned,planned]=await Promise.all([
+  db.from('teacher_assignments').select('class_id,section_id').eq('school_id',a.schoolId).eq('teacher_id',a.user.id).eq('is_active',true),
+  db.from('noor_teacher_periods').select('class_id,section_id').eq('school_id',a.schoolId).eq('teacher_id',a.user.id).eq('approval_status','approved').limit(300)
+ ]);
+ if(assigned.error||planned.error){say('Could not load your timetable and classes: '+(assigned.error||planned.error).message,true);return;}
+ const all=[...(assigned.data||[]),...(planned.data||[])].filter(x=>x.class_id);
+ st.assignments=[...new Map(all.map(x=>[x.class_id+'|'+(x.section_id||''),x])).values()];
+ if(!st.assignments.length){$('#taRows').textContent='No active classes in your timetable yet. Use My Timetable → Add Period to choose a class and section.';$('#taDayInfo').textContent='No class in your timetable';return;}
  const ids=[...new Set(st.assignments.map(x=>x.class_id))];
  const [classes,sections]=await Promise.all([
  db.from('classes').select('id,name').eq('school_id',a.schoolId).eq('is_active',true).in('id',ids),
@@ -73,13 +78,13 @@ async function open(){
  if(classes.error||sections.error){say('Could not load school classes: '+(classes.error||sections.error).message,true);return;}
  st.classes=(classes.data||[]).sort((a,b)=>natural.compare(a.name,b.name));st.sections=sections.data||[];
  $('#taClass').innerHTML=st.classes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
- if(!st.classes.length){say('No active class assigned. Ask your Principal.',true);return;}
+ if(!st.classes.length){say('Choose an existing class in My Timetable first.',true);return;}
  chooseSections();await load();
 }
 async function load(){
  const a=api(),db=a.db,version=++st.version,school=a.schoolId,c=$('#taClass')?.value,section=$('#taSection')?.value||null,date=$('#taDate')?.value;
  if(!c||!date)return;
- if(!section&&(st.sections.some(x=>x.class_id===c)||!st.assignments.some(x=>x.class_id===c&&!x.section_id)))return say('Choose your assigned section first.',true);
+ if(!section&&st.sections.some(x=>x.class_id===c))return say('Choose a section from this class first.',true);
  if(date>dateNow())return say('Cannot mark future attendance.',true);
  $('#taRows').textContent='Loading enrolled students…';say('');
  let sesQuery=db.from('attendance_sessions').select('id,status').eq('school_id',school).eq('class_id',c).eq('attendance_date',date);

@@ -78,7 +78,8 @@ test('the connected NEW NOOR has its own verified schema, private bucket and RLS
  ]);
  assert.match(config,/ayrryemawwplguaauxij\.supabase\.co/);
  assert.doesNotMatch(config,/npzedchxfurcphvpjock/);
- assert.match(html,/noor-v2\.js/);
+ assert.match(html,/window\.location\.replace/);
+ assert.doesNotMatch(html,/src="\.\/noor-v2\.js/);
  assert.doesNotThrow(()=>new Script(code));
  assert.match(code,/register_institution_for_current_user/);
  assert.match(code,/teacher_timetable_periods/);

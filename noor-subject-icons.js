@@ -23,7 +23,6 @@
   [/quantum|nuclear physics|applied physics|physics|mechanics|thermodynamic|optics/i,"⚛️","Physics","physics"],
   [/laboratory|\blab\b|practical|experiment/i,"🔬","Laboratory","lab"],
   [/biology|biological|life science|living science/i,"🧬","Biology","biology"],
-  [/integrated science|general science|science/i,"🔬","Science","science"],
   [/statistics|statistic|data analysis|data science/i,"📊","Statistics","statistics"],
   [/mathematics|\bmath\b|maths|arithmetic|algebra|geometry|calculus|trigonometry|number theory/i,"🧮","Mathematics","math"],
   [/social studies|social science|social education/i,"🌍","Social Studies","social"],
@@ -74,7 +73,8 @@
   [/education|pedagog|teaching method|early childhood/i,"🎓","Education","education"],
   [/research method|thesis|dissertation/i,"🔎","Research","research"],
   [/home science|family studies|household/i,"🏡","Home Science","home"],
-  [/tourism|hospitality|hotel management/i,"🧳","Hospitality","hospitality"]
+  [/tourism|hospitality|hotel management/i,"🧳","Hospitality","hospitality"],
+  [/integrated science|general science|science/i,"🔬","Science","science"],
  ];
  function normalize(input){return String(input??'').normalize('NFKC').trim().replace(/\s+/g,' ').slice(0,140)}
  function display(input){

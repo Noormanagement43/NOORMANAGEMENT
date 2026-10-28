@@ -11,7 +11,6 @@ const FEATURE_TILES=[
  ['◈ Learning Gap Detector','gaps','Assessment-based support'],
  ['▤ Syllabus Progress','syllabus','Track real topic completion'],
  ['▦ Deadline Planner','deadlines','Plan weekly assignments'],
- ['✎ Teaching Diary','diary','Record today’s lessons'],
  ['✦ Rubric & Grading','rubric','Teacher-reviewed feedback']
 ];
 const tileMarkup=()=>'<div class="nti-quick-grid">'+FEATURE_TILES.map(([name,key,sub])=>

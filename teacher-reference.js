@@ -10,7 +10,21 @@ const formatDate=s=>s?new Date(s).toLocaleDateString('en-IN',{day:'numeric',mont
 let rendering=false,renderId=0,channel=null,sessionKey='',live=false,current=null;
 const root=()=>document.getElementById('view-overview');
 const $=s=>root()?.querySelector(s);
-const subjectIcon=s=>/math|algebra|geometry|stat/i.test(s)?'▦':/science|chemistry|physics|biology/i.test(s)?'⚗':/english|hindi|urdu|language/i.test(s)?'▤':/computer|it|technology/i.test(s)?'⌘':'▣';
+const subjectVisual=value=>{
+ const s=String(value||'').trim().toLowerCase();
+ if(/laboratory|\blab\b|practical|experiment/.test(s))return {icon:'🔬',title:'Laboratory',tone:'lab'};
+ if(/math|algebra|geometry|arithmetic|statistics|calculus/.test(s))return {icon:'🧮',title:'Mathematics',tone:'math'};
+ if(/english|literature|grammar|reading/.test(s))return {icon:'📘',title:'English',tone:'english'};
+ if(/science|chemistry|physics|biology|botany|zoology/.test(s))return {icon:'⚗️',title:'Science',tone:'science'};
+ if(/social|history|geography|civics|political/.test(s))return {icon:'🌍',title:'Social Studies',tone:'social'};
+ if(/computer|coding|information technology|informatics/.test(s))return {icon:'💻',title:'Computing',tone:'computer'};
+ if(/urdu|hindi|telugu|arabic|language/.test(s))return {icon:'📚',title:'Languages',tone:'language'};
+ if(/sports|physical education|games|yoga/.test(s))return {icon:'⚽',title:'Physical Education',tone:'sports'};
+ if(/music|performing/.test(s))return {icon:'🎼',title:'Music',tone:'music'};
+ if(/art|drawing|craft/.test(s))return {icon:'🎨',title:'Art',tone:'art'};
+ return {icon:'📖',title:'Lesson',tone:'general'};
+};
+const subjectIcon=s=>subjectVisual(s).icon;
 const isTeacher=()=>get().profile?.role==='teacher'&&get().profile?.status==='active'&&get().user&&get().schoolId;
 const notify=(message,type='success')=>get().toast?.(message,type);
 const openView=id=>get().openView?.(id);
@@ -32,10 +46,15 @@ function statusHTML(p,run){
  const complete=run?.status==='done',active=run?.status==='ongoing';
  const action=complete?'✓ Completed':active?'✓ Complete':'○ Mark Complete';
  return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
- '<span class="nt-subject-icon">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
+ '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>'+
  (!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
  '<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button></div>';
+}
+function weeklyTimetableHTML(periods){
+ const sorted=[...periods].filter(p=>p.approval_status==='approved').sort((a,b)=>a.weekday-b.weekday||String(a.start_time).localeCompare(String(b.start_time)));
+ const content=sorted.map(p=>'<div class="nt-weekly-item"><span class="nt-weekly-day">'+esc(days[p.weekday]?.slice(0,3)||'Day')+'</span><span class="nt-weekly-subject-icon subject-'+subjectVisual(p.subject_name).tone+'">'+subjectIcon(p.subject_name)+'</span><span class="nt-weekly-name"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label||'Class')+' · '+esc(prettyTime(p.start_time))+'–'+esc(prettyTime(p.end_time))+'</small></span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">Edit</button></div>').join('')||'<p class="nt-muted">No periods saved yet. Create a period above.</p>';
+ return '<details class="nt-weekly"><summary>▦ My full weekly timetable <span class="nt-pill">'+sorted.length+' periods</span><span class="nt-weekly-chevron">⌄</span></summary><div class="nt-weekly-content">'+content+'</div></details>';
 }
 function activityHtml(items){
  if(!items.length)return '<p class="nt-empty">No recent activity has been recorded yet.</p>';
@@ -111,7 +130,6 @@ async function render(){
  const currentPeriod=approved.find(x=>runByPeriod.get(x.id)?.status==='ongoing')||approved.find(x=>fmt(x.start_time)<=now&&fmt(x.end_time)>now);
  const name=app.profile.full_name||'Teacher',initials=name.split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase();
  current={details,periods:allPeriods,runs:allRuns,checkin:checkin.data,assignments:assignment.data||[],notices:validNotices,events,avatar};
- const pendingToday=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='pending');
  const rejectedToday=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='rejected');
  const staff=checkin.data?.status==='present';
  const taskStatus=new Map((assignees.data||[]).map(x=>[x.task_id,x.status]));
@@ -126,19 +144,19 @@ async function render(){
     '<div class="nt-hero-stats"><div class="nt-hero-stat-pill purple"><small>Assigned class</small><b>'+esc(approved.length===1?(approved[0].class_label||'Assigned'):(approved.length?new Set(approved.map(p=>p.class_label)).size+' classes':'Not assigned'))+'</b></div><div class="nt-hero-stat-pill pink"><small>Today’s periods</small><b>'+approved.length+'</b></div><div class="nt-hero-stat-pill green"><small>Completed</small><b>'+complete+' / '+approved.length+'</b></div></div></div>'+
  '<aside class="nt-quote" id="ntTeacherQuote"><p id="ntTeacherQuoteText">“Teaching is shaping brighter tomorrows.”</p><div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" class="nt-btn small" id="ntRefreshTeacherQuote" style="font-size:9px;padding:3px 8px">↻ Refresh quote</button></div></aside></section>'+
  '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Teaching Periods</h2></div><button class="nt-btn" id="ntEditTimetable">✎ Edit Timetable</button></div>'+
- '<div class="nt-timeline">'+(approved.length?approved.map(x=>statusHTML(x,runByPeriod.get(x.id))).join(''):'<p class="nt-empty">No approved periods for today. Use Edit Timetable to request new periods.</p>')+'</div>'+
+ '<div class="nt-timeline">'+(approved.length?approved.map(x=>statusHTML(x,runByPeriod.get(x.id))).join(''):'<p class="nt-empty">No periods scheduled today. Add your own period to begin.</p>')+'</div>'+
  '<div class="nt-review-requests">'+
  (rejectedToday.length?'<p class="nt-muted">Review unavailable periods: '+rejectedToday.map(x=>esc(x.subject_name)).join(' · ')+'</p>':'')+
  '</div>'+
  '<div class="nt-progress" title="Today\'s completed classes"><span style="width:'+(approved.length?Math.round(complete/approved.length*100):0)+'%"></span></div>'+
  '<p class="nt-muted" style="margin:8px 0 0">'+complete+' of '+approved.length+' periods completed today</p>'+
- '<div class="nt-timeline-footer">◉ Class completion is saved to school records and visible in the Principal Dashboard.</div></section></div>'+
+ '<div class="nt-timeline-footer">◉ Completed periods sync with the Principal Dashboard.</div>'+weeklyTimetableHTML(allPeriods)+'</section></div>'+
  '<div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Today\'s Status</h2></div><span class="nt-pill done"><span class="nt-pulse"></span> School data</span></div>'+
  '<div class="nt-status-list"><div class="nt-status-box '+(staff?'good':'')+'"><span class="nt-round">'+(staff?'✓':'○')+'</span><div><b>'+ (staff?'Checked in':'Not checked in')+'</b><small>'+ (staff?esc(dateTime(checkin.data.checked_in_at)):'Mark your attendance for today')+'</small></div>'+
  (staff?'':'<button class="nt-btn small" id="ntCheckIn">Check in</button>')+'</div>'+
  '<div class="nt-status-box"><span class="nt-round">▦</span><div><b>'+(currentPeriod?'Period '+esc(currentPeriod.period_number)+' · '+esc(currentPeriod.subject_name):'No current period')+'</b><small>'+(currentPeriod?esc(currentPeriod.class_label)+' · '+esc(prettyTime(currentPeriod.start_time)):'Your approved schedule is shown on the left')+'</small></div></div>'+
  '<div class="nt-status-box"><span class="nt-round">◉</span><div><b>Principal activity view</b><small id="ntLiveStatus">Today\'s class activity and check-in are saved to the school database.</small></div></div></div></section>'+'<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✦</span><h2>Quick Actions</h2></div></div><div class="nt-3d-quick-grid nt-refined-actions"><button type="button" class="nt-3d-quick-btn" data-action="take-attendance"><span class="nt-quick-icon green" aria-hidden="true">✓</span><span class="nt-quick-text"><b>Take Attendance</b><small>Mark today’s class</small></span></button><button type="button" class="nt-3d-quick-btn" data-action="create-assignment"><span class="nt-quick-icon violet" aria-hidden="true">✎</span><span class="nt-quick-text"><b>Create Assignment</b><small>Publish to students</small></span></button><button type="button" class="nt-3d-quick-btn" data-link="teaching"><span class="nt-quick-icon pink" aria-hidden="true">▤</span><span class="nt-quick-text"><b>Share Smart Notes</b><small>Lessons & resources</small></span></button><button type="button" class="nt-3d-quick-btn" data-link="assessments"><span class="nt-quick-icon amber" aria-hidden="true">▥</span><span class="nt-quick-text"><b>Marks & Results</b><small>Review progress</small></span></button></div></section>'+
- '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✦</span><h2>Notices & AI</h2></div><button class="nt-btn small" data-link="notices">View all</button></div>'+
+ '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✦</span><h2>Notices & Messages</h2></div><button class="nt-btn small" data-link="notices">View all</button></div>'+
  (validNotices.slice(0,3).map(x=>'<button type="button" class="nt-event" style="width:100%;text-align:left;background:none;border:0" data-link="notices"><span class="nt-round">▤</span><span><b>'+esc(x.title)+'</b><small>'+esc(formatDate(x.created_at))+'</small></span><span class="nt-arrow">›</span></button>').join('')||'<p class="nt-muted">No school notices for teachers yet.</p>')+
  '<button type="button" class="nt-event" style="width:100%;text-align:left;background:none;border:0" data-link="notifications"><span class="nt-round">✧</span><span><b>School messages</b><small>View tasks and communication</small></span><span class="nt-arrow">›</span></button></section>'+
  '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✓</span><h2>Principal Tasks</h2></div><button class="nt-btn small" data-link="weekly-plan">Weekly plan</button></div>'+
@@ -158,14 +176,22 @@ async function render(){
  const priorityGrid=document.createElement('div');priorityGrid.className='nt-priority-grid';
  priority.appendChild(priorityGrid);
  if(attendance)priorityGrid.append(attendance);
- const profileQuote=dash?.querySelector('.nt-quote');
- if(quickCard&&profileQuote){quickCard.classList.add('nt-quote-actions');profileQuote.append(quickCard);}
  profileNode?.insertAdjacentElement('afterend',priority);
+ if(quickCard){quickCard.classList.remove('nt-quote-actions');quickCard.classList.add('nt-bottom-actions');dash.append(quickCard);}
  const advance=document.createElement('details');advance.className='nt-advanced-details';
  advance.innerHTML='<summary><span class="nt-advanced-summary-icon" aria-hidden="true">✦</span><span class="nt-advanced-summary-copy"><b>Teaching Intelligence & Planning</b><small>Learning gaps · syllabus · weekly plans · review tools</small></span><span class="nt-advanced-summary-tag">EXPLORE TOOLS</span><span class="nt-advanced-chevron" aria-hidden="true">⌄</span></summary><div class="nt-advanced-content"><section id="ntTeacherIntelligence" aria-label="AI Teacher Command Centre"><p class="nti-empty">Loading verified teaching data…</p></section><section id="ntTeacherPlanners" aria-label="Syllabus and deadlines"><div class="ntp-card">Loading editable plans…</div></section></div>';
  const analytics=dash.querySelector('.nt-ref-analytics');
  const mainCols=dash.querySelector('.nt-columns');
- (analytics||mainCols||priority)?.insertAdjacentElement('afterend',advance);
+ dash.append(advance);
+ const toolkit=document.createElement('section');toolkit.className='nt-toolkit-bottom';toolkit.setAttribute('aria-label','Teaching diary and reports');
+ toolkit.innerHTML='<div class="nt-toolkit-head"><div><span class="nt-kicker">MORE WAYS TO TEACH</span><h2>Diary, Reports & Planning</h2><p>Optional tools stay at the end of your dashboard so daily work stays clear.</p></div></div>'+
+ '<div class="nt-toolkit-grid">'+
+ '<button type="button" data-action="open-teaching-diary" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📔</span><b>Teaching Diary</b><small>Record lessons & learning</small><span class="nt-toolkit-arrow">↗</span></button>'+
+ '<button type="button" data-link="daily-report" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📊</span><b>Daily School Report</b><small>Share your teaching summary</small><span class="nt-toolkit-arrow">↗</span></button>'+
+ '<button type="button" data-link="weekly-plan" class="nt-toolkit-card"><span class="nt-toolkit-glyph">🗓️</span><b>Weekly Planner</b><small>Prepare the week ahead</small><span class="nt-toolkit-arrow">↗</span></button>'+
+ '<button type="button" data-action="open-learning-gaps" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📈</span><b>Learning Insights</b><small>Review needs and progress</small><span class="nt-toolkit-arrow">↗</span></button>'+
+ '</div>';
+ dash.append(toolkit);
  current.assignedTasks=assignedTasks;
  wrapper.onclick=onClick; // Replace handler on each render; avoid duplicate clicks/period submissions.
  $('#ntHiddenPhoto').onchange=uploadPhoto;
@@ -180,6 +206,8 @@ async function render(){
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
  if(b.dataset.action==='create-assignment'){openPaper();setTimeout(()=>{const form=document.getElementById('ppForm');if(!form)return;const t=document.getElementById('ppType');if(t)t.value='assignment';document.getElementById('ppQuestions')?.focus();},0);return;} if(b.dataset.action==='take-attendance'){openView('attendance');return;} if(b.dataset.action==='upload-resource'){openView('teaching');return;} if(b.dataset.link){if(b.dataset.link==='paper-generator')openPaper();else if(b.dataset.link==='edit-timetable')showPeriodEditor(null);else if(b.dataset.link==='calendar'||b.dataset.link==='school-calendar')openCalendar();else openView(b.dataset.link);return;}
+ if(b.dataset.action==='open-teaching-diary'){const advanced=$('.nt-advanced-details');if(advanced)advanced.open=true;const first=$('#ntiPeriods [data-nti-log]');if(first)first.click();else openView('daily-report');return;}
+ if(b.dataset.action==='open-learning-gaps'){const advanced=$('.nt-advanced-details');if(advanced){advanced.open=true;requestAnimationFrame(()=>{($('#ntiGaps')||advanced).scrollIntoView({behavior:'smooth',block:'start'})});}return;}
  if(b.id==='ntEditProfile'){showProfileEditor();return;}
  if(b.id==='ntChangePhoto'){$('#ntHiddenPhoto')?.click();return}
  if(b.id==='ntEditTimetable'){showPeriodEditor(null);return}
@@ -273,17 +301,13 @@ async function showPeriodEditor(p){
   const allClasses=cs.data||[];
   if(!allClasses.length)return notify('No school classes exist yet. Create a real class first in School Management.','error');
   const ids=allClasses.map(c=>c.id);
-  const [ss,subs]=await Promise.all([
-    db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true),
-    db.from('subjects').select('id,class_id,name').eq('school_id',app.schoolId).eq('is_active',true)
-  ]);
-  if(ss.error||subs.error)throw ss.error||subs.error;
-  const sections=ss.data||[],subj=subs.data||[],options=[];
+  const ss=await db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true);
+  if(ss.error)throw ss.error;
+  const sections=ss.data||[],options=[];
   for(const c of allClasses){
     const selected=sections.filter(x=>x.class_id===c.id);
-    const ownedSubject=subj.find(x=>x.class_id===c.id);
     for(const sec of selected.length?selected:[null]){
-      options.push({class_id:c.id,section_id:sec?.id||null,subject_id:ownedSubject?.id||null,subject_name:ownedSubject?.name||'',class_label:c.name+(sec?' · Section '+sec.name:'')});
+      options.push({class_id:c.id,section_id:sec?.id||null,subject_name:'',class_label:c.name+(sec?' · Section '+sec.name:'')});
     }
   }
   if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
@@ -300,7 +324,7 @@ async function showPeriodEditor(p){
     field('End time','end_time',fmt(p?.end_time||'09:45'),'time','required')+
     '<label>Block type<select name="block_type">'+kinds+'</select></label>'+
     '<label>School Class & Section<select name="context_index" required>'+choices+'</select></label>'+
-    field('Subject','subject_name',p?.subject_name||options[selected]?.subject_name||'General','text','required maxlength="80"')+
+    '<label class="nt4-subject-label">Subject<div class="nt4-subject-entry"><span class="nt4-subject-badge" id="ntSubjectIcon" role="img" aria-label="Subject icon">📖</span><input name="subject_name" type="text" required maxlength="80" value="'+esc(p?.subject_name||options[selected]?.subject_name||'')+'" autocomplete="off" spellcheck="true" placeholder="Subject name"></div></label>'+
     '<p class="nt4-span nt-muted">You can edit your own timetable. It uses existing school classes and sections. Student attendance remains subject to school access permissions.</p>';
   const modalNode=modal(p?'Edit my period':'Add my period',body,async form=>{
     const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))];
@@ -319,15 +343,16 @@ async function showPeriodEditor(p){
       subject_name:val('subject_name')||context.subject_name||'General',
       approval_status:'approved'
     };
-    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id):
-      await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'});
-    if(result.error)throw new Error(result.error.message+' (Teacher timetable permissions may need a school-policy update.)');
-    notify(p?'Timetable period updated successfully.':'New period added to your timetable.','success');
-    try{await render();}catch{}
+    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id).select('id,approval_status'):
+      await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'}).select('id,approval_status');
+    if(result.error)throw new Error('Supabase denied your timetable save: '+result.error.message);
+    if(!result.data?.length)throw new Error('No period was saved: your school database may still need the teacher self-timetable policy.');
+    notify(p?'Your own period was updated.':'Your period was added to the school timetable.','success');
   });
-  modalNode.querySelector('[name="context_index"]').onchange=ev=>{
-    modalNode.querySelector('[name="subject_name"]').value=options[Number(ev.target.value)]?.subject_name||'';
-  };
+  const subjectInput=modalNode.querySelector('[name="subject_name"]'),icon=modalNode.querySelector('#ntSubjectIcon');
+  const updateIcon=()=>{const visual=subjectVisual(subjectInput.value);icon.textContent=visual.icon;icon.className='nt4-subject-badge subject-'+visual.tone;icon.setAttribute('aria-label',visual.title);};
+  subjectInput.addEventListener('input',updateIcon);
+  updateIcon();
  }catch(err){notify('Timetable request failed: '+(err?.message||'Try again.'),'error')}
 }
 function openPaper(){

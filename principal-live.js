@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const a=()=>window.NOOR_AI_APP||{},e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const root=()=>document.getElementById('view-principal-studio');
-const permitted=()=>['owner','principal'].includes(a().profile?.role)&&a().profile?.status==='active'&&a().profile?.school_id===a().schoolId&&a().school?.verification_status==='verified'&&a().school?.account_status==='active'&&a().school?.is_active===true;
+const permitted=()=>['owner','principal','manager'].includes(a().profile?.role)&&a().profile?.status==='active'&&a().profile?.school_id===a().schoolId&&a().school?.verification_status==='verified'&&a().school?.account_status==='active'&&a().school?.is_active===true;
 let loading=false,queued=false,channel=null,identity='',timer=null,snapshot=null,insight='Leadership in education builds brighter tomorrows.';
 const button=(text,route)=>`<button type="button" class="pd-link" data-route="${route}">${text}</button>`;
 const empty=text=>`<p class="pd-empty">${text}</p>`;

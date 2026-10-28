@@ -68,3 +68,17 @@
 .nsto-lesson-inputs h3{font:700 18px/1.2 'Playfair Display',Georgia,serif;color:#603348;margin:0}
 .nsto-lesson-inputs .nsto-muted{margin:0!important}
 .nsto-dialog .nsto-lesson-inputs textarea{background:#fffefc}
+
+/* Principal may add, edit or archive any numbered period, without ever
+   choosing a teacher, subject or class. These controls remain visible on phones. */
+.nsto-bell-row{grid-template-columns:90px minmax(0,1fr) minmax(0,1fr) auto}
+.nsto-remove-bell{min-height:38px;padding:8px 10px;border-radius:11px;background:#fff2f4;color:#a44360;border:1px solid #edc3d0;font:700 11px Inter,system-ui;white-space:nowrap;cursor:pointer}
+.nsto-remove-bell:focus-visible,.nsto-add-bell:focus-visible{outline:3px solid #d99ab0;outline-offset:2px}
+.nsto-remove-bell:hover{background:#ffe7ee}
+.nsto-add-bell{width:100%;padding:12px;background:linear-gradient(110deg,#edf5ff,#f6f0ff);color:#3b5277;border:1px dashed #9eb8d9;border-radius:13px;font:800 12px Inter,system-ui;cursor:pointer}
+.nsto-add-bell:hover{background:#e3edff}
+@media(max-width:760px){
+ .nsto-bell-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .nsto-bell-row>b{grid-column:1 / 2;align-self:center}
+ .nsto-bell-row .nsto-remove-bell{grid-column:2/3;grid-row:1;justify-self:end}
+}

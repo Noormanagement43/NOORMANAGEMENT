@@ -11,18 +11,9 @@ let rendering=false,renderId=0,channel=null,sessionKey='',live=false,current=nul
 const root=()=>document.getElementById('view-overview');
 const $=s=>root()?.querySelector(s);
 const subjectVisual=value=>{
- const s=String(value||'').trim().toLowerCase();
- if(/laboratory|\blab\b|practical|experiment/.test(s))return {icon:'🔬',title:'Laboratory',tone:'lab'};
- if(/math|algebra|geometry|arithmetic|statistics|calculus/.test(s))return {icon:'🧮',title:'Mathematics',tone:'math'};
- if(/english|literature|grammar|reading/.test(s))return {icon:'📘',title:'English',tone:'english'};
- if(/science|chemistry|physics|biology|botany|zoology/.test(s))return {icon:'⚗️',title:'Science',tone:'science'};
- if(/social|history|geography|civics|political/.test(s))return {icon:'🌍',title:'Social Studies',tone:'social'};
- if(/computer|coding|information technology|informatics/.test(s))return {icon:'💻',title:'Computing',tone:'computer'};
- if(/urdu|hindi|telugu|arabic|language/.test(s))return {icon:'📚',title:'Languages',tone:'language'};
- if(/sports|physical education|games|yoga/.test(s))return {icon:'⚽',title:'Physical Education',tone:'sports'};
- if(/music|performing/.test(s))return {icon:'🎼',title:'Music',tone:'music'};
- if(/art|drawing|craft/.test(s))return {icon:'🎨',title:'Art',tone:'art'};
- return {icon:'📖',title:'Lesson',tone:'general'};
+ const match=window.NOOR_SUBJECT_ICONS?.display(value);
+ if(match)return {icon:match.icon,title:match.label,tone:match.tone,initials:match.initials,hue:match.hue,matched:match.matched};
+ return {icon:'📚',title:String(value||'Subject'),tone:'general',initials:String(value||'?').slice(0,2),hue:230,matched:false};
 };
 const subjectIcon=s=>subjectVisual(s).icon;
 const isTeacher=()=>get().profile?.role==='teacher'&&get().profile?.status==='active'&&get().user&&get().schoolId;
@@ -350,7 +341,7 @@ async function showPeriodEditor(p){
     notify(p?'Your own period was updated.':'Your period was added to the school timetable.','success');
   });
   const subjectInput=modalNode.querySelector('[name="subject_name"]'),icon=modalNode.querySelector('#ntSubjectIcon');
-  const updateIcon=()=>{const visual=subjectVisual(subjectInput.value);icon.textContent=visual.icon;icon.className='nt4-subject-badge subject-'+visual.tone;icon.setAttribute('aria-label',visual.title);};
+  const updateIcon=()=>{const visual=subjectVisual(subjectInput.value);icon.textContent=visual.icon+(visual.matched?'':' '+(visual.initials||''));icon.className='nt4-subject-badge subject-'+visual.tone;icon.style.setProperty('--subject-hue',String(visual.hue));icon.setAttribute('aria-label',visual.title);};
   subjectInput.addEventListener('input',updateIcon);
   updateIcon();
  }catch(err){notify('Timetable request failed: '+(err?.message||'Try again.'),'error')}

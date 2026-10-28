@@ -185,6 +185,9 @@ async function render(){
  dash.append(toolkit);
  current.assignedTasks=assignedTasks;
  wrapper.onclick=onClick; // Replace handler on each render; avoid duplicate clicks/period submissions.
+ // Replace legacy principal-assigned period display with teacher-owned timetable.
+ // Never prompt for hours/minutes here; the school bell times are set once by Principal.
+ try{await window.NOOR_SCHOOL_TIMETABLE?.mountTeacher?.()}catch(error){console.warn('School timetable panel:',error)}
  $('#ntHiddenPhoto').onchange=uploadPhoto;
 
  try{Promise.resolve(window.NOOR_TEACHER_PLANNERS?.mount?.()).catch(error=>{console.error('Teacher planners unavailable',error);const p=document.querySelector('#ntTeacherPlanners');if(p)p.textContent='Planning tools could not load. Refresh to retry.'})}catch(e){console.error(e)}
@@ -281,69 +284,11 @@ async function uploadPhoto(e){
 }
 
 async function showPeriodEditor(p){
- const app=get(),db=app.db;
- try{
-  // Teachers can plan their own periods using REAL school classes and sections.
-  // Never fabricate a Class 1–10 list: the principal's school structure is authoritative.
-  const cs=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).order('sort_order').limit(200);
-  if(cs.error)throw cs.error;
-  const allClasses=cs.data||[];
-  if(!allClasses.length)return notify('No school classes exist yet. Create a real class first in School Management.','error');
-  const ids=allClasses.map(c=>c.id);
-  const ss=await db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true);
-  if(ss.error)throw ss.error;
-  const sections=ss.data||[],options=[];
-  for(const c of allClasses){
-    const selected=sections.filter(x=>x.class_id===c.id);
-    for(const sec of selected.length?selected:[null]){
-      options.push({class_id:c.id,section_id:sec?.id||null,subject_name:'',class_label:c.name+(sec?' · Section '+sec.name:'')});
-    }
-  }
-  if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
-    return notify('This period’s class or section is no longer active in your school. Choose an existing class.','error');
-  }
-  const daysHTML=days.map((d,i)=>'<option value="'+i+'" '+((p?.weekday??new Date().getDay())===i?'selected':'')+'>'+d+'</option>').join('');
-  const kinds=['class','break','lunch'].map(x=>'<option value="'+x+'" '+((p?.block_type||'class')===x?'selected':'')+'>'+x+'</option>').join('');
-  let selected=options.findIndex(x=>x.class_id===p?.class_id&&x.section_id===(p?.section_id||null));
-  if(selected<0)selected=0;
-  const choices=options.map((x,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(x.class_label)+(x.subject_name?' - '+esc(x.subject_name):'')+'</option>').join('');
-  const body='<label>Day of week<select name="weekday">'+daysHTML+'</select></label>'+
-    field('Period number','period_number',p?.period_number||1,'number','min="1" max="15" required')+
-    field('Start time','start_time',fmt(p?.start_time||'09:00'),'time','required')+
-    field('End time','end_time',fmt(p?.end_time||'09:45'),'time','required')+
-    '<label>Block type<select name="block_type">'+kinds+'</select></label>'+
-    '<label>School Class & Section<select name="context_index" required>'+choices+'</select></label>'+
-    '<label class="nt4-subject-label">Subject<div class="nt4-subject-entry"><span class="nt4-subject-badge" id="ntSubjectIcon" role="img" aria-label="Subject icon">📖</span><input name="subject_name" type="text" required maxlength="80" value="'+esc(p?.subject_name||options[selected]?.subject_name||'')+'" autocomplete="off" spellcheck="true" placeholder="Subject name"></div></label>'+
-    '<p class="nt4-span nt-muted">You can edit your own timetable. It uses existing school classes and sections. Student attendance remains subject to school access permissions.</p>';
-  const modalNode=modal(p?'Edit my period':'Add my period',body,async form=>{
-    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))];
-    if(!context?.class_id)throw Error('Choose an existing class and section.');
-    if(!val('subject_name'))throw Error('Subject is required.');
-    if(val('start_time')>=val('end_time'))throw Error('End time must be later than start time.');
-    const values={
-      weekday:Number(val('weekday')),
-      period_number:Number(val('period_number')),
-      start_time:val('start_time'),
-      end_time:val('end_time'),
-      block_type:val('block_type'),
-      class_id:context.class_id,
-      section_id:context.section_id,
-      class_label:context.class_label,
-      subject_name:val('subject_name')||context.subject_name||'General',
-      approval_status:'approved'
-    };
-    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id).select('id,approval_status'):
-      await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'}).select('id,approval_status');
-    if(result.error)throw new Error('Supabase denied your timetable save: '+result.error.message);
-    if(!result.data?.length)throw new Error('No period was saved: your school database may still need the teacher self-timetable policy.');
-    notify(p?'Your own period was updated.':'Your period was added to the school timetable.','success');
-  });
-  const subjectInput=modalNode.querySelector('[name="subject_name"]'),icon=modalNode.querySelector('#ntSubjectIcon');
-  const updateIcon=()=>{const visual=subjectVisual(subjectInput.value);icon.textContent=visual.icon+(visual.matched?'':' '+(visual.initials||''));icon.className='nt4-subject-badge subject-'+visual.tone;icon.style.setProperty('--subject-hue',String(visual.hue));icon.setAttribute('aria-label',visual.title);};
-  subjectInput.addEventListener('input',updateIcon);
-  updateIcon();
- }catch(err){notify('Timetable request failed: '+(err?.message||'Try again.'),'error')}
+ // The Principal sets bell times. Teachers manage only their own class,
+ // section, subject and daily lesson topic in the single NOOR schedule form.
+ return window.NOOR_SCHOOL_TIMETABLE?.openTeacherEditor?.(p&&p.id&&!p.approval_status?p:null);
 }
+
 function openPaper(){
  // Create the view before routing so openView can activate it normally.
  if(!document.getElementById('view-paper-generator')){const v=document.createElement('section');v.id='view-paper-generator';v.className='view';document.querySelector('#workspace .content')?.append(v);}

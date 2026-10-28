@@ -21,8 +21,12 @@ const migrationError=e=>e&&(e.code==='42P01'||e.code==='42703'||/does not exist|
 const setupHint='The one-time school timetable database migration has not been applied to this school connection yet. Ask the account owner to apply the NOOR School Bell & Teacher Timetable migration in Supabase.';
 let teacherKey='',teacherChannel=null,refreshTimer=null,teacherLoading=false;
 let principalLoading=false;
-async function loadBells(){
- const r=await db().from('noor_school_bell_slots').select('school_id,period_number,start_time,end_time').eq('school_id',school()).order('period_number');
+async function loadBells({includeArchived=false}={}){
+ let query=db().from('noor_school_bell_slots')
+  .select('school_id,period_number,start_time,end_time,is_active')
+  .eq('school_id',school()).order('period_number');
+ if(!includeArchived)query=query.eq('is_active',true);
+ const r=await query;
  if(r.error)throw r.error;return r.data||[];
 }
 async function loadClassSections(){
@@ -61,7 +65,7 @@ function dialog(title,body,onSubmit){
  const form=overlay.querySelector('form');
  form.onsubmit=async e=>{
    e.preventDefault();const b=form.querySelector('button[type=submit]');b.disabled=true;
-   try{await onSubmit(new FormData(form));close();if(isTeacher())await mountTeacher();if(isLeader())await mountPrincipal();window.NOOR_AI_APP?.toast?.('Saved to your school records.','success')}
+   try{const completed=await onSubmit(new FormData(form));if(completed===false){button.disabled=false;return;}close();if(isTeacher())await mountTeacher();if(isLeader())await mountPrincipal();window.NOOR_AI_APP?.toast?.('Saved to your school records.','success')}
    catch(error){overlay.querySelector('#nstoError').textContent=error.message||String(error);b.disabled=false}
  };
  return overlay;
@@ -70,28 +74,103 @@ function option(value,label,selected){return '<option value="'+esc(value)+'" '+(
 async function openSchoolTimes(){
  if(!canSetBells())return;
  try{
-  const bells=await loadBells(),byNum=new Map(bells.map(x=>[Number(x.period_number),x]));
-  // No timetable writes until principal explicitly clicks Save.
-  const rows=Array.from({length:Math.max(8,...bells.map(x=>Number(x.period_number)),0)},(_,i)=>{
-   const n=i+1,b=byNum.get(n);
-   return '<div class="nsto-bell-row" data-number="'+n+'"><b>Period '+n+'</b><label>Start<input type="time" name="start_'+n+'" value="'+esc(formatTime(b?.start_time))+'"></label><label>End<input type="time" name="end_'+n+'" value="'+esc(formatTime(b?.end_time))+'"></label></div>'
-  }).join('');
-  dialog('School Bell Times · Principal Only','<p class="nsto-muted">Set the school-wide start and end time for each period once. Every teacher uses the same bell times. Leave unused periods blank.</p><div class="nsto-bell-grid">'+rows+'</div>',async f=>{
-   const saved=[],times=[];
-   for(let n=1;n<=Math.max(8,...bells.map(x=>Number(x.period_number)),0);n++){
-     const start=String(f.get('start_'+n)||''),end=String(f.get('end_'+n)||'');
-     if(!start&&!end)continue;
-     if(!start||!end||start>=end)throw Error('Period '+n+': select a valid start and end time.');
-     times.push({n,start,end});
-     saved.push({school_id:school(),period_number:n,start_time:start,end_time:end,updated_by:app().user.id,updated_at:new Date().toISOString()});
-   }
-   if(!saved.length)throw Error('Please set at least one period time.');
-   const sorted=[...times].sort((a,b)=>a.start.localeCompare(b.start));
-   for(let i=1;i<sorted.length;i++)if(sorted[i].start<sorted[i-1].end)throw Error('School periods cannot overlap.');
-   const r=await db().from('noor_school_bell_slots').upsert(saved,{onConflict:'school_id,period_number'}).select('period_number');
-   if(r.error)throw r.error;
-   if((r.data||[]).length!==saved.length)throw Error('The school timetable was not saved. Principal permission may be missing.');
-  });
+  const existing=await loadBells({includeArchived:true});
+  // Only active rows are shown to Principal. Archived periods are kept
+  // in the database so teachers' historical lesson plans are never deleted.
+  const active=existing.filter(x=>x.is_active!==false);
+  const activeNumbers=new Set(active.map(x=>Number(x.period_number)));
+  const makeRow=(n,b={})=>'<div class="nsto-bell-row" data-number="'+n+'">'+
+   '<b>Period '+n+'</b>'+
+   '<label>Start<input type="time" name="start_'+n+'" value="'+esc(formatTime(b.start_time))+'" required></label>'+
+   '<label>End<input type="time" name="end_'+n+'" value="'+esc(formatTime(b.end_time))+'" required></label>'+
+   '<button type="button" class="nsto-remove-bell" data-nsto-remove-bell="'+n+'" aria-label="Remove Period '+n+'">Remove ✕</button>'+
+   '</div>';
+  const intro='<p class="nsto-muted">You control only the school bell: Period 1, Period 2 and their start/end times. Tap + Add Period or Remove whenever required. Teachers independently choose classes, sections and subjects for the periods you publish.</p>';
+  const initial=active.length?active.map(x=>makeRow(Number(x.period_number),x)).join(''):makeRow(1);
+  const overlay=dialog('School Period Timings · Principal Only',intro+
+   '<div class="nsto-bell-grid" id="nstoBellGrid">'+initial+'</div>'+
+   '<button type="button" class="nsto-add-bell" id="nstoAddBell">＋ Add Another Period</button>'+
+   '<p class="nsto-muted">Existing teacher assignments are preserved if a period is removed. Such lessons stop appearing in current school and student timetables until the period is restored or the teacher reassigns the class.</p>',
+   async()=>{
+    const cards=[...overlay.querySelectorAll('#nstoBellGrid [data-number]')];
+    const next=cards.map(card=>{
+     const n=Number(card.dataset.number);
+     const start=card.querySelector('[name="start_'+n+'"]').value;
+     const end=card.querySelector('[name="end_'+n+'"]').value;
+     if(!start||!end||start>=end)throw Error('Period '+n+': choose valid start and end times.');
+     return {school_id:school(),period_number:n,start_time:start,end_time:end,is_active:true,
+       updated_by:app().user.id,updated_at:new Date().toISOString()};
+    });
+    const numbers=new Set(next.map(x=>x.period_number));
+    if(numbers.size!==next.length)throw Error('Each period number must be unique.');
+    const ordered=[...next].sort((a,b)=>a.start_time.localeCompare(b.start_time));
+    for(let i=1;i<ordered.length;i++){
+     if(ordered[i].start_time<ordered[i-1].end_time)throw Error(
+       'Period '+ordered[i-1].period_number+' overlaps Period '+ordered[i].period_number+
+       '. Please correct the school timing.'
+     );
+    }
+    const removed=existing.filter(x=>x.is_active!==false&&!numbers.has(Number(x.period_number)))
+     .map(x=>Number(x.period_number));
+    if(removed.length){
+     const q=await db().from('noor_class_timetable')
+      .select('id',{head:true,count:'exact'}).eq('school_id',school())
+      .eq('is_active',true).in('period_number',removed);
+     if(q.error)throw new Error('Cannot check existing teacher lessons: '+q.error.message);
+     const count=q.count||0;
+     const warning=count
+       ?'Removing '+removed.map(n=>'Period '+n).join(', ')+' will hide '+count+
+         ' currently assigned teacher lesson(s) from active class timetables. Their lesson records will NOT be deleted. Continue?'
+       :'Remove '+removed.map(n=>'Period '+n).join(', ')+' from the school timetable?';
+     if(!window.confirm(warning))return false;
+    }
+    // Save active slots first. Archived entries can be restored by re-adding
+    // that period number. Nothing automatically alters teacher ownership.
+    if(next.length){
+     const r=await db().from('noor_school_bell_slots')
+      .upsert(next,{onConflict:'school_id,period_number'}).select('period_number');
+     if(r.error)throw r.error;
+     if((r.data||[]).length!==next.length)throw Error('Some bell slots failed to save.');
+    }
+    if(removed.length){
+     const result=await db().from('noor_school_bell_slots')
+      .update({is_active:false,updated_by:app().user.id,updated_at:new Date().toISOString()})
+      .eq('school_id',school()).in('period_number',removed).select('period_number');
+     if(result.error)throw result.error;
+     if((result.data||[]).length!==removed.length)throw Error('Some removed periods could not be archived.');
+    }
+    return true;
+   });
+  const grid=overlay.querySelector('#nstoBellGrid');
+  const addButton=overlay.querySelector('#nstoAddBell');
+  const refreshRemoveButtons=()=>{
+   grid.querySelectorAll('[data-nsto-remove-bell]').forEach(btn=>{
+    btn.onclick=()=>{
+     const number=Number(btn.dataset.nstoRemoveBell);
+     const card=grid.querySelector('[data-number="'+number+'"]');
+     card?.remove();
+     if(!grid.children.length){
+      const hint=document.createElement('div');
+      hint.className='nsto-empty';hint.id='nstoNoBells';
+      hint.textContent='No periods selected. Add a period or save to archive all active school bell times.';
+      grid.append(hint);
+     }
+    };
+   });
+  };
+  addButton.onclick=()=>{
+   grid.querySelector('#nstoNoBells')?.remove();
+   const used=new Set([...grid.querySelectorAll('[data-number]')].map(x=>Number(x.dataset.number)));
+   let n=1;
+   while(used.has(n)&&n<=100)n++;
+   if(n>100){overlay.querySelector('#nstoError').textContent='Maximum 100 periods per school.';return;}
+   // Prefer next consecutive number; a previously removed period can
+   // intentionally be restored by choosing its numbered slot.
+   grid.insertAdjacentHTML('beforeend',makeRow(n,existing.find(x=>Number(x.period_number)===n)||{}));
+   refreshRemoveButtons();
+   grid.lastElementChild?.querySelector('input')?.focus();
+  };
+  refreshRemoveButtons();
  }catch(e){app().toast?.(migrationError(e)?setupHint:e.message,'error')}
 }
 function weekdayBoxes(selected){

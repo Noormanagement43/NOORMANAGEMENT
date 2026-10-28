@@ -60,7 +60,6 @@ function setup(){
           <header>
             <h2>◷ Teacher Daily Schedule & Active Periods</h2>
             <div style="display:flex;gap:8px;align-items:center">
-              <button type="button" class="pd-btn pd-btn-primary" id="pd-add-teacher" style="padding:5px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#6f2a45;color:#fff;border:none;cursor:pointer">+ Add Teacher</button>
               <button class="pd-link" id="pd-timetable">View full timetable →</button>
             </div>
           </header>
@@ -111,10 +110,6 @@ function setup(){
       if(b.dataset.route==='__more')document.getElementById('sidebar')?.classList.toggle('open');
       else a().openView?.(b.dataset.route);
     }
-    const edit=ev.target.closest('[data-edit-period]');
-    if(edit)editPeriod(edit.dataset.editPeriod);
-    const removeP=ev.target.closest('[data-remove-period]');
-    if(removeP)removePeriod(removeP.dataset.removePeriod, removeP.dataset.teacherId);
     const viewStaff=ev.target.closest('[data-view-teacher]');
     if(viewStaff)showStaffProfile(viewStaff.dataset.viewTeacher);
     const viewStu=ev.target.closest('[data-view-student]');
@@ -123,9 +118,8 @@ function setup(){
 
   r.querySelector('#pd-refresh').onclick=refresh;
 
-  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=showTeacherDirectoryModal;
+  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('staff-management');
   r.querySelector('#pd-timetable').onclick=showTimetable;
-  const addTch=r.querySelector('#pd-add-teacher');if(addTch)addTch.onclick=openAddTeacherModal;
   r.querySelector('#pd-mode').onclick=()=>{
     const h=r.querySelector('#noor-principal');h.classList.toggle('pd-dark');
     try{localStorage.setItem('noor.principal.theme.'+key,h.classList.contains('pd-dark')?'dark':'light')}catch{}
@@ -420,190 +414,6 @@ function editProfile(){
 }
 
 
-async function removePeriod(id, teacherId){
-  if(!confirm('Are you sure you want to remove this period schedule / teacher from active timetable?'))return;
-  try {
-    const {error} = await a().db.from('noor_teacher_periods').delete().eq('school_id',a().schoolId).eq('id',id);
-    if(window.NOOR_ALNOOR_HUB){
-      const t = window.NOOR_ALNOOR_HUB.getTeachers().find(x=>x.id===teacherId || x.id===id);
-      if(t) window.NOOR_ALNOOR_HUB.removeTeacher(t.id);
-    }
-    a().toast?.('Timetable period removed successfully.','success');
-    await refresh();
-  } catch(e){
-    a().toast?.('Could not remove period: '+e.message,'error');
-  }
-}
-
-async function openAddTeacherModal(){
-  const {data:cs}=await a().db.from('classes').select('id,name').eq('school_id',a().schoolId).eq('is_active',true).order('sort_order');
-  form('Add New Teacher to Staff & Schedule',[
-    ['full_name','Teacher Full Name (e.g. Ms. Aafra Fathima)',''],
-    ['email','Email Address',''],
-    ['mobile_number','Phone / Mobile Number',''],
-    ['subject_name','Subject (e.g. Mathematics, Science)','Mathematics'],
-    ['class_name','Assigned Class & Section (e.g. Class 8 - Section B)','Class 8 - Section B'],
-    ['start_time','Period Start Time','09:00','time'],
-    ['end_time','Period End Time','10:00','time'],
-    ['employee_code','Employee Code (e.g. TCH-ALN-023)',''],
-    ['qualification','Qualification (e.g. M.Sc., B.Ed.)','M.Sc., B.Ed.']
-  ], async v => {
-    const name = v.full_name?.trim();
-    if(!name) throw Error('Teacher full name is required.');
-    const email = v.email?.trim() || (name.toLowerCase().replace(/\s+/g,'.')+'@alnoor.demo');
-    const phone = v.mobile_number?.trim() || '+91 98765 00000';
-    const sub = v.subject_name?.trim() || 'General';
-    const clsLabel = v.class_name?.trim() || 'Class 8 - Section B';
-    const sTime = v.start_time || '09:00';
-    const eTime = v.end_time || '10:00';
-    const code = v.employee_code?.trim() || ('TCH-ALN-' + Math.floor(100+Math.random()*900));
-    const qual = v.qualification?.trim() || 'B.Ed. Faculty';
-
-    if(window.NOOR_ALNOOR_HUB) {
-      window.NOOR_ALNOOR_HUB.addTeacher({
-        name, email, phone, code, qual, subject: sub, classLabel: clsLabel, startTime: sTime, endTime: eTime
-      });
-    }
-
-    try {
-      const rpc = await a().db.rpc('noor_add_teacher', {
-        p_name: name, p_email: email, p_phone: phone, p_code: code, p_qual: qual, p_subject: sub, p_class_label: clsLabel, p_start_time: sTime, p_end_time: eTime
-      });
-      if(rpc.error){
-        const {data:prof} = await a().db.from('profiles').insert({
-          school_id: a().schoolId, full_name: name, email: email, mobile_number: phone, role: 'teacher', status: 'active'
-        }).select('id').single();
-        if(prof) {
-          await a().db.from('noor_teacher_periods').insert({
-            school_id: a().schoolId, teacher_id: prof.id, subject_name: sub, class_label: clsLabel, start_time: sTime, end_time: eTime, period_number: 1, weekday: new Date().getDay(), approval_status: 'approved', status: 'upcoming'
-          });
-        }
-      }
-    } catch(dbErr){
-      console.warn('Teacher insert error:', dbErr);
-    }
-    a().toast?.('Teacher '+name+' added to school staff and timetable.','success');
-  });
-}
-
-async function showTeacherDirectoryModal(){
-  const r=root(),dlg=r.querySelector('#pd-detail-dialog');
-  r.querySelector('#pd-detail-title').textContent='School Teachers Directory (22 Teachers)';
-  const body=r.querySelector('#pd-detail-body');
-  
-  let list = window.NOOR_ALNOOR_HUB?.getTeachers?.() || [];
-  if(!list.length && snapshot?.teachers) {
-    list = snapshot.teachers.map(t=>({
-      id: t.id, name: t.full_name, email: t.email, phone: t.mobile_number, code: 'TCH-'+t.id.slice(0,6), subject: 'Assigned Faculty', classLabel: 'Classes 1-10', status: 'Active'
-    }));
-  }
-
-  function renderTable(items){
-    return '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
-      '<input id="pd-teacher-filter-input" placeholder="Search teacher by name, subject, or code…" style="padding:9px 12px;border:1px solid #ebdbe2;border-radius:10px;font-size:12px;flex:1">' +
-      '<button class="pd-btn pd-btn-primary" id="pd-modal-add-teacher" style="padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;background:#6f2a45;color:#fff;border:none;cursor:pointer">+ Add Teacher</button>' +
-    '</div>' +
-    '<div style="max-height:450px;overflow-y:auto;border:1px solid #ebdbe2;border-radius:12px">' +
-      '<table class="pd-table" style="width:100%;border-collapse:collapse;font-size:12px">' +
-        '<thead style="position:sticky;top:0;background:#fcf4f7;border-bottom:2px solid #ebdbe2">' +
-          '<tr>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">#</th>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">Teacher Name</th>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">Code</th>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">Subject</th>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">Class & Section</th>' +
-            '<th style="padding:10px;text-align:left;color:#6b2649">Period</th>' +
-            '<th style="padding:10px;text-align:center;color:#6b2649">Status</th>' +
-            '<th style="padding:10px;text-align:center;color:#6b2649">Actions</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tbody>' +
-          items.map((t,idx)=>'<tr style="border-bottom:1px solid #f6edf1">' +
-            '<td style="padding:10px;color:#856b78;font-weight:700">'+(idx+1)+'</td>' +
-            '<td style="padding:10px"><b style="color:#3b1e2e">'+e(t.name)+'</b><br><small style="color:#856b78">'+e(t.email||'')+'</small></td>' +
-            '<td style="padding:10px;color:#6f334e;font-weight:700">'+e(t.code||'—')+'</td>' +
-            '<td style="padding:10px;color:#3b1e2e">'+e(t.subject||'—')+'</td>' +
-            '<td style="padding:10px;color:#54253c">'+e(t.classLabel||'—')+'</td>' +
-            '<td style="padding:10px;color:#784e64">'+e(t.startTime||'—')+' - '+e(t.endTime||'—')+'</td>' +
-            '<td style="padding:10px;text-align:center"><span class="pd-tag '+(t.checkInStatus==='present'?'done':'soft')+'">'+e(t.status||'Active')+'</span></td>' +
-            '<td style="padding:10px;text-align:center">' +
-              '<button type="button" class="pd-link" data-directory-edit="'+e(t.id)+'" style="color:#6f334e;font-weight:700;margin-right:8px;cursor:pointer">Edit ✎</button>' +
-              '<button type="button" class="pd-link" data-directory-remove="'+e(t.id)+'" style="color:#b91c1c;font-weight:700;cursor:pointer">Remove ✕</button>' +
-            '</td>' +
-          '</tr>').join('') +
-        '</tbody>' +
-      '</table>' +
-    '</div>';
-  }
-
-  body.innerHTML = renderTable(list);
-  dlg.showModal();
-
-  function wireActions(){
-    const addBtn = body.querySelector('#pd-modal-add-teacher');
-    if(addBtn) addBtn.onclick=()=>{ dlg.close(); openAddTeacherModal(); };
-    body.querySelectorAll('[data-directory-edit]').forEach(btn=>{
-      btn.onclick=()=>{
-        dlg.close();
-        const tid = btn.dataset.directoryEdit;
-        const target = list.find(x=>x.id===tid);
-        if(target) {
-          form('Edit Teacher Profile',[
-            ['name','Full Name',target.name],
-            ['subject','Subject',target.subject],
-            ['classLabel','Class & Section',target.classLabel],
-            ['startTime','Start Time',target.startTime,'time'],
-            ['endTime','End Time',target.endTime,'time'],
-            ['phone','Phone Number',target.phone],
-            ['qual','Qualification',target.qual]
-          ], async v=>{
-            if(window.NOOR_ALNOOR_HUB) window.NOOR_ALNOOR_HUB.updateTeacher(tid, v);
-            a().toast?.('Teacher updated successfully.','success');
-            await refresh();
-          });
-        }
-      };
-    });
-    body.querySelectorAll('[data-directory-remove]').forEach(btn=>{
-      btn.onclick=async()=>{
-        const tid = btn.dataset.directoryRemove;
-        const target = list.find(x=>x.id===tid);
-        if(confirm('Are you sure you want to remove '+(target?.name||'this teacher')+' from the school roster?')) {
-          if(window.NOOR_ALNOOR_HUB) window.NOOR_ALNOOR_HUB.removeTeacher(tid);
-          a().toast?.('Teacher removed from school roster.','success');
-          dlg.close();
-          await refresh();
-        }
-      };
-    });
-  }
-  wireActions();
-
-  const filterInp = body.querySelector('#pd-teacher-filter-input');
-  if(filterInp){
-    filterInp.oninput=()=>{
-      const q = filterInp.value.toLowerCase().trim();
-      const filtered = list.filter(t=>[t.name, t.email, t.code, t.subject, t.classLabel].some(v=>String(v||'').toLowerCase().includes(q)));
-      body.innerHTML = renderTable(filtered);
-      wireActions();
-      const newInp = body.querySelector('#pd-teacher-filter-input');
-      if(newInp){
-        newInp.value = q;
-        newInp.focus();
-        newInp.selectionStart = newInp.selectionEnd = q.length;
-      }
-    };
-  }
-}
-
-function editPeriod(id){
-  const p=snapshot?.periods.find(x=>x.id===id);if(!p)return;
-  form('Edit approved period',[['subject_name','Subject',p.subject_name],['start_time','Start time',p.start_time?.slice(0,5),'time'],['end_time','End time',p.end_time?.slice(0,5),'time']],async v=>{
-    if(v.start_time>=v.end_time)throw Error('End time must be after start time.');
-    const {error}=await a().db.from('noor_teacher_periods').update(v).eq('school_id',a().schoolId).eq('id',id).select('id').single();
-    if(error)throw error;
-  });
-}
 
 async function showTimetable(){
   const r=root(),dlg=r.querySelector('#pd-dialog');
@@ -859,7 +669,7 @@ async function refresh(){
     q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
 
     // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
-    q('#pd-periods').innerHTML=res.periods.error||res.runs.error||res.teachers.error?empty('Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
+    q('#pd-periods').innerHTML=res.periods.error||res.runs.error||res.teachers.error?empty('Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
       const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled';
       return `<tr>
         <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(teacherMap.get(p.teacher_id)||'Inactive teacher')}</button></td>
@@ -868,7 +678,6 @@ async function refresh(){
         <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
         <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
         <td><span class="pd-tag ${done?'done':status==='Teaching'?'now':''}">● ${status}</span></td>
-        <td><button class="pd-link" data-edit-period="${e(p.id)}" aria-label="Edit ${e(p.subject_name)} period" style="color:#6f334e;font-weight:700;margin-right:8px">Edit ✎</button><button class="pd-link" data-remove-period="${e(p.id)}" data-teacher-id="${e(p.teacher_id)}" aria-label="Remove ${e(p.subject_name)} period" style="color:#b91c1c;font-weight:700">Remove ✕</button></td>
       </tr>`;
     }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No approved class periods for today.');
 

@@ -121,8 +121,8 @@ function setup(){
   const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('staff-management');
   r.querySelector('#pd-timetable').onclick=showTimetable;
   r.querySelector('#pd-mode').onclick=()=>{
-    const h=r.querySelector('#noor-principal');h.classList.toggle('pd-dark');
-    try{localStorage.setItem('noor.principal.theme.'+key,h.classList.contains('pd-dark')?'dark':'light')}catch{}
+    const dark=document.documentElement.dataset.noorMode==='dark';
+    window.NOOR_THEME_SETTINGS?.setMode(dark?'light':'dark');
   };
   r.querySelector('#pd-close').onclick=()=>r.querySelector('#pd-dialog').close();
   r.querySelector('#pd-detail-close').onclick=()=>r.querySelector('#pd-detail-dialog').close();
@@ -141,7 +141,7 @@ function setup(){
     }
   };
 
-  try{if(localStorage.getItem('noor.principal.theme.'+key)==='dark')r.querySelector('#noor-principal').classList.add('pd-dark')}catch{}
+  r.querySelector('#pd-mode').setAttribute('aria-label','Switch light or dark mode for all pages');
   paintInsight();
 }
 

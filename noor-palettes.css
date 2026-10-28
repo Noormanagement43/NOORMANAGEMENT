@@ -94,3 +94,43 @@ html[data-noor-theme] .noor-theme-panel,.noor-theme-card{background:var(--paper)
 html[data-noor-theme] #authApp :is(input,select,textarea){accent-color:var(--berry)}
 @media(max-width:900px){html[data-noor-theme] #noor-principal .pd-chart-pair{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html[data-noor-theme] *{scroll-behavior:auto}}
+
+/* One colour mode for authentication, every role, dialogs and settings. */
+html[data-noor-theme]{--noor-paper:var(--paper);--noor-ink:var(--ink);--noor-line:var(--line);--noor-muted:var(--muted)}
+html[data-noor-theme] #noor-principal{--paper:var(--noor-paper);--ink:var(--noor-ink);--line:var(--noor-line);--muted:var(--noor-muted)}
+html[data-noor-theme] :is(.auth-card,.modal,.nt4-dialog,.nt-profile-modal,.cc-modal,dialog){background:var(--paper)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-noor-theme] :is(input,textarea,select){background:var(--paper);color:var(--ink);border-color:var(--line)}
+html[data-noor-theme] :is(.noor-vision,.noor-vision-item,.detail,.nt-detail,.pd-quote){background:var(--paper)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-noor-mode="dark"]{
+ color-scheme:dark;--canvas:#111923!important;--paper:#1c2836!important;--ink:#edf3fa!important;--muted:#b7c6d8!important;
+ --line:#41556c!important;--rose-soft:#28384d!important;--rose-line:#4d637c!important;
+ --berry:#32577e!important;--berry2:#182b42!important;--rose:#a8c8ee!important;--gold:#edd3a0!important;
+ --green:#9be2c3!important;--green-soft:#183e36!important;--red:#ffb9c6!important;--red-soft:#492736!important;
+ --ui-main:#111923!important;--ui-canvas:#111923!important;--ui-sidebar:#1e344e!important;--ui-sidebar2:#132437!important;--ui-active:#40648c!important;
+ --ui-kpi1:#8ebdf1;--ui-kpi2:#80d6ce;--ui-kpi3:#f2b3c0;--ui-kpi4:#c7b8f0;--ui-kpi5:#efd0a3;
+}
+html[data-noor-mode="light"]{color-scheme:light}
+html[data-noor-mode="dark"] #workspace :is(.panel,.stat,.nt-card,.nt4-dialog,.nt-profile-modal,.nt-profile,.nt-quote,.nt-ref-overview-ring,.sp-card,.sp-panel,.sp-ref-hero,.sp-ref-subject-bars,.sp-ref-att-ring,.sp-ref-period,.pd-card,.pd-profile,.pd-kpi,.pd-insight,.pd-quote,.pd-chart-pair>div,.detail,.class-item,.cc-widget,.acad-panel,.empty),
+html[data-noor-mode="dark"] :is(.auth-card,.hero-card,.modal,dialog,.nt4-dialog,.nt-profile-modal,.noor-theme-panel,.noor-theme-card,.noor-vision,.noor-vision-item){background:var(--paper)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-noor-mode="dark"] #workspace :is(button,.btn),
+html[data-noor-mode="dark"] #authApp :is(button,.btn),
+html[data-noor-mode="dark"] :is(.nt4-dialog,.nt-profile-modal,dialog) button{
+ background:#2b4058!important;color:#f4f8ff!important;border-color:#7d96b2!important;
+}
+html[data-noor-mode="dark"] #workspace :is(button.primary,.btn:not(.light):not(.danger),.pd-primary,.nt-save,button[type="submit"]),
+html[data-noor-mode="dark"] #authApp button[type="submit"],
+html[data-noor-mode="dark"] :is(.nt4-dialog,.nt-profile-modal,dialog) button[type="submit"]{background:#a7c8ef!important;color:#142337!important;border-color:#a7c8ef!important}
+html[data-noor-mode="dark"] :is(button,.btn):disabled{opacity:.6!important;cursor:not-allowed}
+html[data-noor-mode="dark"] :is(button,.btn):focus-visible{outline:3px solid #f3d294!important;outline-offset:3px}
+html[data-noor-mode="dark"] :is(input,select,textarea){background:#142132!important;color:#f4f8ff!important;border-color:#8199b4!important}
+html[data-noor-mode="dark"] :is(input,textarea)::placeholder{color:#b3c3d7!important;opacity:1}
+html[data-noor-mode="dark"] #workspace :is(h1,h2,h3,h4,p,small,label,.nt-muted,.pd-empty,.pd-tag,.sp-label,.noor-theme-name,.noor-theme-desc,.small-note),
+html[data-noor-mode="dark"] #authApp :is(h1,h2,h3,p,label,.small-note),
+html[data-noor-mode="dark"] :is(.nt4-dialog,.nt-profile-modal,dialog) :is(h2,p,label){color:var(--ink)!important}
+html[data-noor-mode="dark"] #workspace :is(table,th,td,.nt-detail,.nt-activity-row,.pd-day,.pd-task,.nt-weekly,.nt-advanced-details,.nt-advanced-details summary){background:var(--paper)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-noor-mode="dark"] #workspace .sidebar :is(button,small,b),html[data-noor-mode="dark"] #workspace .topbar :is(button,small,b){color:#f4f8ff!important}
+html[data-noor-mode="dark"] #noor-principal{--p-bg:var(--canvas);--p-card:var(--paper);--p-ink:var(--ink);--p-muted:var(--muted);--p-line:var(--line);--p-berry:#a7c8ef}
+html[data-noor-mode="dark"] .noor-theme-card[aria-pressed="true"]{border-color:#a7c8ef!important;box-shadow:0 0 0 2px #a7c8ef!important}
+html[data-noor-mode="dark"] :is(.noor-theme-head h2,.noor-theme-selected,.noor-theme-status,.nt4-feedback){color:#d7e7ff!important}
+html[data-noor-theme="rose-whisper"][data-noor-mode="light"]{--berry:#805772;--ui-sidebar:#805772}
+html[data-noor-theme][data-noor-mode="light"] #noor-principal :is(.pd-profile h2,.pd-head h1){color:var(--ink)}

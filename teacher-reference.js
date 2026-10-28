@@ -91,7 +91,7 @@ async function render(){
  const school=app.schoolId,uid=app.user.id,db=app.db,weekday=new Date().getDay();
  const [extra,periods,runs,checkin,assignees,personal,notices,calendar,assignment,membership]=await Promise.all([
  db.from('noor_teacher_profile_details').select('*').eq('school_id',school).eq('teacher_id',uid).maybeSingle(),
- db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(100),
+ db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(200),
  db.from('noor_teacher_period_runs').select('id,period_id,status,started_at,finished_at').eq('school_id',school).eq('teacher_id',uid).eq('class_date',today()),
  db.from('noor_staff_attendance').select('id,status,checked_in_at').eq('school_id',school).eq('teacher_id',uid).eq('attendance_date',today()).maybeSingle(),
  db.from('task_assignees').select('task_id,status').eq('school_id',school).eq('assignee_id',uid).limit(40),
@@ -281,8 +281,10 @@ async function uploadPhoto(e){
 }
 
 async function showPeriodEditor(p){
- const app=get(),db=app.db;
+ const app=get(),db=app.db,accountId=app.user?.id,schoolId=app.schoolId;
  try{
+  if(!isTeacher())throw Error('Sign in as an active teacher to edit your timetable.');
+  if(p && !current?.periods?.some(row=>row.id===p.id))throw Error('This period is no longer available. Refresh your timetable.');
   // Teachers can plan their own periods using REAL school classes and sections.
   // Never fabricate a Class 1–10 list: the principal's school structure is authoritative.
   const cs=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).order('sort_order').limit(200);
@@ -299,14 +301,12 @@ async function showPeriodEditor(p){
       options.push({class_id:c.id,section_id:sec?.id||null,subject_name:'',class_label:c.name+(sec?' · Section '+sec.name:'')});
     }
   }
-  if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
-    return notify('This period’s class or section is no longer active in your school. Choose an existing class.','error');
-  }
-  const daysHTML=days.map((d,i)=>'<option value="'+i+'" '+((p?.weekday??new Date().getDay())===i?'selected':'')+'>'+d+'</option>').join('');
+  const needsClass=p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null));
+  const daysHTML=days.map((d,i)=>'<option value="'+i+'" '+(Number(p?.weekday??new Date().getDay())===i?'selected':'')+'>'+d+'</option>').join('');
   const kinds=['class','break','lunch'].map(x=>'<option value="'+x+'" '+((p?.block_type||'class')===x?'selected':'')+'>'+x+'</option>').join('');
   let selected=options.findIndex(x=>x.class_id===p?.class_id&&x.section_id===(p?.section_id||null));
   if(selected<0)selected=0;
-  const choices=options.map((x,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(x.class_label)+(x.subject_name?' - '+esc(x.subject_name):'')+'</option>').join('');
+  const choices=(needsClass?'<option value="" selected disabled>Choose an active class and section</option>':'')+options.map((x,i)=>'<option value="'+i+'" '+(!needsClass&&i===selected?'selected':'')+'>'+esc(x.class_label)+(x.subject_name?' - '+esc(x.subject_name):'')+'</option>').join('');
   const body='<label>Day of week<select name="weekday">'+daysHTML+'</select></label>'+
     field('Period number','period_number',p?.period_number||1,'number','min="1" max="15" required')+
     field('Start time','start_time',fmt(p?.start_time||'09:00'),'time','required')+
@@ -316,8 +316,12 @@ async function showPeriodEditor(p){
     '<label class="nt4-subject-label">Subject<div class="nt4-subject-entry"><span class="nt4-subject-badge" id="ntSubjectIcon" role="img" aria-label="Subject icon">📖</span><input name="subject_name" type="text" required maxlength="80" value="'+esc(p?.subject_name||options[selected]?.subject_name||'')+'" autocomplete="off" spellcheck="true" placeholder="Subject name"></div></label>'+
     '<p class="nt4-span nt-muted">You can edit your own timetable. It uses existing school classes and sections. Student attendance remains subject to school access permissions.</p>';
   const modalNode=modal(p?'Edit my period':'Add my period',body,async form=>{
-    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))];
+    const val=k=>String(form.elements[k]?.value||'').trim(),context=val('context_index')===''?null:options[Number(val('context_index'))];
+    if(get().user?.id!==accountId||get().schoolId!==schoolId)throw Error('Your account changed. Reopen the timetable.');
+    await window.NOOR_AVATAR_SAFE.ownUser(db,accountId);
     if(!context?.class_id)throw Error('Choose an existing class and section.');
+    const periodNumber=Number(val('period_number'));
+    if(!Number.isInteger(periodNumber)||periodNumber<1||periodNumber>15)throw Error('Period number must be a whole number from 1 to 15.');
     if(!val('subject_name'))throw Error('Subject is required.');
     if(val('start_time')>=val('end_time'))throw Error('End time must be later than start time.');
     const values={
@@ -334,7 +338,8 @@ async function showPeriodEditor(p){
     };
     const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id).select('id,approval_status'):
       await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'}).select('id,approval_status');
-    if(result.error)throw new Error('Supabase denied your timetable save: '+result.error.message);
+    if(result.error)throw new Error('Period not saved: '+result.error.message);
+    if(get().user?.id!==accountId||get().schoolId!==schoolId)throw Error('Your account changed. Reopen the timetable to see its saved state.');
     if(!result.data?.length)throw new Error('No period was saved: your school database may still need the teacher self-timetable policy.');
     notify(p?'Your own period was updated.':'Your period was added to the school timetable.','success');
   });

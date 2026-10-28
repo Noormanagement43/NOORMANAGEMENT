@@ -60,11 +60,11 @@ try {
     return result;
   });
 
-  if (diagnostics.themeCount !== 8) throw new Error(`Expected 8 theme options, got ${diagnostics.themeCount}`);
+  if (diagnostics.themeCount !== 4) throw new Error(`Expected 4 theme options, got ${diagnostics.themeCount}`);
   const broken = diagnostics.outcomes.filter(x => x.rootTheme !== x.theme || !x.primary || !x.selected);
   if (broken.length) throw new Error(`Theme apply/selection failed: ${JSON.stringify(broken)}`);
   const uniquePrimaries = new Set(diagnostics.outcomes.map(x => x.primary));
-  if (uniquePrimaries.size !== 8) throw new Error("Themes do not resolve to eight distinct primary palettes.");
+  if (uniquePrimaries.size !== 4) throw new Error("Themes do not resolve to four distinct primary palettes.");
   if (!diagnostics.largeFontApplied || !diagnostics.reducedMotionApplied) {
     throw new Error("Font-size or reduced-motion settings did not apply.");
   }

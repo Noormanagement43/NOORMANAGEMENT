@@ -186,7 +186,7 @@ async function render(){
  const toolkit=document.createElement('section');toolkit.className='nt-toolkit-bottom';toolkit.setAttribute('aria-label','Teaching diary and reports');
  toolkit.innerHTML='<div class="nt-toolkit-head"><div><span class="nt-kicker">MORE WAYS TO TEACH</span><h2>Diary, Reports & Planning</h2><p>Optional tools stay at the end of your dashboard so daily work stays clear.</p></div></div>'+
  '<div class="nt-toolkit-grid">'+
- '<button type="button" data-link="daily-report" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📔</span><b>Teaching Diary</b><small>Record lessons & learning</small><span class="nt-toolkit-arrow">↗</span></button>'+
+ '<button type="button" data-action="open-teaching-diary" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📔</span><b>Teaching Diary</b><small>Record lessons & learning</small><span class="nt-toolkit-arrow">↗</span></button>'+
  '<button type="button" data-link="daily-report" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📊</span><b>Daily School Report</b><small>Share your teaching summary</small><span class="nt-toolkit-arrow">↗</span></button>'+
  '<button type="button" data-link="weekly-plan" class="nt-toolkit-card"><span class="nt-toolkit-glyph">🗓️</span><b>Weekly Planner</b><small>Prepare the week ahead</small><span class="nt-toolkit-arrow">↗</span></button>'+
  '<button type="button" data-action="open-learning-gaps" class="nt-toolkit-card"><span class="nt-toolkit-glyph">📈</span><b>Learning Insights</b><small>Review needs and progress</small><span class="nt-toolkit-arrow">↗</span></button>'+
@@ -206,6 +206,7 @@ async function render(){
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
  if(b.dataset.action==='create-assignment'){openPaper();setTimeout(()=>{const form=document.getElementById('ppForm');if(!form)return;const t=document.getElementById('ppType');if(t)t.value='assignment';document.getElementById('ppQuestions')?.focus();},0);return;} if(b.dataset.action==='take-attendance'){openView('attendance');return;} if(b.dataset.action==='upload-resource'){openView('teaching');return;} if(b.dataset.link){if(b.dataset.link==='paper-generator')openPaper();else if(b.dataset.link==='edit-timetable')showPeriodEditor(null);else if(b.dataset.link==='calendar'||b.dataset.link==='school-calendar')openCalendar();else openView(b.dataset.link);return;}
+ if(b.dataset.action==='open-teaching-diary'){const advanced=$('.nt-advanced-details');if(advanced)advanced.open=true;const first=$('#ntiPeriods [data-nti-log]');if(first)first.click();else openView('daily-report');return;}
  if(b.dataset.action==='open-learning-gaps'){const advanced=$('.nt-advanced-details');if(advanced){advanced.open=true;requestAnimationFrame(()=>{($('#ntiGaps')||advanced).scrollIntoView({behavior:'smooth',block:'start'})});}return;}
  if(b.id==='ntEditProfile'){showProfileEditor();return;}
  if(b.id==='ntChangePhoto'){$('#ntHiddenPhoto')?.click();return}
@@ -300,17 +301,13 @@ async function showPeriodEditor(p){
   const allClasses=cs.data||[];
   if(!allClasses.length)return notify('No school classes exist yet. Create a real class first in School Management.','error');
   const ids=allClasses.map(c=>c.id);
-  const [ss,subs]=await Promise.all([
-    db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true),
-    db.from('subjects').select('id,class_id,name').eq('school_id',app.schoolId).eq('is_active',true)
-  ]);
-  if(ss.error||subs.error)throw ss.error||subs.error;
-  const sections=ss.data||[],subj=subs.data||[],options=[];
+  const ss=await db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true);
+  if(ss.error)throw ss.error;
+  const sections=ss.data||[],options=[];
   for(const c of allClasses){
     const selected=sections.filter(x=>x.class_id===c.id);
-    const ownedSubject=subj.find(x=>x.class_id===c.id);
     for(const sec of selected.length?selected:[null]){
-      options.push({class_id:c.id,section_id:sec?.id||null,subject_id:ownedSubject?.id||null,subject_name:ownedSubject?.name||'',class_label:c.name+(sec?' · Section '+sec.name:'')});
+      options.push({class_id:c.id,section_id:sec?.id||null,subject_name:'',class_label:c.name+(sec?' · Section '+sec.name:'')});
     }
   }
   if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
@@ -346,11 +343,11 @@ async function showPeriodEditor(p){
       subject_name:val('subject_name')||context.subject_name||'General',
       approval_status:'approved'
     };
-    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id):
-      await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'});
-    if(result.error)throw new Error(result.error.message+' (Teacher timetable permissions may need a school-policy update.)');
-    notify(p?'Timetable period updated successfully.':'New period added to your timetable.','success');
-    try{await render();}catch{}
+    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id).select('id,approval_status'):
+      await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'}).select('id,approval_status');
+    if(result.error)throw new Error('Supabase denied your timetable save: '+result.error.message);
+    if(!result.data?.length)throw new Error('No period was saved: your school database may still need the teacher self-timetable policy.');
+    notify(p?'Your own period was updated.':'Your period was added to the school timetable.','success');
   });
   const subjectInput=modalNode.querySelector('[name="subject_name"]'),icon=modalNode.querySelector('#ntSubjectIcon');
   const updateIcon=()=>{const visual=subjectVisual(subjectInput.value);icon.textContent=visual.icon;icon.className='nt4-subject-badge subject-'+visual.tone;icon.setAttribute('aria-label',visual.title);};

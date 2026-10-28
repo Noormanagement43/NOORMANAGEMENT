@@ -1,0 +1,244 @@
+/* NOOR portraits restored: the actual photo fills the full leading side
+   of each profile card. No change to the existing themes, role dashboards,
+   upload logic, identity security, or student timetable. */
+#view-profile .noor-profile-main{
+ display:grid!important;
+ grid-template-columns:minmax(215px,31%) minmax(0,1fr)!important;
+ gap:clamp(17px,2.4vw,32px)!important;
+ align-items:stretch!important;
+ padding:clamp(12px,1.8vw,20px)!important;
+ overflow:hidden;
+}
+#view-profile .noor-profile-photo-col{
+ display:flex!important;
+ width:100%!important;
+ height:100%!important;
+ min-height:390px!important;
+ align-self:stretch!important;
+ position:relative;
+}
+#view-profile .noor-profile-main .noor-profile-photo-col .noor-profile-avatar.avatar{
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ width:100%!important;
+ height:100%!important;
+ min-height:390px!important;
+ max-height:none!important;
+ margin:0!important;
+ aspect-ratio:auto!important;
+ border-radius:20px!important;
+ border:3px solid var(--paper)!important;
+ background:linear-gradient(145deg,var(--rose-soft),var(--paper))!important;
+ box-shadow:0 15px 34px #431a3220!important;
+ overflow:hidden!important;
+ font-size:clamp(28px,5vw,64px)!important;
+}
+#view-profile .noor-profile-main .noor-profile-avatar img{
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ object-fit:cover!important;
+ object-position:center top!important;
+ border-radius:16px!important;
+}
+#view-profile .noor-profile-main-content{
+ min-width:0;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ gap:clamp(13px,2vw,24px);
+ padding:clamp(2px,1vw,14px) 0;
+}
+#view-profile .noor-profile-main .noor-profile-identity{
+ min-width:0;
+ padding-bottom:clamp(12px,1.4vw,20px);
+ border-bottom:1px solid var(--line);
+}
+#view-profile .noor-profile-main .noor-profile-identity h3{
+ font-size:clamp(19px,2vw,25px)!important;
+ line-height:1.18;
+ color:var(--ink);
+ overflow-wrap:anywhere;
+}
+#view-profile .noor-profile-main .noor-profile-actions{
+ display:flex;
+ align-items:center;
+ flex-wrap:wrap;
+ gap:9px;
+ margin:12px 0 6px;
+}
+#view-profile .noor-profile-main .noor-profile-actions input{
+ max-width:min(100%,300px);
+ min-width:0;
+ font-size:12px;
+}
+#view-profile .noor-profile-main .detailgrid{min-width:0;gap:10px}
+#view-profile .noor-profile-main .detail{overflow-wrap:anywhere}
+#view-profile .noor-profile-main .detail b{overflow-wrap:anywhere}
+
+/* Large edge-to-edge Teacher photo: one continuous portrait rather
+   than the small square/round icon imposed by older media queries. */
+#workspace.noor-teacher-activated .noor-t4 .nt-profile,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile{
+ grid-template-columns:minmax(205px,30%) minmax(0,1.35fr) minmax(190px,.72fr)!important;
+ gap:clamp(14px,1.8vw,25px)!important;
+ align-items:stretch!important;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column{
+ display:block!important;
+ height:100%!important;
+ min-height:320px!important;
+ width:100%!important;
+ max-width:none!important;
+ margin:0!important;
+ align-self:stretch!important;
+ position:relative!important;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column .nt-photo,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column .nt-photo{
+ width:100%!important;
+ max-width:none!important;
+ min-width:0!important;
+ height:100%!important;
+ min-height:320px!important;
+ max-height:none!important;
+ aspect-ratio:auto!important;
+ border-radius:20px!important;
+ border:3px solid var(--paper)!important;
+ overflow:hidden!important;
+ box-shadow:0 15px 32px #431a321a!important;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo img,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo img{
+ width:100%!important;height:100%!important;
+ object-fit:cover!important;object-position:center top!important;
+ display:block!important;border-radius:16px!important;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-camera,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-camera{
+ position:absolute!important;
+ right:11px!important;bottom:11px!important;
+ width:43px!important;height:43px!important;
+ background:var(--berry)!important;
+ border:2px solid var(--paper)!important;
+ color:#fff!important;border-radius:13px!important;
+ z-index:1;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile > :nth-child(2),
+#workspace.noor-teacher-handset .noor-t4 .nt-profile > :nth-child(2){
+ min-width:0;
+ align-self:center;
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote,
+#workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-quote{align-self:stretch}
+
+/* Principal portrait fills left column of profile card, never a 140x185
+   thumbnail. The photograph is not a shared app-level avatar. */
+#noor-principal .pd-profile .pd-photo{
+ display:flex!important;
+ justify-content:center!important;
+ align-items:center!important;
+ width:clamp(195px,36%,320px)!important;
+ min-width:195px!important;
+ height:auto!important;
+ min-height:305px!important;
+ max-height:none!important;
+ aspect-ratio:auto!important;
+ align-self:stretch!important;
+ border-radius:17px!important;
+ border:3px solid var(--paper)!important;
+ overflow:hidden!important;
+ padding:0!important;
+ background:var(--rose-soft)!important;
+}
+#noor-principal .pd-profile .pd-photo img{
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ min-height:305px!important;
+ max-height:none!important;
+ object-fit:cover!important;
+ object-position:center top!important;
+ border-radius:13px!important;
+}
+#noor-principal .pd-profile .pd-profile-info{
+ flex:1;min-width:0;align-self:center;
+}
+@media(max-width:1180px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile{
+  grid-template-columns:minmax(195px,32%) minmax(0,1fr)!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-quote{
+  grid-column:1/-1!important;
+ }
+}
+@media(max-width:700px){
+ #view-profile .noor-profile-main{
+  grid-template-columns:minmax(118px,38%) minmax(0,1fr)!important;
+  gap:12px!important;
+  padding:11px!important;
+ }
+ #view-profile .noor-profile-photo-col{
+  min-height:310px!important;
+  align-self:stretch!important;
+ }
+ #view-profile .noor-profile-main .noor-profile-photo-col .noor-profile-avatar.avatar{
+  min-height:310px!important;
+  border-radius:14px!important;
+  border-width:2px!important;
+ }
+ #view-profile .noor-profile-main .noor-profile-avatar img{border-radius:12px!important}
+ #view-profile .noor-profile-main-content{gap:10px;justify-content:start}
+ #view-profile .noor-profile-main .noor-profile-identity h3{font-size:18px!important}
+ #view-profile .noor-profile-main .detailgrid{grid-template-columns:1fr}
+ #view-profile .noor-profile-main .detail{padding:8px!important}
+ #view-profile .noor-profile-main .noor-profile-actions input{width:100%}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile{
+  grid-template-columns:minmax(122px,39%) minmax(0,1fr)!important;
+  padding:12px!important;
+  gap:11px!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column,
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column .nt-photo,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column .nt-photo{
+  min-height:250px!important;
+  max-width:none!important;
+  height:100%!important;
+  margin:0!important;
+  border-radius:15px!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-quote{
+  grid-column:1/-1!important;
+ }
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-profile-grid,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-profile-grid{
+  grid-template-columns:1fr!important;
+  gap:8px!important;
+ }
+ #noor-principal .pd-profile .pd-photo{
+  width:39%!important;
+  min-width:120px!important;
+  min-height:265px!important;
+  border-radius:15px!important;
+ }
+ #noor-principal .pd-profile .pd-photo img{
+  min-height:265px!important;
+  border-radius:12px!important;
+ }
+ #noor-principal .pd-profile .pd-profile-info{align-self:flex-start}
+}
+@media(max-width:390px){
+ #view-profile .noor-profile-main{grid-template-columns:minmax(105px,36%) minmax(0,1fr)!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile,
+ #workspace.noor-teacher-handset .noor-t4 .nt-profile{
+  grid-template-columns:minmax(110px,37%) minmax(0,1fr)!important;
+ }
+ #noor-principal .pd-profile .pd-photo{min-width:110px!important}
+}

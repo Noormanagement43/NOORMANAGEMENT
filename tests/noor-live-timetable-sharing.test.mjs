@@ -4,12 +4,16 @@ import {readFile} from 'node:fs/promises';
 import {Script} from 'node:vm';
 const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 
-test('NOOR login never shows confusing NEW Supabase or duplicate-project labels',async()=>{
- const [login,workspace,home]=await Promise.all([read('noor-v2.html'),read('noor-v2.js'),read('index.html')]);
- assert.doesNotMatch(login,/Connected to NEW NOOR Supabase|NOOR — New School/);
+test('only the original NOOR login remains publicly accessible',async()=>{
+ const [oldLink,workspace,home]=await Promise.all([read('noor-v2.html'),read('noor-v2.js'),read('index.html')]);
+ assert.match(oldLink, /window\.location\.replace\(new URL\('\.\/', window\.location\.href\)\.toString\(\)\)/);
+ assert.match(oldLink,/http-equiv="refresh" content="0;url=\.\//);
+ assert.match(oldLink,/href="\.\/">NOOR School Management/);
+ assert.doesNotMatch(oldLink,/id="v2AuthForm"|noor-v2\.js|Inspire learning/);
+ assert.doesNotMatch(home,/href="\.\/noor-v2\.html"|NOOR School Portal →/);
+ assert.match(home,/noor-official-logo\.svg/);
+ assert.match(home,/id="loginForm"/);
  assert.doesNotMatch(workspace,/NEW SUPABASE · VERIFIED ROLE ACCESS|Sign in to the new NOOR Management Supabase project/);
- assert.doesNotMatch(home,/Using the NEW NOOR Supabase account\?/);
- assert.match(login,/Secure School Workspace/);
  assert.doesNotThrow(()=>new Script(workspace));
 });
 

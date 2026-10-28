@@ -123,9 +123,9 @@ function setup(){
 
   r.querySelector('#pd-refresh').onclick=refresh;
 
-  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=showTeacherDirectoryModal;
+  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('staff-management');
   r.querySelector('#pd-timetable').onclick=()=>window.NOOR_SCHOOL_TIMETABLE?.showPrincipalSchedule?.();
-  const bellBtn=r.querySelector('#pd-add-teacher');if(bellBtn)bellBtn.onclick=()=>window.NOOR_SCHOOL_TIMETABLE?.openSchoolTimes?.();
+  const bellBtn=r.querySelector('#pd-add-teacher');if(bellBtn){bellBtn.hidden=!['owner','principal'].includes(a().profile?.role);bellBtn.onclick=()=>window.NOOR_SCHOOL_TIMETABLE?.openSchoolTimes?.();}
   r.querySelector('#pd-mode').onclick=()=>{
     const h=r.querySelector('#noor-principal');h.classList.toggle('pd-dark');
     try{localStorage.setItem('noor.principal.theme.'+key,h.classList.contains('pd-dark')?'dark':'light')}catch{}

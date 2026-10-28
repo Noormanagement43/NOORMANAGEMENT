@@ -8,6 +8,7 @@
 const app=()=>window.NOOR_AI_APP||{};
 const isTeacher=()=>app().profile?.role==='teacher';
 const isLeader=()=>['owner','principal','manager'].includes(app().profile?.role);
+const canSetBells=()=>['owner','principal'].includes(app().profile?.role);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const two=x=>String(x).padStart(2,'0');
@@ -67,7 +68,7 @@ function dialog(title,body,onSubmit){
 }
 function option(value,label,selected){return '<option value="'+esc(value)+'" '+(String(value)===String(selected)?'selected':'')+'>'+esc(label)+'</option>'}
 async function openSchoolTimes(){
- if(!isLeader())return;
+ if(!canSetBells())return;
  try{
   const bells=await loadBells(),byNum=new Map(bells.map(x=>[Number(x.period_number),x]));
   // No timetable writes until principal explicitly clicks Save.
@@ -223,6 +224,16 @@ async function mountTeacher(){
   }
   const status=host.querySelector('#ntLiveStatus');
   if(status)status.textContent='Teacher controls class allocation; the Principal controls school bell times.';
+  // Replace legacy period status text derived from Principal assignments with
+  // the real teacher-owned timetable and current bell slot.
+  const schoolTime=new Date().toTimeString().slice(0,5);
+  const ongoing=sorted.find(x=>x.weekday===week&&x.bell&&formatTime(x.bell.start_time)<=schoolTime&&formatTime(x.bell.end_time)>schoolTime);
+  const periodStatus=host.querySelector('.nt-status-list .nt-status-box:nth-child(2)');
+  if(periodStatus){
+    const heading=periodStatus.querySelector('b'),details=periodStatus.querySelector('small');
+    if(heading)heading.textContent=ongoing?'Scheduled: '+ongoing.subject_name:'No period scheduled right now';
+    if(details)details.textContent=ongoing?'Period '+ongoing.period_number+' · '+ongoing.class_label:'Your teacher-managed timetable is shown on the left.';
+  }
   if(teacherKey!==app().user.id+':'+school()){
    if(teacherChannel)await db().removeChannel(teacherChannel);
    teacherKey=app().user.id+':'+school();
@@ -261,11 +272,11 @@ async function mountPrincipal(){
  if(!container||!isLeader()||principalLoading)return;
  principalLoading=true;
  try{
-  const d=await principalTable();
   const hdr=container.closest('.pd-schedule')?.querySelector('header');
+  const d=await principalTable();
   if(hdr){
    const add=hdr.querySelector('#pd-add-teacher');
-   if(add){add.textContent='⚙ School Bell Times';add.id='nstoBellSettings';add.onclick=openSchoolTimes;}
+   if(add){add.textContent='⚙ School Bell Times';add.id='nstoBellSettings';add.hidden=!canSetBells();add.onclick=openSchoolTimes;}
    const all=hdr.querySelector('#pd-timetable');
    if(all){all.textContent='View School Timetable →';all.onclick=showPrincipalSchedule;}
   }
@@ -318,5 +329,5 @@ function connectStudentLive(handler){
   .on('postgres_changes',{event:'*',schema:'public',table:'noor_daily_lesson_topics',filter:'school_id=eq.'+school()},handler)
   .subscribe();
 }
-window.NOOR_SCHOOL_TIMETABLE=Object.freeze({mountTeacher,mountPrincipal,openTeacherEditor,openSchoolTimes,studentPeriods,connectStudentLive,setupHint});
+window.NOOR_SCHOOL_TIMETABLE=Object.freeze({mountTeacher,mountPrincipal,openTeacherEditor,openSchoolTimes,showPrincipalSchedule,studentPeriods,connectStudentLive,setupHint});
 })();

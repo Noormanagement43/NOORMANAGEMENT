@@ -15,6 +15,14 @@ const two=x=>String(x).padStart(2,'0');
 const formatTime=t=>String(t||'').slice(0,5);
 const formatDate=d=>{const local=new Date(d+'T12:00:00');return Number.isNaN(local.getTime())?d:local.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})};
 const localDay=()=>{const d=new Date();return [d.getFullYear(),two(d.getMonth()+1),two(d.getDate())].join('-')};
+function nextLessonDate(weekdays){
+ const start=new Date();start.setHours(12,0,0,0);
+ for(let day=0;day<8;day++){
+  const value=new Date(start);value.setDate(start.getDate()+day);
+  if(weekdays.includes(value.getDay()))return [value.getFullYear(),two(value.getMonth()+1),two(value.getDate())].join('-');
+ }
+ return localDay();
+}
 const school=()=>app().schoolId,db=()=>app().db;
 const icon=n=>{const r=window.NOOR_SUBJECT_ICONS?.display(n);return r?.icon||'📚'};
 const migrationError=e=>e&&(e.code==='42P01'||e.code==='42703'||/does not exist|relation .*not found|schema cache/i.test(e.message||''));
@@ -196,7 +204,7 @@ async function openTeacherEditor(row=null){
   '<label>Subject<div class="nsto-subject"><span id="nstoSubjectIcon">'+icon(row?.subject_name)+'</span><input type="text" name="subject_name" maxlength="140" required placeholder="e.g. Zoology, English, Mathematics" value="'+esc(row?.subject_name||'')+'"></div></label>'+
   '</div>'+(row?'<p class="nsto-muted">Repeats on '+esc(days[row.weekday])+'. Other weekdays can be added separately.</p>':weekdayBoxes([new Date().getDay()||1]))+
   '<div class="nsto-lesson-inputs"><h3>Lesson details</h3><p class="nsto-muted">Optional when setting your timetable. After first setup, edit only the daily topic.</p>'+
-  '<label>Lesson date<input type="date" name="lesson_date" value="'+esc(localDay())+'"></label>'+
+  '<label>Lesson date<input type="date" name="lesson_date" value="'+esc(nextLessonDate(row?[row.weekday]:[new Date().getDay()||1]))+'"></label>'+
   '<label>Lesson / Chapter topic<textarea name="topic" maxlength="600" rows="2" placeholder="Daily teaching topic (optional)"></textarea></label>'+
   '<label>Homework / follow-up<textarea name="homework" maxlength="1500" rows="2" placeholder="Optional"></textarea></label></div>'+
   '<div class="nsto-tip">✓ Principal owns the time slots; your class, subject and lesson entries are yours. Students see their own class/section timetable.</div>';
@@ -208,6 +216,16 @@ async function openTeacherEditor(row=null){
     if(!subject)throw Error('Enter your subject.');
     if(!weekdays.length)throw Error('Select at least one weekday for the repeating class.');
     if(!bells.some(x=>Number(x.period_number)===periodNum))throw Error('The selected school bell period no longer exists.');
+    // Check the lesson date BEFORE saving the recurring timetable.
+    // A mismatched date must never create periods and then fail half-way
+    // through, since retrying that form would cause duplicate conflicts.
+    const lessonTopic=String(f.get('topic')||'').trim(),lessonDate=String(f.get('lesson_date')||''),homework=String(f.get('homework')||'').trim();
+    if(lessonTopic){
+      const lessonDay=new Date(lessonDate+'T12:00:00');
+      if(!lessonDate||Number.isNaN(lessonDay.getTime())||!weekdays.includes(lessonDay.getDay())){
+        throw Error('Choose a lesson date that matches a selected weekday before saving.');
+      }
+    }
     const values={class_id:cls,section_id:sec,subject_name:subject,period_number:periodNum};
     let savedRows=[];
     if(row){
@@ -222,10 +240,8 @@ async function openTeacherEditor(row=null){
       if((r.data||[]).length!==records.length)throw Error('Some periods were not saved. Check for timetable conflicts.');
       savedRows=r.data||[];
     }
-    const lessonTopic=String(f.get('topic')||'').trim(),lessonDate=String(f.get('lesson_date')||''),homework=String(f.get('homework')||'').trim();
     if(lessonTopic){
       const dateObject=new Date(lessonDate+'T12:00:00');
-      if(!lessonDate||Number.isNaN(dateObject.getTime()))throw Error('The timetable is saved. Choose a valid lesson date before adding the topic.');
       const target=savedRows.find(x=>x.weekday===dateObject.getDay());
       if(!target)throw Error('The timetable is saved. Select a lesson date matching one of the selected weekdays to publish the topic.');
       const data={timetable_id:target.id,school_id:school(),teacher_id:uid,lesson_date:lessonDate,topic:lessonTopic,homework:homework||null};
@@ -236,6 +252,15 @@ async function openTeacherEditor(row=null){
   const sel=wrap.querySelector('#nstoSection'),cls=wrap.querySelector('#nstoClass'),input=wrap.querySelector('[name=subject_name]'),badge=wrap.querySelector('#nstoSubjectIcon');
   cls.onchange=()=>{const matching=sections.filter(x=>x.class_id===cls.value);sel.innerHTML=matching.map(x=>option(x.id,x.name,'')).join('');};
   input.oninput=()=>{badge.textContent=icon(input.value)};
+  const dateInput=wrap.querySelector('[name=lesson_date]');
+  const weekdayInputs=[...wrap.querySelectorAll('[name=weekdays]')];
+  for(const box of weekdayInputs)box.addEventListener('change',()=>{
+   const weekdays=weekdayInputs.filter(x=>x.checked).map(x=>Number(x.value));
+   const date=new Date(dateInput.value+'T12:00:00');
+   if(weekdays.length&&(!dateInput.value||!weekdays.includes(date.getDay()))){
+    dateInput.value=nextLessonDate(weekdays);
+   }
+  });
   if(row){
     const remove=document.createElement('button');remove.type='button';remove.textContent='Remove My Period';remove.className='nsto-remove';
     const foot=wrap.querySelector('footer');foot.prepend(remove);

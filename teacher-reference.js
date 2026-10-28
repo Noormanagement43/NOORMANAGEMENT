@@ -39,8 +39,8 @@ function statusHTML(p,run){
  return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
  '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(p.schedule_status?'<span class="noor-tt-status">'+esc(p.schedule_status)+'</span>':'')+'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>'+
- (!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
- '<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button></div>';
+ (!p.schedule_status&&!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
+ ''+(p.schedule_status?'':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
 }
 function weeklyTimetableHTML(periods){
  const sorted=[...periods].filter(p=>p.approval_status==='approved').sort((a,b)=>a.weekday-b.weekday||String(a.start_time).localeCompare(String(b.start_time)));
@@ -273,8 +273,8 @@ async function uploadPhoto(e){
  const file=e.target.files?.[0],a=get();if(!file)return;
  try{
   const accountId=a.user?.id;
-  const saved=await window.NOOR_AVATAR_SAFE.uploadOwn({client:a.db,userId:accountId,profile:a.profile,schoolId:a.schoolId,file});
-  a.profile.avatar_url=saved.avatar_url;
+  const saved=await window.NOOR_AVATAR_SAFE.uploadOwn({client:a.db,userId:accountId,profile:a.profile,schoolId:a.schoolId,file,backend:window.NOOR_SHARED_TIMETABLE?.current()?'v2':'legacy'});
+  a.profile.avatar_url=saved.avatar_url;if(window.NOOR_SHARED_TIMETABLE?.current())a.profile.avatar_reference=saved.stored_reference;
   notify('Your own profile photo has been updated.','success');
   await render();
  }catch(err){notify('Photo could not be updated: '+err.message,'error')}

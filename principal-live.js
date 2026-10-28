@@ -60,7 +60,7 @@ function setup(){
           <header>
             <h2>◷ Teacher Daily Schedule & Active Periods</h2>
             <div style="display:flex;gap:8px;align-items:center">
-              <button type="button" class="pd-btn pd-btn-primary" id="pd-add-teacher" style="padding:5px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#6f2a45;color:#fff;border:none;cursor:pointer">+ Add Teacher</button>
+              <button type="button" class="pd-btn pd-btn-primary" id="pd-add-teacher" style="padding:5px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#6f2a45;color:#fff;border:none;cursor:pointer">⚙ School Bell Times</button>
               <button class="pd-link" id="pd-timetable">View full timetable →</button>
             </div>
           </header>
@@ -112,9 +112,9 @@ function setup(){
       else a().openView?.(b.dataset.route);
     }
     const edit=ev.target.closest('[data-edit-period]');
-    if(edit)editPeriod(edit.dataset.editPeriod);
+    if(edit)a().toast?.('Teachers edit their own periods. Principal sets school bell times only.','info');
     const removeP=ev.target.closest('[data-remove-period]');
-    if(removeP)removePeriod(removeP.dataset.removePeriod, removeP.dataset.teacherId);
+    if(removeP)a().toast?.('Period removal belongs to its teacher.','info');
     const viewStaff=ev.target.closest('[data-view-teacher]');
     if(viewStaff)showStaffProfile(viewStaff.dataset.viewTeacher);
     const viewStu=ev.target.closest('[data-view-student]');
@@ -124,8 +124,8 @@ function setup(){
   r.querySelector('#pd-refresh').onclick=refresh;
 
   const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=showTeacherDirectoryModal;
-  r.querySelector('#pd-timetable').onclick=showTimetable;
-  const addTch=r.querySelector('#pd-add-teacher');if(addTch)addTch.onclick=openAddTeacherModal;
+  r.querySelector('#pd-timetable').onclick=()=>window.NOOR_SCHOOL_TIMETABLE?.showPrincipalSchedule?.();
+  const bellBtn=r.querySelector('#pd-add-teacher');if(bellBtn)bellBtn.onclick=()=>window.NOOR_SCHOOL_TIMETABLE?.openSchoolTimes?.();
   r.querySelector('#pd-mode').onclick=()=>{
     const h=r.querySelector('#noor-principal');h.classList.toggle('pd-dark');
     try{localStorage.setItem('noor.principal.theme.'+key,h.classList.contains('pd-dark')?'dark':'light')}catch{}
@@ -420,71 +420,8 @@ function editProfile(){
 }
 
 
-async function removePeriod(id, teacherId){
-  if(!confirm('Are you sure you want to remove this period schedule / teacher from active timetable?'))return;
-  try {
-    const {error} = await a().db.from('noor_teacher_periods').delete().eq('school_id',a().schoolId).eq('id',id);
-    if(window.NOOR_ALNOOR_HUB){
-      const t = window.NOOR_ALNOOR_HUB.getTeachers().find(x=>x.id===teacherId || x.id===id);
-      if(t) window.NOOR_ALNOOR_HUB.removeTeacher(t.id);
-    }
-    a().toast?.('Timetable period removed successfully.','success');
-    await refresh();
-  } catch(e){
-    a().toast?.('Could not remove period: '+e.message,'error');
-  }
-}
 
-async function openAddTeacherModal(){
-  const {data:cs}=await a().db.from('classes').select('id,name').eq('school_id',a().schoolId).eq('is_active',true).order('sort_order');
-  form('Add New Teacher to Staff & Schedule',[
-    ['full_name','Teacher Full Name (e.g. Ms. Aafra Fathima)',''],
-    ['email','Email Address',''],
-    ['mobile_number','Phone / Mobile Number',''],
-    ['subject_name','Subject (e.g. Mathematics, Science)','Mathematics'],
-    ['class_name','Assigned Class & Section (e.g. Class 8 - Section B)','Class 8 - Section B'],
-    ['start_time','Period Start Time','09:00','time'],
-    ['end_time','Period End Time','10:00','time'],
-    ['employee_code','Employee Code (e.g. TCH-ALN-023)',''],
-    ['qualification','Qualification (e.g. M.Sc., B.Ed.)','M.Sc., B.Ed.']
-  ], async v => {
-    const name = v.full_name?.trim();
-    if(!name) throw Error('Teacher full name is required.');
-    const email = v.email?.trim() || (name.toLowerCase().replace(/\s+/g,'.')+'@alnoor.demo');
-    const phone = v.mobile_number?.trim() || '+91 98765 00000';
-    const sub = v.subject_name?.trim() || 'General';
-    const clsLabel = v.class_name?.trim() || 'Class 8 - Section B';
-    const sTime = v.start_time || '09:00';
-    const eTime = v.end_time || '10:00';
-    const code = v.employee_code?.trim() || ('TCH-ALN-' + Math.floor(100+Math.random()*900));
-    const qual = v.qualification?.trim() || 'B.Ed. Faculty';
-
-    if(window.NOOR_ALNOOR_HUB) {
-      window.NOOR_ALNOOR_HUB.addTeacher({
-        name, email, phone, code, qual, subject: sub, classLabel: clsLabel, startTime: sTime, endTime: eTime
-      });
-    }
-
-    try {
-      const rpc = await a().db.rpc('noor_add_teacher', {
-        p_name: name, p_email: email, p_phone: phone, p_code: code, p_qual: qual, p_subject: sub, p_class_label: clsLabel, p_start_time: sTime, p_end_time: eTime
-      });
-      if(rpc.error){
-        const {data:prof} = await a().db.from('profiles').insert({
-          school_id: a().schoolId, full_name: name, email: email, mobile_number: phone, role: 'teacher', status: 'active'
-        }).select('id').single();
-        if(prof) {
-          await a().db.from('noor_teacher_periods').insert({
-            school_id: a().schoolId, teacher_id: prof.id, subject_name: sub, class_label: clsLabel, start_time: sTime, end_time: eTime, period_number: 1, weekday: new Date().getDay(), approval_status: 'approved', status: 'upcoming'
-          });
-        }
-      }
-    } catch(dbErr){
-      console.warn('Teacher insert error:', dbErr);
-    }
-    a().toast?.('Teacher '+name+' added to school staff and timetable.','success');
-  });
-}
+async function openAddTeacherModal(){a().openView?.('staff-management');}
 
 async function showTeacherDirectoryModal(){
   const r=root(),dlg=r.querySelector('#pd-detail-dialog');
@@ -596,14 +533,6 @@ async function showTeacherDirectoryModal(){
   }
 }
 
-function editPeriod(id){
-  const p=snapshot?.periods.find(x=>x.id===id);if(!p)return;
-  form('Edit approved period',[['subject_name','Subject',p.subject_name],['start_time','Start time',p.start_time?.slice(0,5),'time'],['end_time','End time',p.end_time?.slice(0,5),'time']],async v=>{
-    if(v.start_time>=v.end_time)throw Error('End time must be after start time.');
-    const {error}=await a().db.from('noor_teacher_periods').update(v).eq('school_id',a().schoolId).eq('id',id).select('id').single();
-    if(error)throw error;
-  });
-}
 
 async function showTimetable(){
   const r=root(),dlg=r.querySelector('#pd-dialog');
@@ -859,18 +788,7 @@ async function refresh(){
     q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
 
     // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
-    q('#pd-periods').innerHTML=res.periods.error||res.runs.error||res.teachers.error?empty('Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
-      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled';
-      return `<tr>
-        <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(teacherMap.get(p.teacher_id)||'Inactive teacher')}</button></td>
-        <td>${e(p.subject_name)}</td>
-        <td>${e(classes.find(c=>c.id===p.class_id)?.name||p.class_label)}</td>
-        <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
-        <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
-        <td><span class="pd-tag ${done?'done':status==='Teaching'?'now':''}">● ${status}</span></td>
-        <td><button class="pd-link" data-edit-period="${e(p.id)}" aria-label="Edit ${e(p.subject_name)} period" style="color:#6f334e;font-weight:700;margin-right:8px">Edit ✎</button><button class="pd-link" data-remove-period="${e(p.id)}" data-teacher-id="${e(p.teacher_id)}" aria-label="Remove ${e(p.subject_name)} period" style="color:#b91c1c;font-weight:700">Remove ✕</button></td>
-      </tr>`;
-    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No approved class periods for today.');
+    q('#pd-periods').innerHTML='<p class="pd-muted">Loading teacher-managed class timetable…</p>';
 
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
@@ -883,6 +801,7 @@ async function refresh(){
 
     const errors=Object.entries(res).filter(([,v])=>v.error).map(([k])=>k);
     q('#pd-errors').innerHTML=errors.length?`<p class="pd-alert">Unable to load: ${e(errors.join(', '))}. Missing data has not been estimated.</p>`:'';
+    await window.NOOR_SCHOOL_TIMETABLE?.mountPrincipal?.();
     q('#pd-status').textContent='Last updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:d.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+d.tz;
   }catch(err){
     if(q('#pd-errors'))q('#pd-errors').innerHTML=`<p class="pd-alert">${e(err.message||'Unable to refresh records.')}</p>`;
@@ -897,7 +816,7 @@ function connect(){
   const key=a().user?.id+':'+a().schoolId;if(channel&&key===identity)return;
   if(channel)a().db.removeChannel(channel);identity=key;
   const db=a().db;channel=db.channel('noor-principal-'+key);
-  for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
+  for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_school_bell_slots','noor_class_timetable','noor_daily_lesson_topics','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
   channel.on('postgres_changes',{event:'*',schema:'public',table:'sections'},refresh);
   channel.subscribe();
   if(!timer)timer=setInterval(()=>{if(!document.hidden)refresh()},30000);

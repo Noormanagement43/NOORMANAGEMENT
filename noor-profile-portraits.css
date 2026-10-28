@@ -3,7 +3,7 @@
    upload logic, identity security, or student timetable. */
 #view-profile .noor-profile-main{
  display:grid!important;
- grid-template-columns:minmax(215px,31%) minmax(0,1fr)!important;
+ grid-template-columns:minmax(255px,43%) minmax(0,1fr)!important;
  gap:clamp(17px,2.4vw,32px)!important;
  align-items:stretch!important;
  padding:clamp(12px,1.8vw,20px)!important;
@@ -13,7 +13,7 @@
  display:flex!important;
  width:100%!important;
  height:100%!important;
- min-height:390px!important;
+ min-height:475px!important;
  align-self:stretch!important;
  position:relative;
 }
@@ -23,7 +23,7 @@
  justify-content:center!important;
  width:100%!important;
  height:100%!important;
- min-height:390px!important;
+ min-height:475px!important;
  max-height:none!important;
  margin:0!important;
  aspect-ratio:auto!important;
@@ -81,7 +81,7 @@
    than the small square/round icon imposed by older media queries. */
 #workspace.noor-teacher-activated .noor-t4 .nt-profile,
 #workspace.noor-teacher-handset .noor-t4 .nt-profile{
- grid-template-columns:minmax(205px,30%) minmax(0,1.35fr) minmax(190px,.72fr)!important;
+ grid-template-columns:minmax(255px,38%) minmax(0,1fr) minmax(180px,.64fr)!important;
  gap:clamp(14px,1.8vw,25px)!important;
  align-items:stretch!important;
 }
@@ -89,7 +89,7 @@
 #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo-column{
  display:block!important;
  height:100%!important;
- min-height:320px!important;
+ min-height:425px!important;
  width:100%!important;
  max-width:none!important;
  margin:0!important;
@@ -102,7 +102,7 @@
  max-width:none!important;
  min-width:0!important;
  height:100%!important;
- min-height:320px!important;
+ min-height:425px!important;
  max-height:none!important;
  aspect-ratio:auto!important;
  border-radius:20px!important;
@@ -140,10 +140,10 @@
  display:flex!important;
  justify-content:center!important;
  align-items:center!important;
- width:clamp(195px,36%,320px)!important;
- min-width:195px!important;
+ width:clamp(240px,43%,420px)!important;
+ min-width:240px!important;
  height:auto!important;
- min-height:305px!important;
+ min-height:385px!important;
  max-height:none!important;
  aspect-ratio:auto!important;
  align-self:stretch!important;
@@ -157,7 +157,7 @@
  display:block!important;
  width:100%!important;
  height:100%!important;
- min-height:305px!important;
+ min-height:385px!important;
  max-height:none!important;
  object-fit:cover!important;
  object-position:center top!important;
@@ -169,7 +169,7 @@
 @media(max-width:1180px){
  #workspace.noor-teacher-activated .noor-t4 .nt-profile,
  #workspace.noor-teacher-handset .noor-t4 .nt-profile{
-  grid-template-columns:minmax(195px,32%) minmax(0,1fr)!important;
+  grid-template-columns:minmax(240px,43%) minmax(0,1fr)!important;
  }
  #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote,
  #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-quote{

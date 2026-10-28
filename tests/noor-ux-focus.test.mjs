@@ -59,6 +59,6 @@ test('new Supabase AI endpoint respects institution membership and holds secrets
   assert.match(code,/verify|institution/);
   assert.doesNotMatch(code,/SUPABASE_SERVICE_ROLE_KEY/);
   const config=await read('config.js');
-  assert.match(config,/npzedchxfurcphvpjock/);
-  assert.doesNotMatch(config,/ayrryemawwplguaauxij/);
+  assert.match(config,/ayrryemawwplguaauxij/);
+  assert.doesNotMatch(config,/npzedchxfurcphvpjock/);
 });

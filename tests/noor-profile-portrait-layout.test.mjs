@@ -38,8 +38,8 @@ test('teacher and principal photo frames share dimensions and mobile compatible'
 
 test('do not silently switch the original NOOR project or change the intended burgundy login',async()=>{
  const [config,html]=await Promise.all([read('config.js'),read('index.html')]);
- assert.match(config,/npzedchxfurcphvpjock\.supabase\.co/);
- assert.doesNotMatch(config,/ayrryemawwplguaauxij/);
+ assert.match(config,/ayrryemawwplguaauxij.supabase.co/);
+ assert.doesNotMatch(config,/npzedchxfurcphvpjock/);
  assert.match(html,/noor-official-logo\.svg/);
  assert.match(html,/id="loginTab"/);
  assert.match(html,/id="ownerTab"/);

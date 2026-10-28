@@ -1,3 +1,11 @@
-import test from 'node:test';import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';const get=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
-test('profile photo fills nearly half the profile card height on desktop and retains original mobile grid',async()=>{const s=await get('noor-profile-portraits.css');assert.match(s,/grid-template-columns:minmax\(255px,43%\)/);assert.match(s,/min-height:475px!important/);assert.match(s,/object-fit:cover!important/);assert.match(s,/grid-template-columns:minmax\(118px,38%\)/);});
-test('teacher and principal portrait sizes increase, old app and user records are not altered',async()=>{const [css,html]=await Promise.all([get('noor-profile-portraits.css'),get('index.html')]);assert.match(css,/grid-template-columns:minmax\(255px,38%\)/);assert.match(css,/min-height:425px!important/);assert.match(css,/width:clamp\(240px,43%,420px\)/);assert.match(css,/min-height:385px!important/);assert.match(html,/noor-profile-portraits\.css\?v=20261028-large-full-side-v2/);assert.match(html,/id="loginTab"/);assert.doesNotMatch(html,/href="\.\/noor-v2\.html"/);});
+import test from 'node:test';import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';
+const get=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
+test('all role portraits use the principal reference dimensions, without oversized minimum heights',async()=>{
+ const s=await get('noor-profile-portraits.css');
+ for(const role of ['.noor-profile-avatar.avatar','.nt-photo','.pd-photo','.sp-avatar'])assert.ok(s.includes(role));
+ assert.match(s,/width:140px!important;height:185px!important/);
+ assert.match(s,/width:115px!important;height:150px!important/);
+ assert.doesNotMatch(s,/min-height:(?:475|425|385|310|265)px/);
+ assert.match(s,/object-fit:cover!important/);
+ assert.match(await get('index.html'),/noor-profile-portraits\.css\?v=20261028-principal-size-v3/);
+});

@@ -38,7 +38,7 @@ function statusHTML(p,run){
  const action=complete?'✓ Completed':active?'✓ Complete':'○ Mark Complete';
  return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
  '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
- '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>'+
+ '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(p.schedule_status?'<span class="noor-tt-status">'+esc(p.schedule_status)+'</span>':'')+'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>'+
  (!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
  '<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button></div>';
 }
@@ -82,16 +82,17 @@ function realTeachingAnalytics(periods,runs,checkin){
 async function render(){
  const app=get(),wrapper=root();
  if(!isTeacher()||!wrapper||rendering)return;
+ window.NOOR_SHARED_TIMETABLE?.subscribe();
  const version=++renderId;
  const workspace=document.getElementById('workspace');
  if(workspace?.classList.contains('hidden'))return;
  rendering=true;workspace.classList.add('noor-teacher-activated');workspace.classList.toggle('noor-teacher-handset',Boolean((navigator.maxTouchPoints>0||'ontouchstart' in window)&&Math.min(screen.width,screen.height)<=650));
  wrapper.innerHTML='<div class="noor-t4"><div class="nt-head"><div><span class="nt-kicker">NOOR · Teacher Portal</span><h1>Teacher Dashboard</h1></div></div><div class="nt-card"><p class="nt-muted">Loading your school data securely…</p></div></div>';
  try{
- const school=app.schoolId,uid=app.user.id,db=app.db,weekday=new Date().getDay();
+ const school=app.schoolId,uid=app.user.id,db=app.db,weekday=window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.weekday():new Date().getDay();
  const [extra,periods,runs,checkin,assignees,personal,notices,calendar,assignment,membership]=await Promise.all([
  db.from('noor_teacher_profile_details').select('*').eq('school_id',school).eq('teacher_id',uid).maybeSingle(),
- db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(200),
+ window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load():db.from('noor_teacher_periods').select('id,period_number,weekday,start_time,end_time,subject_name,class_label,approval_status,block_type,class_id,section_id').eq('school_id',school).eq('teacher_id',uid).order('weekday').order('start_time').limit(200),
  db.from('noor_teacher_period_runs').select('id,period_id,status,started_at,finished_at').eq('school_id',school).eq('teacher_id',uid).eq('class_date',today()),
  db.from('noor_staff_attendance').select('id,status,checked_in_at').eq('school_id',school).eq('teacher_id',uid).eq('attendance_date',today()).maybeSingle(),
  db.from('task_assignees').select('task_id,status').eq('school_id',school).eq('assignee_id',uid).limit(40),
@@ -202,7 +203,7 @@ function onClick(e){
  if(b.id==='ntEditProfile'){showProfileEditor();return;}
  if(b.id==='ntChangePhoto'){$('#ntHiddenPhoto')?.click();return}
  if(b.id==='ntEditTimetable'){showPeriodEditor(null);return}
- if(b.dataset.editPeriod){showPeriodEditor(current?.periods.find(x=>x.id===b.dataset.editPeriod));return}
+ if(b.dataset.editPeriod){const ownPeriod=current?.periods.find(x=>x.id===b.dataset.editPeriod);if(ownPeriod)showPeriodEditor(ownPeriod);return}
  if(b.dataset.startPeriod){updateRun(b.dataset.startPeriod,'ongoing',b);return}
  if(b.dataset.completePeriod){updateRun(b.dataset.completePeriod,'done',b);return}
  if(b.id==='ntCheckIn'){checkIn(b);return}
@@ -281,6 +282,7 @@ async function uploadPhoto(e){
 }
 
 async function showPeriodEditor(p){
+ if(window.NOOR_SHARED_TIMETABLE?.current()){return p?window.NOOR_SHARED_TIMETABLE.openEditor(p):window.NOOR_SHARED_TIMETABLE.open();}
  const app=get(),db=app.db,accountId=app.user?.id,schoolId=app.schoolId;
  try{
   if(!isTeacher())throw Error('Sign in as an active teacher to edit your timetable.');
@@ -456,6 +458,7 @@ function initTeacherQuotes(){
  },150);
 }
 
+window.addEventListener('noor:timetable-saved',()=>{if(isTeacher()&&root()?.classList.contains('active'))render();});
 window.NOOR_TEACHER_REFERENCE={render,renderCalendar,openPaper,openCalendar,showPeriodEditor,editTimetable:()=>showPeriodEditor(null),getCurrent:()=>current};
 const watcher=new MutationObserver(()=>{
  const w=document.getElementById('workspace');

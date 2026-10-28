@@ -134,3 +134,20 @@ html[data-noor-mode="dark"] .noor-theme-card[aria-pressed="true"]{border-color:#
 html[data-noor-mode="dark"] :is(.noor-theme-head h2,.noor-theme-selected,.noor-theme-status,.nt4-feedback){color:#d7e7ff!important}
 html[data-noor-theme="rose-whisper"][data-noor-mode="light"]{--berry:#805772;--ui-sidebar:#805772}
 html[data-noor-theme][data-noor-mode="light"] #noor-principal :is(.pd-profile h2,.pd-head h1){color:var(--ink)}
+/* Laptop-friendly shared timetable; the same controls inherit global colour mode. */
+.noor-timetable-dialog{width:min(780px,94vw);max-height:88vh;overflow:auto;border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--paper);color:var(--ink)}
+.noor-timetable-dialog::backdrop{background:#14203388;backdrop-filter:blur(4px)}
+.noor-timetable-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.noor-timetable-dialog h2{margin:0;font:800 21px Manrope,system-ui}
+.noor-timetable-dialog button{min-height:42px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:var(--berry);color:#fff;font:700 13px system-ui;cursor:pointer}
+.noor-tt-form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.noor-tt-form label{display:grid;gap:7px;font:700 13px system-ui;min-width:0}
+.noor-tt-form :is(input,select){box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:10px;font:400 14px system-ui;background:var(--paper);color:var(--ink)}
+.noor-tt-form :is(footer,p){grid-column:1/-1;margin:0}.noor-tt-form footer{display:flex;justify-content:flex-end;gap:10px}
+.noor-tt-note{font-size:12px;line-height:1.6;color:var(--muted)}
+.noor-tt-row{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+.noor-tt-row>div{flex:1;min-width:0}.noor-tt-row p{font-size:13px;margin:5px 0}.noor-tt-row strong{overflow-wrap:anywhere}
+.noor-tt-status{display:inline-block;padding:6px 10px;border-radius:20px;background:var(--rose-soft);color:var(--ink);font-size:12px;font-weight:700;white-space:nowrap}
+html[data-noor-mode="dark"] .noor-timetable-dialog :is(p,label,h2,small){color:#edf3fa!important}
+html[data-noor-mode="dark"] .noor-timetable-dialog button:hover{background:#45648a!important;color:#fff!important}
+@media(max-width:560px){.noor-tt-form{grid-template-columns:1fr}.noor-timetable-dialog{padding:16px}.noor-tt-row{flex-wrap:wrap}.noor-tt-row>div{flex-basis:65%}}

@@ -18,11 +18,11 @@ const mine=()=>p()?.role==='student'&&sid()&&u()&&db();
 function view(id){let v=document.getElementById('view-'+id);if(!v){v=document.createElement('section');v.className='view';v.id='view-'+id;document.querySelector('#workspace .content')?.append(v)}return v}
 function renderShell(id,title,subtitle,content){view(id).innerHTML='<div class="sp-root"><header class="sp-head"><div><span class="sp-kicker">NOOR · MY LEARNING CENTRE</span><h1>'+E(title)+'</h1><p class="sp-muted">'+E(subtitle||'')+'</p></div><button type="button" class="sp-action secondary" data-sp-refresh>↻ Refresh</button></header>'+content+'</div>'}
 async function readAll(){
- if(!mine())return;const school=sid(),me=p(),id=u().id;
+ if(!mine())return;window.NOOR_SHARED_TIMETABLE?.subscribe();const school=sid(),me=p(),id=u().id;
  const jobs={
   classes:db().from('classes').select('id,name').eq('school_id',school).eq('is_active',true),
   sections:db().from('sections').select('id,name,class_id').eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000'),
-  periods:db().from('noor_teacher_periods').select('id,weekday,period_number,start_time,end_time,subject_name,class_label,block_type,section_id,approval_status').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('approval_status','approved').order('weekday').order('start_time'),
+  periods:window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load():db().from('noor_teacher_periods').select('id,weekday,period_number,start_time,end_time,subject_name,class_label,block_type,section_id,approval_status').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('approval_status','approved').order('weekday').order('start_time'),
   subjects:db().from('subjects').select('id,name,class_id').eq('school_id',school),
   notes:db().from('smart_notes').select('id,title,content,subject_id,updated_at,teacher_id').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('status','published').eq('published_to_students',true).order('updated_at',{ascending:false}).limit(150),
   notices:db().from('school_notices').select('id,title,body,starts_at,ends_at,created_at').eq('school_id',school).eq('is_active',true).contains('target_roles',['student']).order('starts_at',{ascending:false}).limit(100),
@@ -46,7 +46,7 @@ async function readAll(){
  data.assignments=data.assignments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.assessments=data.assessments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.marks=data.results.map(r=>{const a=data.assessments.find(x=>x.id===r.assessment_id && x.status!=='planned');return a?{...r,assessment:a,pct:N(a.max_marks)>0?100*N(r.marks_obtained)/N(a.max_marks):null}:null}).filter(Boolean).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));
- data.periods=data.periods.filter(x=>!x.section_id||x.section_id===sectionId);data.exams=data.assessments.filter(x=>x.status==='planned'&&x.assessment_date>=isoDay(new Date()));const reviewedHomework=data.submissions.filter(x=>x.status==='reviewed'&&x.marks_obtained!=null).map(x=>{const asg=data.assignments.find(a=>a.id===x.assignment_id);if(!asg||!N(asg.max_marks))return null;return {marks_obtained:x.marks_obtained,teacher_feedback:x.teacher_feedback,assessment:{id:asg.id,title:asg.title,subject_id:asg.subject_id,assessment_type:'homework',assessment_date:(x.reviewed_at||x.submitted_at).slice(0,10),max_marks:asg.max_marks},pct:100*N(x.marks_obtained)/N(asg.max_marks)};}).filter(Boolean);data.marks=data.marks.concat(reviewedHomework).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));data.recordDays=data.attendance.map(r=>{const s=data.sessions.find(s=>s.id===r.session_id);return s?{day:s.attendance_date,status:r.status}:null}).filter(Boolean);
+ if(!window.NOOR_SHARED_TIMETABLE?.current())data.periods=data.periods.filter(x=>!x.section_id||x.section_id===sectionId);data.exams=data.assessments.filter(x=>x.status==='planned'&&x.assessment_date>=isoDay(new Date()));const reviewedHomework=data.submissions.filter(x=>x.status==='reviewed'&&x.marks_obtained!=null).map(x=>{const asg=data.assignments.find(a=>a.id===x.assignment_id);if(!asg||!N(asg.max_marks))return null;return {marks_obtained:x.marks_obtained,teacher_feedback:x.teacher_feedback,assessment:{id:asg.id,title:asg.title,subject_id:asg.subject_id,assessment_type:'homework',assessment_date:(x.reviewed_at||x.submitted_at).slice(0,10),max_marks:asg.max_marks},pct:100*N(x.marks_obtained)/N(asg.max_marks)};}).filter(Boolean);data.marks=data.marks.concat(reviewedHomework).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));data.recordDays=data.attendance.map(r=>{const s=data.sessions.find(s=>s.id===r.session_id);return s?{day:s.attendance_date,status:r.status}:null}).filter(Boolean);
 }
 const subject=id=>data.subjects?.find(s=>s.id===id)?.name||'General subject';
 const eligible=()=>data.marks||[];
@@ -109,9 +109,9 @@ function overview(){
   refAction('✧','Ask My Teacher','student-questions','violet'),
   refAction('▥','View Results','student-progress','sky')
  ].join('')+'</div>');
- const currentDay=new Date().getDay();
+ const currentDay=window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.weekday():new Date().getDay();
  const todays=(data.periods||[]).filter(x=>x.weekday===currentDay).sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time))).slice(0,7);
- const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E(classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge">Approved</span></button>').join('')+'</div>':empty('No approved timetable for today. Your school will publish periods here.');
+ const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E(classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge">Scheduled</span></button>').join('')+'</div>':empty('No teacher periods saved for your class today.');
  const scheduleCard=box('Today’s Schedule',new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'}),scheduleHTML,btn('Full Timetable','student-schedule'));
  const dueHTML=due.length?'<div class="sp-ref-list">'+due.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-homework"><span class="sp-ref-list-icon">▤</span><span><strong>'+E(x.title)+'</strong><small>'+E(subject(x.subject_id)+(x.due_at?' · Due '+dayTime(x.due_at):' · No deadline'))+'</small></span><em>'+(x.due_at&&new Date(x.due_at)<new Date()?'Overdue':'Pending')+'</em></button>').join('')+'</div>':empty('No pending assignments.');
  const resultRows=(data.marks||[]).slice().reverse().slice(0,3);
@@ -156,11 +156,11 @@ function topicBars(m){
 
 function scheduleRows(weekday){
  const rows=(data.periods||[]).filter(x=>x.weekday===weekday).sort((a,b)=>a.start_time.localeCompare(b.start_time));
- return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.block_type||'Class'))).join('')+'</div>':empty('No approved periods recorded for this day.');
+ return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.schedule_status||x.block_type||'Class'))).join('')+'</div>':empty('No saved periods for this day.');
 }
 function schedule(){
  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
- renderShell('student-schedule','My Daily Schedule','Approved periods from teachers assigned to your class/section. No fictional timetable.',
+ renderShell('student-schedule','My Daily Schedule','Saved teacher periods for your class/section. Updates are shared automatically.',
  '<div class="sp-grid equal">'+days.map((x,i)=>box(x,i===new Date().getDay()?'Today':'Weekly timetable',scheduleRows(i))).join('')+'</div>');
 }
 function studentNotices(){
@@ -335,5 +335,6 @@ document.addEventListener('submit',async e=>{
  }catch(ex){app().toast?.(ex.message||'Unable to save','error');const target=f.closest('.sp-card')?.querySelector('[id$="Msg"],[id^="spSubmitMsg"]');if(target){target.hidden=false;target.className='sp-status error';target.textContent=ex.message||String(ex);}}
  finally{if(button)button.disabled=false}
 });
+window.addEventListener('noor:timetable-saved',()=>{if(mine()){readAll().then(()=>{const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='student-schedule')schedule();else if(id==='overview')render();}).catch(()=>{});}});
 window.NOOR_STUDENT_PORTAL={render,open:run,refresh};
 })();

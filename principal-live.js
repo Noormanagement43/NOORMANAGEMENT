@@ -416,6 +416,7 @@ function editProfile(){
 
 
 async function showTimetable(){
+ if(window.NOOR_SHARED_TIMETABLE?.current())return window.NOOR_SHARED_TIMETABLE.open();
   const r=root(),dlg=r.querySelector('#pd-dialog');
   r.querySelector('#pd-form-title').textContent='Full weekly timetable';
   r.querySelector('#pd-save-status').textContent='';
@@ -431,7 +432,7 @@ async function showTimetable(){
 async function allRows(make){
   let data=[];
   for(let offset=0;;offset+=500){
-    const q=make(),res=await (q.range?q.range(offset,offset+499):q.limit(500));
+    const q=make(),res=await (q.range?q.range(offset,offset+499):q.limit?q.limit(500):q);
     if(res.error)return {data:[],error:res.error};
     data.push(...res.data||[]);
     if(!q.range||(res.data||[]).length<500)return {data,error:null};
@@ -562,6 +563,7 @@ function graph(classes,sections,students,sessions,records,day){
 }
 
 async function refresh(){
+ window.NOOR_SHARED_TIMETABLE?.subscribe();
   if(loading){queued=true;return;}
   if(!permitted()||!root()?.classList.contains('active'))return;
   loading=true;
@@ -595,7 +597,7 @@ async function refresh(){
       students:()=>db.from('profiles').select('id,class_id,section_id').eq('school_id',sid).eq('role','student').eq('status','active').order('id'),
       teachers:()=>db.from('profiles').select('id,full_name').eq('school_id',sid).eq('role','teacher').eq('status','active').order('id'),
       staff:()=>db.from('noor_staff_attendance').select('teacher_id,status').eq('school_id',sid).eq('attendance_date',d.day).order('teacher_id'),
-      periods:()=>db.from('noor_teacher_periods').select('id,teacher_id,period_number,start_time,end_time,subject_name,class_label,class_id,section_id,block_type').eq('school_id',sid).eq('weekday',d.weekday).eq('approval_status','approved').order('id'),
+      periods:()=>window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load().then(r=>({...r,data:r.data.filter(p=>p.weekday===d.weekday)})):db.from('noor_teacher_periods').select('id,teacher_id,period_number,start_time,end_time,subject_name,class_label,class_id,section_id,block_type').eq('school_id',sid).eq('weekday',d.weekday).eq('approval_status','approved').order('id'),
       runs:()=>db.from('noor_teacher_period_runs').select('period_id,status').eq('school_id',sid).eq('class_date',d.day).order('period_id'),
       sessions:()=>db.from('attendance_sessions').select('id,attendance_date,class_id,section_id,status').eq('school_id',sid).gte('attendance_date',from).lte('attendance_date',d.day).order('id'),
       classes:()=>db.from('classes').select('id,name,sort_order').eq('school_id',sid).eq('is_active',true).order('id'),
@@ -669,10 +671,10 @@ async function refresh(){
     q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
 
     // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
-    q('#pd-periods').innerHTML=res.periods.error||res.runs.error||res.teachers.error?empty('Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
-      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled';
+    q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
+      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=p.schedule_status|| (done?'Completed':now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
       return `<tr>
-        <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(teacherMap.get(p.teacher_id)||'Inactive teacher')}</button></td>
+        <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
         <td>${e(p.subject_name)}</td>
         <td>${e(classes.find(c=>c.id===p.class_id)?.name||p.class_label)}</td>
         <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
@@ -722,5 +724,6 @@ function render(){
   setup();connect();refresh();
 }
 
+window.addEventListener('noor:timetable-saved',()=>{if(permitted())refresh();});
 window.NOOR_PRINCIPAL_LIVE={render,refresh,aggregate,clock,showStaffProfile,showStudentDashboard};
 })();

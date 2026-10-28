@@ -1,0 +1,42 @@
+/* NOOR: shared Supabase teacher timetable, parent class / section schedules and
+   student attendance progress. No demo data or alternate sign-in UI. */
+.v2-live-status{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;padding:7px 12px;margin:1px 0 0;background:var(--paper);border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:10px;font-weight:750;letter-spacing:.15px}
+.v2-live-status[data-connected="yes"]{background:#ebf8f1;color:#2b795a;border-color:#bce6d2}
+.v2-period-current{background:linear-gradient(100deg,#e7f8f0,transparent 94%);padding-inline:9px!important;border:1px solid #c4e5d5!important;border-radius:13px}
+.v2-now-label{display:inline-flex;align-items:center;align-self:start;color:#247a57;background:#e7f9ee;border:1px solid #bde9d2;border-radius:999px;font-size:9px;font-weight:750;padding:4px 8px;margin-top:2px}
+.v2-period-row .v2-btn{flex:0 0 auto}
+.v2-btn.v2-danger{border-color:#edc6d0;background:#fff1f4;color:#a83b58;min-width:130px;margin-right:auto}
+.v2-btn.v2-danger:hover{background:#ffe8ed;border-color:#e69faf}
+.v2-student-progress{margin:13px 0;padding:14px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(115deg,var(--canvas),var(--paper))}
+.v2-student-progress>strong{display:block;font:700 39px/1.2 'Playfair Display',Georgia,serif;color:var(--brand2)}
+.v2-student-progress>span{display:block;font-size:11px;color:var(--muted);margin:5px 0 13px}
+.v2-student-progress>small{display:block;font-size:11px;color:var(--muted);line-height:1.6;margin-top:9px}
+.v2-progress-track{height:9px;border-radius:999px;background:var(--line);overflow:hidden}
+.v2-progress-track i{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,var(--brand),var(--rose));max-width:100%}
+.v2-panel-note{margin:15px 0 11px}
+.v2-period-content .v2-now-label{max-width:max-content}
+.v2-period-row:has(.v2-now-label) .v2-period-content{gap:4px}
+.v2-timetable-grid .v2-day:has(.v2-period-current){border-color:color-mix(in srgb,#31966d 44%,var(--line));box-shadow:0 10px 30px #3a84641a}
+.v2-metric strong{overflow-wrap:anywhere}
+.v2-auth-card .v2-footnote{color:var(--muted)}
+.v2-profile-note blockquote{max-width:100%}
+@media(max-width:700px){
+ .v2-mobile-nav:has([data-tab="progress"]){grid-template-columns:repeat(5,minmax(0,1fr))}
+ .v2-mobile-nav:has([data-tab="progress"]) button small{font-size:8.5px;line-height:1.1;letter-spacing:-.2px}
+ .v2-mobile-nav:has([data-tab="progress"]) button span{font-size:20px}
+ .v2-live-status{padding:5px 10px;margin-top:0;font-size:9px}
+ .v2-period-row{flex-wrap:wrap}
+ .v2-period-time{font-size:10px}
+ .v2-period-current{padding:10px!important}
+ .v2-period-row .v2-btn{margin-left:auto}
+ .v2-btn.v2-danger{width:100%;margin-bottom:5px}
+ .v2-dialog footer{flex-wrap:wrap;gap:7px}
+ .v2-student-progress>strong{font-size:31px}
+}
+@media(max-width:375px){
+ .v2-mobile-nav:has([data-tab="progress"]) button small{font-size:8px}
+ .v2-period-content small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .v2-now-label{animation:none}
+}

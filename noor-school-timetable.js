@@ -115,9 +115,12 @@ async function openTeacherEditor(row=null){
   '<label>Section<select name="section_id" id="nstoSection" required>'+sectionOptions+'</select></label>'+
   '<label>School Period<select name="period_number" required>'+bellOptions+'</select></label>'+
   '<label>Subject<div class="nsto-subject"><span id="nstoSubjectIcon">'+icon(row?.subject_name)+'</span><input type="text" name="subject_name" maxlength="140" required placeholder="e.g. Zoology, English, Mathematics" value="'+esc(row?.subject_name||'')+'"></div></label>'+
-  '</div>'+weekdayBoxes(row?[row.weekday]:[new Date().getDay()||1])+
-  (row?'<p class="nsto-muted">This edit changes this weekday’s recurring class only. To add the same subject on another weekday, choose Add Class Period.</p>':'')+
-  '<div class="nsto-tip">✓ Times are automatically taken from the Principal’s school bell schedule. No Principal assignment or approval is required.</div>';
+  '</div>'+(row?'<p class="nsto-muted">Repeats on '+esc(days[row.weekday])+'. Other weekdays can be added separately.</p>':weekdayBoxes([new Date().getDay()||1]))+
+  '<div class="nsto-lesson-inputs"><h3>Lesson details</h3><p class="nsto-muted">Optional when setting your timetable. After first setup, edit only the daily topic.</p>'+
+  '<label>Lesson date<input type="date" name="lesson_date" value="'+esc(localDay())+'"></label>'+
+  '<label>Lesson / Chapter topic<textarea name="topic" maxlength="600" rows="2" placeholder="Daily teaching topic (optional)"></textarea></label>'+
+  '<label>Homework / follow-up<textarea name="homework" maxlength="1500" rows="2" placeholder="Optional"></textarea></label></div>'+
+  '<div class="nsto-tip">✓ Principal owns the time slots; your class, subject and lesson entries are yours. Students see their own class/section timetable.</div>';
   const wrap=dialog(row?'Edit My Class Period':'Assign My Class Period',body,async f=>{
     const uid=app().user.id,cls=f.get('class_id'),sec=f.get('section_id'),subject=String(f.get('subject_name')||'').trim();
     const weekdays=row?[row.weekday]:f.getAll('weekdays').map(Number);
@@ -127,15 +130,28 @@ async function openTeacherEditor(row=null){
     if(!weekdays.length)throw Error('Select at least one weekday for the repeating class.');
     if(!bells.some(x=>Number(x.period_number)===periodNum))throw Error('The selected school bell period no longer exists.');
     const values={class_id:cls,section_id:sec,subject_name:subject,period_number:periodNum};
+    let savedRows=[];
     if(row){
-      const r=await db().from('noor_class_timetable').update(values).eq('id',row.id).eq('school_id',school()).eq('teacher_id',uid).select('id');
+      const r=await db().from('noor_class_timetable').update(values).eq('id',row.id).eq('school_id',school()).eq('teacher_id',uid).select('id,weekday');
       if(r.error)throw r.error;
       if((r.data||[]).length!==1)throw Error('Your teacher account could not edit this period.');
+      savedRows=r.data||[];
     }else{
       const records=weekdays.map(weekday=>({...values,school_id:school(),teacher_id:uid,weekday}));
-      const r=await db().from('noor_class_timetable').insert(records).select('id');
+      const r=await db().from('noor_class_timetable').insert(records).select('id,weekday');
       if(r.error)throw r.error;
       if((r.data||[]).length!==records.length)throw Error('Some periods were not saved. Check for timetable conflicts.');
+      savedRows=r.data||[];
+    }
+    const lessonTopic=String(f.get('topic')||'').trim(),lessonDate=String(f.get('lesson_date')||''),homework=String(f.get('homework')||'').trim();
+    if(lessonTopic){
+      const dateObject=new Date(lessonDate+'T12:00:00');
+      if(!lessonDate||Number.isNaN(dateObject.getTime()))throw Error('The timetable is saved. Choose a valid lesson date before adding the topic.');
+      const target=savedRows.find(x=>x.weekday===dateObject.getDay());
+      if(!target)throw Error('The timetable is saved. Select a lesson date matching one of the selected weekdays to publish the topic.');
+      const data={timetable_id:target.id,school_id:school(),teacher_id:uid,lesson_date:lessonDate,topic:lessonTopic,homework:homework||null};
+      const result=await db().from('noor_daily_lesson_topics').upsert(data,{onConflict:'timetable_id,lesson_date'}).select('id');
+      if(result.error||!result.data?.length)throw Error('Timetable saved. Daily topic could not be saved: '+(result.error?.message||'Use Edit Topic to retry.'));
     }
   });
   const sel=wrap.querySelector('#nstoSection'),cls=wrap.querySelector('#nstoClass'),input=wrap.querySelector('[name=subject_name]'),badge=wrap.querySelector('#nstoSubjectIcon');

@@ -25,7 +25,7 @@ test('principal alone sets shared school period times; no teacher period assignm
  assert.doesNotMatch(ui,/async function removePeriod\(id, teacherId\)/);
  assert.doesNotMatch(ui,/db\.from\('noor_teacher_periods'\)\.insert/);
  assert.match(mod,/canSetBells\(\)/);
- assert.match(mod,/\.from\('noor_school_bell_slots'\)\.upsert\(saved/);
+ assert.match(mod,/\.from\('noor_school_bell_slots'\)\s*\.upsert\(next/);
  assert.match(mod,/start_time:start,end_time:end/);
 });
 

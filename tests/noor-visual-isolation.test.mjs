@@ -40,7 +40,7 @@ test('teacher attendance is actual authorised database workflow, never a fake de
  assert.doesNotMatch(teacher,/NOOR_TEACHER_EMBED/);
  assert.match(teacher,/nt-quote-actions/);
  assert.match(teacher,/Open Register/);
- assert.match(teacher,/school class and section/i);
+ assert.match(teacher,/School Class & Section/);
  assert.match(attendance,/\.from\('noor_teacher_periods'\)/);
  assert.match(attendance,/\.from\('teacher_assignments'\)/);
  assert.match(attendance,/\.from\('attendance_sessions'\)/);

@@ -100,9 +100,9 @@ function renderClasses(){
  shell(titleBlock('Classes & Sections','ACADEMIC MANAGEMENT','All entries are real, school-scoped academic groups.')+
  '<div class="v2-title-action">'+(canManage()?button('+ Create Class','new-class',true)+button('+ Add Section','new-section'):'' )+'</div>'+
  '<div class="v2-two-cols"><section class="v2-panel"><h2>Classes · '+classes.length+'</h2>'+
- (classes.length?classes.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(x.name)+'</strong><small>'+sections.filter(y=>y.parent_group_id===x.id).length+' sections</small></div>').join(''):noData('Your school has no created classes.'))+'</section>'+
+ (classes.length?classes.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(x.name)+'</strong><small>'+sections.filter(y=>y.parent_group_id===x.id).length+' sections</small>'+(canManage()?'<button class="v2-btn v2-outline" type="button" data-edit-group="'+escapeHTML(x.id)+'">Edit</button>':'')+'</div>').join(''):noData('Your school has no created classes.'))+'</section>'+
  '<section class="v2-panel"><h2>Sections · '+sections.length+'</h2>'+
- (sections.length?sections.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(groupLabel(x.id))+'</strong><small>'+escapeHTML(x.code||'Section')+'</small></div>').join(''):noData('Sections have not been added yet.'))+'</section></div>');
+ (sections.length?sections.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(groupLabel(x.id))+'</strong><small>'+escapeHTML(x.code||'Section')+'</small>'+(canManage()?'<button class="v2-btn v2-outline" type="button" data-edit-group="'+escapeHTML(x.id)+'">Edit</button>':'')+'</div>').join(''):noData('Sections have not been added yet.'))+'</section></div>');
 }
 function renderProfile(){
  shell(titleBlock('My Profile','PERSONAL AND PRIVATE','Your picture and name belong only to your own authenticated user ID.')+
@@ -159,23 +159,27 @@ function openPeriod(row){
  const update=()=>{const x=subject(subj.value);live.textContent=x.icon+(x.matched?'':' '+(x.initials||''));live.style.setProperty('--sh',String(x.hue));};
  subj.addEventListener('input',update);update();
 }
-function newGroup(type){
- if(!canManage())return say('Only authorised school managers can create classes.',true);
+function newGroup(type,existing=null){
+ if(!canManage())return say('Only authorised school managers can edit classes.',true);
+ if(!['class','section'].includes(type))return say('This group type is not editable here.',true);
  const classes=state.groups.filter(g=>g.group_type==='class');
- const body='<label>'+ (type==='class'?'Class name':'Section name') +'<input name="name" maxlength="120" required placeholder="'+(type==='class'?'Class 1':'Section A')+'"></label>'+
- '<label>Code (optional)<input name="code" maxlength="40"></label>'+
+ const body='<label>'+ (type==='class'?'Class name':'Section name') +'<input name="name" maxlength="120" required placeholder="'+(type==='class'?'Class 1':'Section A')+'" value="'+escapeHTML(existing?.name||'')+'"></label>'+
+ '<label>Code (optional)<input name="code" maxlength="40" value="'+escapeHTML(existing?.code||'')+'"></label>'+
  (type==='section'?'<label>Parent class<select name="parent_group_id" required><option value="">Choose a class</option>'+
- classes.map(c=>'<option value="'+escapeHTML(c.id)+'">'+escapeHTML(c.name)+'</option>').join('')+'</select></label>':'')+
- '<label>Capacity (optional)<input name="capacity" type="number" min="1"></label>';
- showDialog(type==='class'?'Create School Class':'Add Class Section',body,async f=>{
+ classes.map(c=>'<option value="'+escapeHTML(c.id)+'" '+(existing?.parent_group_id===c.id?'selected':'')+'>'+escapeHTML(c.name)+'</option>').join('')+'</select></label>':'')+
+ '<label>Capacity (optional)<input name="capacity" type="number" min="1" value="'+escapeHTML(existing?.capacity||'')+'"></label>';
+ showDialog(existing?'Edit '+(type==='class'?'School Class':'Class Section'):(type==='class'?'Create School Class':'Add Class Section'),body,async f=>{
   const name=String(f.get('name')||'').trim();if(!name)throw Error('Enter the class or section name.');
   const payload={institution_id:state.institution.id,group_type:type,name,code:String(f.get('code')||'').trim()||null,
    capacity:f.get('capacity')?Number(f.get('capacity')):null};
   if(type==='section')payload.parent_group_id=f.get('parent_group_id')||null;
-  const {data,error}=await db.from('academic_groups').insert(payload).select('id').single();
-  if(error||!data)throw error||Error('Class could not be created.');
+  const query=existing?db.from('academic_groups').update(payload).eq('id',existing.id).eq('institution_id',state.institution.id):
+   db.from('academic_groups').insert(payload);
+  const {data,error}=await query.select('id').single();
+  if(error||!data)throw error||Error('Class could not be saved.');
  });
 }
+
 async function reloadSchool(){
  const m=state.membership;
  if(!m)return;
@@ -273,6 +277,7 @@ root.addEventListener('click',async event=>{
   return;
  }
  const edit=event.target.closest('[data-edit-period]');if(edit){const p=state.periods.find(x=>x.id===edit.dataset.editPeriod);if(p)openPeriod(p)}
+ const group=event.target.closest('[data-edit-group]');if(group){const item=state.groups.find(x=>x.id===group.dataset.editGroup);if(item&&canManage())newGroup(item.group_type,item)}
 });
 root.addEventListener('submit',async event=>{
  const id=event.target.id;

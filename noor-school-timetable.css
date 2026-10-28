@@ -64,3 +64,7 @@
  .nsto-dialog footer .nsto-save{flex:1}
 }
 @media(prefers-reduced-motion:reduce){.nsto-overlay{backdrop-filter:none}}
+.nsto-lesson-inputs{display:grid;gap:10px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#f9f1f5,#fffaf8);border:1px solid #ecdae4}
+.nsto-lesson-inputs h3{font:700 18px/1.2 'Playfair Display',Georgia,serif;color:#603348;margin:0}
+.nsto-lesson-inputs .nsto-muted{margin:0!important}
+.nsto-dialog .nsto-lesson-inputs textarea{background:#fffefc}

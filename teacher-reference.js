@@ -269,19 +269,17 @@ function showProfileEditor(){
  });
 }
 async function uploadPhoto(e){
- const f=e.target.files?.[0],a=get();if(!f)return;
- if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>3*1024*1024){notify('Choose a JPG, PNG or WebP photo under 3 MB.','error');e.target.value='';return}
+ const file=e.target.files?.[0],a=get();if(!file)return;
  try{
- const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[f.type],path=a.user.id+'/profile.'+ext;
- const upload=await a.db.storage.from('student-photos').upload(path,f,{upsert:true,contentType:f.type,cacheControl:'60'});
- if(upload.error)throw upload.error;
- const update=await a.db.from('profiles').update({avatar_path:path}).eq('id',a.user.id).eq('school_id',a.schoolId);
- if(update.error)throw update.error;
- const url=await a.db.storage.from('student-photos').createSignedUrl(path,900);
- a.profile.avatar_path=path;a.profile.avatar_url=url.data?.signedUrl||'';notify('Profile photo updated.');await render();
+  const accountId=a.user?.id;
+  const saved=await window.NOOR_AVATAR_SAFE.uploadOwn({client:a.db,userId:accountId,profile:a.profile,schoolId:a.schoolId,file});
+  a.profile.avatar_url=saved.avatar_url;
+  notify('Your own profile photo has been updated.','success');
+  await render();
  }catch(err){notify('Photo could not be updated: '+err.message,'error')}
  finally{e.target.value=''}
 }
+
 async function showPeriodEditor(p){
  const app=get(),db=app.db;
  try{

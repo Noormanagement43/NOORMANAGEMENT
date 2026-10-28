@@ -13,7 +13,7 @@ test('edit-profile portrait fills entire left side while retaining photo editing
  assert.match(html,/id="noorProfilePhotoInput"/);
  assert.match(html,/id="noorProfilePhotoSave"/);
  assert.match(html,/await uploadPendingPhoto\(currentUser\.id,file\)/);
- assert.match(html,/noor-profile-portraits\.css\?v=20261028-full-side-v1/);
+ assert.match(html,/noor-profile-portraits\.css\?v=20261028-large-full-side-v2/);
  assert.match(css,/#view-profile \.noor-profile-main\{/);
  assert.match(css,/#view-profile \.noor-profile-photo-col\{/);
  assert.match(css,/\.noor-profile-avatar\.avatar\{/);
@@ -28,7 +28,7 @@ test('teacher and principal photo left panels are large and mobile compatible',a
  assert.match(principal,/pd-photo/);
  assert.match(css,/#workspace\.noor-teacher-activated \.noor-t4 \.nt-profile \.nt-photo-column/);
  assert.match(css,/#noor-principal \.pd-profile \.pd-photo/);
- assert.match(css,/min-height:320px!important/);
+ assert.match(css,/min-height:425px!important/);
  assert.match(css,/@media\(max-width:700px\)/);
  assert.match(css,/@media\(max-width:390px\)/);
  assert.doesNotMatch(css,/\.sp-avatar\s*\{/); // Do not override student photo components.

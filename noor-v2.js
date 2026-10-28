@@ -194,7 +194,7 @@ async function reloadSchool(){
  state.photoUrl=ref?await window.NOOR_AVATAR_SAFE.signedUrl({client:db,storedReference:ref,userId:state.user.id}):null;
 }
 async function bootstrap(){
- const token=++bootstrapId;if(loading)return;loading=true;
+ if(loading)return;const token=++bootstrapId;loading=true;
  try{
   if(!db){root.innerHTML='<p class="v2-error">The new Supabase library did not load. Check your connection.</p>';return}
   const auth=await db.auth.getUser();if(token!==bootstrapId)return;

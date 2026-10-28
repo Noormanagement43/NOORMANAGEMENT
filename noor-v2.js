@@ -274,22 +274,83 @@ function newGroup(type,existing=null){
  });
 }
 
+async function fetchSchoolPeriods(institutionId){
+ const all=[];
+ for(let offset=0;offset<12000;offset+=500){
+  const {data,error}=await db.from('teacher_timetable_periods')
+   .select('id,institution_id,academic_group_id,teacher_membership_id,created_by,subject_name,weekday,period_number,start_time,end_time,room_label')
+   .eq('institution_id',institutionId).order('weekday').order('start_time')
+   .range(offset,offset+499);
+  if(error)throw error;
+  all.push(...(data||[]));
+  if(!data||data.length<500)break;
+  if(offset===11500)console.warn('NOOR: timetable exceeds current 12,000-period page limit.');
+ }
+ return all;
+}
 async function reloadSchool(){
  const m=state.membership;
  if(!m)return;
  const current=await db.auth.getUser();
- if(current.error||current.data?.user?.id!==state.user.id)throw Error('Your session changed. Sign in again.');
- const [institution,groups,periods,profile]=await Promise.all([
-  db.from('institutions').select('id,name,institution_type,status').eq('id',m.institution_id).maybeSingle(),
-  db.from('academic_groups').select('id,institution_id,parent_group_id,name,code,group_type,is_active').eq('institution_id',m.institution_id).order('name').limit(500),
-  db.from('teacher_timetable_periods').select('id,institution_id,academic_group_id,teacher_membership_id,created_by,subject_name,weekday,period_number,start_time,end_time,room_label').eq('institution_id',m.institution_id).order('weekday').order('start_time').limit(500),
-  db.from('profiles').select('id,full_name,avatar_url').eq('id',state.user.id).maybeSingle()
+ if(current.error||current.data?.user?.id!==state.user.id)throw Error('Your login changed. Sign in again.');
+ const student=isStudent();
+ const [institution,groups,periods,profile,enrollments,attendance]=await Promise.all([
+  db.from('institutions').select('id,name,institution_type,status,timezone').eq('id',m.institution_id).maybeSingle(),
+  db.from('academic_groups').select('id,institution_id,parent_group_id,name,code,group_type,is_active').eq('institution_id',m.institution_id).order('name').limit(1000),
+  fetchSchoolPeriods(m.institution_id),
+  db.from('profiles').select('id,full_name,avatar_url').eq('id',state.user.id).maybeSingle(),
+  student?db.from('academic_group_memberships').select('group_id,membership_id,status')
+   .eq('institution_id',m.institution_id).eq('membership_id',m.id).eq('status','active').limit(300):Promise.resolve({data:[]}),
+  student?db.from('attendance_records').select('attendance_status,marked_at,session_id')
+   .eq('institution_id',m.institution_id).eq('student_membership_id',m.id)
+   .order('marked_at',{ascending:false}).limit(600):Promise.resolve({data:[]})
  ]);
- for(const x of [institution,groups,periods,profile])if(x.error)throw x.error;
+ for(const x of [institution,groups,profile,enrollments,attendance])if(x.error)throw x.error;
  if(institution.data?.status!=='active')throw Error('Your school has not been activated.');
- state.institution=institution.data;state.groups=groups.data||[];state.periods=periods.data||[];state.profile=profile.data||state.profile;
+ const stillSigned=await db.auth.getUser();
+ if(stillSigned.error||stillSigned.data?.user?.id!==state.user.id)throw Error('Account changed during loading; reload your workspace.');
+ state.institution=institution.data;
+ state.groups=groups.data||[];
+ state.periods=periods;
+ state.profile=profile.data||state.profile;
+ state.enrollments=enrollments.data||[];
+ state.attendance=attendance.data||[];
+ state.staffNames={};
+ // The school Principal sees teacher names on saved periods. Students receive
+ // only the timetable for their class, not the staff directory.
+ if(canManage()){
+  const members=await db.from('institution_memberships').select('id,user_id,role')
+   .eq('institution_id',m.institution_id).eq('status','active')
+   .in('role',['teacher','faculty']).limit(1000);
+  if(!members.error&&members.data?.length){
+   const userIds=[...new Set(members.data.map(x=>x.user_id).filter(Boolean))];
+   if(userIds.length){
+    const names=await db.from('profiles').select('id,full_name').in('id',userIds);
+    if(!names.error){
+     const lookup=Object.fromEntries((names.data||[]).map(x=>[x.id,x.full_name]));
+     state.staffNames=Object.fromEntries(members.data.map(x=>[x.id,lookup[x.user_id]||'Teacher']));
+    }
+   }
+  }
+ }
  const ref=state.profile?.avatar_url||'';
- state.photoUrl=ref?await window.NOOR_AVATAR_SAFE.signedUrl({client:db,storedReference:ref,userId:state.user.id}):null;
+ if(ref!==state.photoRef||!state.photoUrl||Date.now()>(state.photoExpiresAt||0)){
+  state.photoUrl=ref?await window.NOOR_AVATAR_SAFE.signedUrl({
+   client:db,storedReference:ref,userId:state.user.id}):null;
+  state.photoRef=ref;
+  state.photoExpiresAt=Date.now()+9*60*1000;
+ }
+}
+async function refreshLive(){
+ if(liveRefreshing||loading||!state.membership||document.hidden)return;
+ liveRefreshing=true;
+ try{
+  await reloadSchool();
+  // Do not destroy a half-completed teacher period editor when another teacher
+  // publishes a period at the same time.
+  if(!root.querySelector('#v2Dialog[open]'))renderCurrent();
+ }catch(error){console.warn('NOOR live school refresh failed:',err(error))}
+ finally{liveRefreshing=false}
 }
 async function bootstrap(){
  if(loading)return;const token=++bootstrapId;loading=true;

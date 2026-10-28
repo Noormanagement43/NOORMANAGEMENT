@@ -266,51 +266,28 @@ async function uploadPhoto(e){
 async function showPeriodEditor(p){
  const app=get(),db=app.db;
  try{
-  let r=await db.from('teacher_assignments').select('class_id,section_id,subject_id').eq('school_id',app.schoolId).eq('teacher_id',app.user.id).eq('is_active',true).limit(200);
-  if(r.error)throw r.error;
-  let assigns=r.data||[];
-  let ids=[...new Set(assigns.map(x=>x.class_id))];
-  if(!ids.length){
-    const allC=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).limit(100);
-    if(allC.data?.length){
-      ids=allC.data.map(c=>c.id);
-      assigns=allC.data.map(c=>({class_id:c.id,section_id:null,subject_id:null}));
-    }
-  }
-  if(!ids.length)return notify('Please create at least one school class first.','error');
-  const [cs,ss,subs]=await Promise.all([
-    db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).in('id',ids),
-    db.from('sections').select('id,class_id,name').eq('is_active',true).in('class_id',ids),
-    db.from('subjects').select('id,class_id,name').eq('school_id',app.schoolId)
+  // Teachers can plan their own periods using REAL school classes and sections.
+  // Never fabricate a Class 1–10 list: the principal's school structure is authoritative.
+  const cs=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true).order('sort_order').limit(200);
+  if(cs.error)throw cs.error;
+  const allClasses=cs.data||[];
+  if(!allClasses.length)return notify('No school classes exist yet. Create a real class first in School Management.','error');
+  const ids=allClasses.map(c=>c.id);
+  const [ss,subs]=await Promise.all([
+    db.from('sections').select('id,class_id,name').in('class_id',ids).eq('is_active',true),
+    db.from('subjects').select('id,class_id,name').eq('school_id',app.schoolId).eq('is_active',true)
   ]);
-  if(cs.error||ss.error||subs.error)throw cs.error||ss.error||subs.error;
-  const cm=new Map((cs.data||[]).map(x=>[x.id,x])), sections=ss.data||[],subj=subs.data||[],options=[];
-  for(const item of assigns){
-    const c=cm.get(item.class_id);if(!c)continue;
-    const selected=item.section_id?sections.filter(x=>x.id===item.section_id):sections.filter(x=>x.class_id===item.class_id);
-    const subject=subj.find(x=>x.id===item.subject_id);
+  if(ss.error||subs.error)throw ss.error||subs.error;
+  const sections=ss.data||[],subj=subs.data||[],options=[];
+  for(const c of allClasses){
+    const selected=sections.filter(x=>x.class_id===c.id);
+    const ownedSubject=subj.find(x=>x.class_id===c.id);
     for(const sec of selected.length?selected:[null]){
-      const entry={class_id:c.id,section_id:sec?.id||null,subject_id:subject?.id||null,subject_name:subject?.name||'',class_label:c.name+(sec?' · Section '+sec.name:'')};
-      if(!options.some(x=>x.class_id===entry.class_id&&x.section_id===entry.section_id&&x.subject_id===entry.subject_id))options.push(entry);
-    }
-  }
-  if(!options.length){
-    const allCls=await db.from('classes').select('id,name').eq('school_id',app.schoolId).eq('is_active',true);
-    const allSec=await db.from('sections').select('id,class_id,name').eq('is_active',true);
-    for(const c of allCls.data||[]){
-      const secs=(allSec.data||[]).filter(x=>x.class_id===c.id);
-      for(const sec of secs.length?secs:[null]){
-        options.push({class_id:c.id,section_id:sec?.id||null,subject_name:'General',class_label:c.name+(sec?' · Section '+sec.name:'')});
-      }
-    }
-  }
-  if(!options.length){
-    for(let k=1;k<=10;k++){
-      options.push({class_id:null,section_id:null,subject_name:'General',class_label:'Class '+k+' · Section A'});
+      options.push({class_id:c.id,section_id:sec?.id||null,subject_id:ownedSubject?.id||null,subject_name:ownedSubject?.name||'',class_label:c.name+(sec?' · Section '+sec.name:'')});
     }
   }
   if(p && !options.some(x=>x.class_id===p.class_id && x.section_id===(p.section_id||null))){
-    options.unshift({class_id:p.class_id,section_id:p.section_id||null,subject_name:p.subject_name||'Class',class_label:p.class_label||'Assigned Class'});
+    return notify('This period’s class or section is no longer active in your school. Choose an existing class.','error');
   }
   const daysHTML=days.map((d,i)=>'<option value="'+i+'" '+((p?.weekday??new Date().getDay())===i?'selected':'')+'>'+d+'</option>').join('');
   const kinds=['class','break','lunch'].map(x=>'<option value="'+x+'" '+((p?.block_type||'class')===x?'selected':'')+'>'+x+'</option>').join('');
@@ -322,11 +299,12 @@ async function showPeriodEditor(p){
     field('Start time','start_time',fmt(p?.start_time||'09:00'),'time','required')+
     field('End time','end_time',fmt(p?.end_time||'09:45'),'time','required')+
     '<label>Block type<select name="block_type">'+kinds+'</select></label>'+
-    '<label>Assigned Class & Section<select name="context_index" required>'+choices+'</select></label>'+
+    '<label>School Class & Section<select name="context_index" required>'+choices+'</select></label>'+
     field('Subject','subject_name',p?.subject_name||options[selected]?.subject_name||'General','text','required maxlength="80"')+
-    '<p class="nt4-span nt-muted">Timetable changes need Principal approval before becoming active.</p>';
-  const modalNode=modal(p?'Edit period request':'New timetable request',body,async form=>{
-    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))]||options[0]||{class_label:'Class 1 · Section A',subject_name:'General'};
+    '<p class="nt4-span nt-muted">You can edit your own timetable. It uses existing school classes and sections. Student attendance remains subject to school access permissions.</p>';
+  const modalNode=modal(p?'Edit my period':'Add my period',body,async form=>{
+    const val=k=>String(form.elements[k]?.value||'').trim(),context=options[Number(val('context_index'))];
+    if(!context?.class_id)throw Error('Choose an existing class and section.');
     if(!val('subject_name'))throw Error('Subject is required.');
     if(val('start_time')>=val('end_time'))throw Error('End time must be later than start time.');
     const values={
@@ -341,9 +319,9 @@ async function showPeriodEditor(p){
       subject_name:val('subject_name')||context.subject_name||'General',
       approval_status:'approved'
     };
-    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId):
+    const result=p?await db.from('noor_teacher_periods').update(values).eq('id',p.id).eq('school_id',app.schoolId).eq('teacher_id',app.user.id):
       await db.from('noor_teacher_periods').insert({...values,school_id:app.schoolId,teacher_id:app.user.id,status:'upcoming'});
-    if(result.error)throw result.error;
+    if(result.error)throw new Error(result.error.message+' (Teacher timetable permissions may need a school-policy update.)');
     notify(p?'Timetable period updated successfully.':'New period added to your timetable.','success');
     try{await render();}catch{}
   });

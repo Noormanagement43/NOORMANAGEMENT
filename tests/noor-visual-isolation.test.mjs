@@ -40,7 +40,9 @@ test('teacher attendance is actual authorised database workflow, never a fake de
  assert.doesNotMatch(teacher,/NOOR_TEACHER_EMBED/);
  assert.match(teacher,/nt-quote-actions/);
  assert.match(teacher,/Open Register/);
- assert.match(teacher,/School Class & Section/);
+ const module=await read('noor-school-timetable.js');
+ assert.match(module,/Class<select name="class_id"/);
+ assert.match(module,/Section<select name="section_id"/);
  assert.match(attendance,/\.from\('noor_teacher_periods'\)/);
  assert.match(attendance,/\.from\('teacher_assignments'\)/);
  assert.match(attendance,/\.from\('attendance_sessions'\)/);

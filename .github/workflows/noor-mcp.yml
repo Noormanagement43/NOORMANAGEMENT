@@ -1,0 +1,33 @@
+name: NOOR MCP validation
+
+on:
+  push:
+    branches:
+      - feature/noor-custom-mcp
+    paths:
+      - "supabase/functions/noor-mcp/**"
+      - ".github/workflows/noor-mcp.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/noor-mcp/**"
+      - ".github/workflows/noor-mcp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Unit tests
+        run: deno test supabase/functions/noor-mcp/security_test.ts
+      - name: Type check Edge Function
+        run: deno check supabase/functions/noor-mcp/index.ts
+      - name: Type check staging smoke test
+        run: deno check supabase/functions/noor-mcp/smoke_test.ts

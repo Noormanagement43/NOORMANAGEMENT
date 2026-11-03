@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
 
   const contentType = (req.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
   if (contentType !== "application/json") return new Response("Content-Type must be application/json.", { status: 415 });
-  const accept = req.headers.get("Accept") || "";
+  const accept = (req.headers.get("Accept") || "").toLowerCase();
   if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
     return new Response("Accept must include application/json and text/event-stream.", { status: 406 });
   }

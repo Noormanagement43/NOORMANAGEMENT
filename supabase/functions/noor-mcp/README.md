@@ -1,38 +1,82 @@
 # NOOR Custom MCP
 
-This folder contains the first customer-facing MCP endpoint for NOOR.
+This is the initial authenticated, read-only NOOR MCP endpoint. It is intentionally **disabled by default** and is not yet approved for customer rollout.
 
-## Endpoint
-After deployment:
-https://<SUPABASE_PROJECT_REF>.supabase.co/functions/v1/noor-mcp
+## Security gates
 
-Transport: stateless MCP JSON-RPC over HTTP POST.
+- Set `NOOR_MCP_ENABLED=true` only in an isolated staging/test deployment after reviewing the code and tests.
+- Set `NOOR_MCP_ALLOWED_ORIGINS` to a comma-separated list of exact HTTPS origins used by NOOR web clients. Do not use wildcards. Native/server-side MCP clients without an `Origin` header are supported.
+- Keep Supabase Edge Function JWT verification enabled (`verify_jwt=true`).
+- Configure `SUPABASE_URL` and the project's publishable/anon key. Do not configure or use a service-role key in this function.
+- All data queries use the authenticated NOOR user's JWT and therefore remain subject to existing Supabase RLS.
+- Request bodies are capped at 64 KiB. Only JSON POST requests are accepted. Invalid Origin, invalid credentials, unsupported protocol versions, and malformed requests are rejected.
+- No MCP session IDs are issued; the server is stateless. GET/DELETE are intentionally not supported for this stateless endpoint.
 
-## Authentication
-Send a valid NOOR Supabase user access token in the Authorization: Bearer header.
-The function verifies the token with Supabase Auth and creates a Supabase client carrying that same user JWT. It does not use a service-role key; database queries remain subject to existing RLS policies.
+## Current tools (read-only)
 
-## Initial read-only tools
-- noor_list_my_institutions: active institutions for the authenticated user.
-- noor_get_attendance_summary: own attendance for students; aggregate attendance for institution leaders.
-- Teachers are deliberately denied institution-wide attendance until teacher-to-class scope is explicitly enforced.
+- `noor_list_my_institutions`: active institutions connected to the authenticated user and their role.
+- `noor_get_attendance_summary`: a student's own attendance or aggregate attendance for an institution leader.
+- Teacher and faculty attendance summaries are blocked until teacher-to-class authorization is explicitly enforced.
+- Student personal attendance is restricted by both the membership filter and the database's existing RLS policy.
+- Date boundaries are UTC calendar dates in this first version.
 
-## Deployment
-1. Review this branch and run NOOR tests.
-2. Confirm the Edge Function environment has SUPABASE_URL and SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEYS).
-3. Deploy noor-mcp with JWT verification enabled.
-4. Set NOOR_MCP_ALLOWED_ORIGIN to the exact NOOR app origin for browser-based clients.
-5. Test with a dedicated test student and test principal in separate institutions.
-6. Verify cross-institution access is denied before enabling external customer connections.
+## Local validation
 
-## Current limitations
-- This first endpoint uses a NOOR Supabase user JWT as its bearer credential.
-- OAuth 2.1 authorization/discovery and per-client consent/revocation are not implemented yet. Do not publish as a general ChatGPT/Claude/Gemini connector until that authorization layer is implemented and tested.
-- Only read-only tools are exposed. Write tools must have role-specific authorization, audit logging, idempotency and explicit confirmation.
-- Shared-store rate limiting is required before broad public rollout.
-- No AI provider secrets or Brevo credentials are exposed through MCP.
+Run unit tests without network access:
 
-## Security
-- Never add service-role keys or Gemini/Claude/ChatGPT/Brevo secrets to browser code or MCP responses.
-- Derive user identity from the verified token, never from tool arguments.
-- Never trust institution_id alone; verify active membership and rely on RLS.
+```sh
+deno test supabase/functions/noor-mcp/security_test.ts
+```
+
+Type-check the Edge Function:
+
+```sh
+deno check supabase/functions/noor-mcp/index.ts
+```
+
+## Staging smoke test
+
+Use a dedicated staging project and test accounts only. Never paste access tokens into source control or chat.
+
+Required environment variables:
+
+- `NOOR_MCP_TEST_ENDPOINT`: deployed staging function URL.
+- `NOOR_MCP_TEST_STUDENT_TOKEN`: access token for a staging student in institution A.
+- `NOOR_MCP_TEST_PRINCIPAL_TOKEN`: access token for a staging principal in institution B.
+- `NOOR_MCP_TEST_OTHER_INSTITUTION_ID`: institution B UUID, to verify student A cannot query it.
+
+Run:
+
+```sh
+deno test --allow-env --allow-net supabase/functions/noor-mcp/smoke_test.ts
+```
+
+The smoke test checks unauthenticated rejection, bad-Origin rejection, initialization, tool discovery, role-scoped tool access, and cross-institution denial. It performs no writes.
+
+## Customer-facing OAuth rollout (not implemented yet)
+
+Before ChatGPT, Claude, or Gemini customers connect:
+
+1. Configure Supabase Auth OAuth 2.1 / OIDC for NOOR with Authorization Code + PKCE.
+2. Build the NOOR authorization/consent page. Show the client name, requested access and institution context; let the signed-in user approve or deny.
+3. Ensure OAuth-issued access tokens still resolve to the same NOOR user and RLS scope. Never let an LLM choose or impersonate a user.
+4. Add per-client consent/revocation and narrow scopes for each operation.
+5. Add shared, persistent rate limiting and security audit events.
+6. Run the staging smoke test with separate student, teacher, principal and cross-institution accounts.
+7. Only then enable the endpoint in production and publish its URL.
+
+Supabase's OAuth 2.1 server supports Authorization Code + PKCE, refresh tokens, dynamic client registration and MCP authentication. The NOOR consent UI and authorization configuration still need to be implemented and verified.
+
+## Write operations (future phase)
+
+Write tools are deliberately absent. Before adding any mutation (for example, mark attendance, publish a notice, create an assignment or update a timetable), implement and test:
+
+- role + institution + class/section scoped authorization on every call;
+- server-side validation and allowlisted fields;
+- atomic database operations with safe idempotency keys;
+- immutable audit events containing actor, institution, action and target;
+- explicit user confirmation for consequential actions;
+- duplicate/replay protection and shared rate limiting;
+- negative tests proving that students, teachers and users in another institution cannot exceed their permissions.
+
+Never expose service-role keys, Gemini/Claude/ChatGPT credentials, or Brevo API keys through MCP tools or client responses.

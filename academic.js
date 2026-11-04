@@ -78,7 +78,7 @@ function context(topic){
  return {school_id:sid(),academic_year_id:val('acadYear'),academic_year_label:year?.label||'',class_id:val('acadClass'),class_name:c?.name||'',section_id:val('acadSection')||null,section_name:se?.name||'Whole class',subject_id:val('acadSubject'),subject_name:sub?.name||'',unit_id:val('acadUnit')||null,topic:topic||''};
 }
 async function ai(payload){
- const r=await db().functions.invoke('noor-ai-academic-assistant',{body:payload});
+ const r=await db().functions.invoke('noor-v2-ai',{body:{...payload,institution_id:sid()}});
  if(r.error)throw new Error(r.data?.error||r.error.message||'AI request failed');
  if(r.data?.error)throw new Error(r.data.error);return r.data;
 }
@@ -185,7 +185,7 @@ async function generateNotes(){
  if(!imgs.length&&!val('roughNotes')&&!val('reviewedSyllabusText')&&!c.topic)throw new Error('Choose a photo OR type a short description to generate notes.');
  const r=await ai({...c,action:'notes',language:val('acadLanguage'),rough_text:val('roughNotes'),reviewed_source_text:val('reviewedSyllabusText'),images:imgs});
  state.lastAI=r.output;state.noteContext=c;$('notesOutput').innerHTML=outputHtml(r.output);$('notesEditor').value=readableText(r.output);
- status('notesAiStatus','AI draft created. Teacher review is required before publishing. Tokens used: '+(r.usage?.input_tokens||0)+' input / '+(r.usage?.output_tokens||0)+' output.','success');
+ status('notesAiStatus','AI draft created. Teacher review is required before publishing.','success');
  }catch(e){status('notesAiStatus',err(e),'error');}
 }
 async function saveNotes(publish){

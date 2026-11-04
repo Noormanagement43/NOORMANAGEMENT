@@ -1,5 +1,7 @@
 # NOOR backend and central integration gateway
 
+**Later update:** AI routing and manager/brain tools are now deployed. See [current AI setup](NOOR_AI_SETUP_20261104.md). General workflow execution and external OAuth remain pending. The sections below describe the initial foundation.
+
 ## Deployed on 4 November 2026
 
 Only destination project `ayrryemawwplguaauxij` was modified. No historical school data was imported or deleted. No provider messages were sent and no external account was connected.

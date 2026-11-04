@@ -44,7 +44,7 @@ Deno.test('authenticated status reveals booleans only; MCP never advertises exte
   assert((await init.json()).result.serverInfo.name==='noor-internal-gateway');
   const listed = await handle(request({jsonrpc:'2.0',id:2,method:'tools/list'},'/mcp'));
   const toolList = (await listed.json()).result.tools;
-  assert(toolList.length===3 && toolList.every((t:{name:string})=>!t.name.includes('send')));
+  assert(toolList.length===5 && toolList.every((t:{name:string})=>!t.name.includes('send')));
   const invalid = await handle(request({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'noor_draft_task',arguments:{institution_id:'attacker-filter'}}},'/mcp'));
   assert((await invalid.json()).error.code===-32602);
  } finally {

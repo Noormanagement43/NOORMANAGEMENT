@@ -22,11 +22,14 @@ test('School and University class editor has separate loader and editable 1–10
  assert.match(html,/\/\/ Reading the page is read-only/);
 });
 
-test('animated Gemini assistant and fake attendance UI are not loaded',async()=>{
+test('AI uses an explicit settings entry without animated mascot or fake attendance UI',async()=>{
  const [principal,teacher,html]=await Promise.all([source('principal-live.js'),source('teacher-reference.js'),source('index.html')]);
  assert.doesNotMatch(principal,/id="pd-ai-assistant"/);
  assert.doesNotMatch(teacher,/id="ntOpenJinni"/);
- assert.doesNotMatch(html,/<script src="\.\/noor-secure-assistant\.js/);
+ assert.match(html,/<script src="\.\/noor-secure-assistant\.js/);
+ const assistant=await source('noor-secure-assistant.js');
+ assert.match(assistant,/mountSettings/);
+ assert.doesNotMatch(assistant,/createLauncher|noorAISafeLauncher/);
  assert.doesNotMatch(html,/<script src="\.\/noor-cartoon-mascot\.js/);
  assert.doesNotMatch(html,/<script src="\.\/teacher-reference-attendance\.js/);
 });

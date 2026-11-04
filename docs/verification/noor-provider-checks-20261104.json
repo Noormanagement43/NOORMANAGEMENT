@@ -1,0 +1,69 @@
+{
+  "checked_date": "2026-11-04",
+  "verification_type": "live server-side provider tests",
+  "initial_checked_at": "2026-11-04T09:50:45.438Z",
+  "groq_checked_at": "2026-11-04T09:52:18.880Z",
+  "results": {
+    "gemini": {
+      "provider": "gemini",
+      "key_saved": true,
+      "secret_detected": true,
+      "environment_matched": true,
+      "secret_name": "gemini",
+      "authentication_successful": true,
+      "api_response_successful": true,
+      "http_status": 200,
+      "verified": true,
+      "model": "gemini-3.5-flash-lite",
+      "code": "MODEL_ACCESS_VERIFIED",
+      "generation_tested": true,
+      "generation_response_successful": true,
+      "expected_output_match": true
+    },
+    "groq": {
+      "secret_detected": true,
+      "secret_name": "groq",
+      "authentication_successful": true,
+      "model_list_http_status": 200,
+      "configured_model": "openai/gpt-oss-120b",
+      "configured_model_available": true,
+      "generation_response_successful": true,
+      "expected_output_match": true
+    },
+    "openai": {
+      "provider": "openai",
+      "key_saved": true,
+      "secret_detected": true,
+      "environment_matched": true,
+      "secret_name": "chatgpt",
+      "authentication_successful": true,
+      "api_response_successful": true,
+      "http_status": 200,
+      "verified": false,
+      "model": "",
+      "code": "MISSING_MODEL",
+      "generation_tested": false,
+      "generation_response_successful": null
+    },
+    "brevo": {
+      "provider": "brevo",
+      "secret_name": "brevo",
+      "secret_detected": true,
+      "environment_matched": true,
+      "key_saved": true,
+      "sender_configured": false,
+      "sender_verified": null,
+      "email_delivery_tested": false,
+      "verified": false,
+      "authentication_successful": false,
+      "api_response_successful": false,
+      "http_status": 401,
+      "code": "INVALID_KEY"
+    }
+  },
+  "database_used": false,
+  "student_data_used": false,
+  "email_sent": false,
+  "temporary_operator_diagnostic_disabled": true,
+  "canonical_application_jwt_verification_preserved": true
+}

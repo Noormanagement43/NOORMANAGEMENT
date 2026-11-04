@@ -20,7 +20,7 @@ jobs:
           deno-version: v2.9.6
       - run: npm ci --ignore-scripts --prefix supabase/functions/noor-backend-api
       - run: deno check --node-modules-dir=manual supabase/functions/noor-backend-api/index.ts
-      - run: deno test --allow-env --node-modules-dir=manual supabase/functions/noor-backend-api/index_test.ts
+      - run: deno test --allow-env --node-modules-dir=manual supabase/functions/noor-backend-api/index_test.ts supabase/functions/noor-backend-api/brevo_mcp_test.ts
 
       - run: npm ci --ignore-scripts --prefix supabase/functions/noor-v2-ai
       - run: deno check --node-modules-dir=manual supabase/functions/noor-v2-ai/index.ts

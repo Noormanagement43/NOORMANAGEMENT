@@ -44,11 +44,24 @@ Deno.test('authenticated status reveals booleans only; MCP never advertises exte
   assert((await init.json()).result.serverInfo.name==='noor-internal-gateway');
   const listed = await handle(request({jsonrpc:'2.0',id:2,method:'tools/list'},'/mcp'));
   const toolList = (await listed.json()).result.tools;
-  assert(toolList.length===5 && toolList.every((t:{name:string})=>!t.name.includes('send')));
+  assert(toolList.length===6 && toolList.every((t:{name:string})=>!t.name.includes('send')));
   const invalid = await handle(request({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'noor_draft_task',arguments:{institution_id:'attacker-filter'}}},'/mcp'));
   assert((await invalid.json()).error.code===-32602);
  } finally {
   globalThis.fetch = previousFetch;
   names.forEach((n,i)=>previous[i]===undefined?Deno.env.delete(n):Deno.env.set(n,previous[i]!));
  }
+});
+Deno.test('Brevo MCP check denies a user without active institution leadership before contacting Brevo', async()=>{
+ const names=['SUPABASE_URL','SUPABASE_ANON_KEY']; const old=names.map(n=>Deno.env.get(n)); const previousFetch=globalThis.fetch;
+ try {
+  Deno.env.set('SUPABASE_URL',`https://${PROJECT_REF}.supabase.co`);Deno.env.set('SUPABASE_ANON_KEY','test-public-key');
+  globalThis.fetch=async(input)=>{
+   const url=String(input instanceof Request?input.url:input);
+   if(url.endsWith('/auth/v1/user')) return Response.json({id:'41000000-0000-4000-8000-000000000001',aud:'authenticated',role:'authenticated'});
+   assert(url.includes('/rest/v1/institution_memberships?'),'Unauthorized external request');return Response.json([]);
+  };
+  const response=await handle(request({action:'brevo.mcp.check',institution_id:'41000000-0000-4000-8000-000000000002'}));
+  assert(response.status===403,'MCP check must require an active leader');
+ }finally{globalThis.fetch=previousFetch;names.forEach((n,i)=>old[i]===undefined?Deno.env.delete(n):Deno.env.set(n,old[i]!));}
 });

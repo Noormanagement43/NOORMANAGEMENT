@@ -53,9 +53,9 @@ test('advanced teaching tools have focused presentation, not duplicate top-level
 test('new Supabase AI endpoint respects institution membership and holds secrets server-side',async()=>{
   const code=await read('supabase/functions/noor-v2-ai/index.ts');
   assert.match(code,/institution_memberships/);
-  assert.match(code,/\.eq\("user_id",uid\)\.eq\("status","active"\)/);
-  assert.match(code,/GEMINI_API_KEY/);
-  assert.match(code,/auth\.getUser\(bearer\)/);
+  assert.match(code,/\.eq\('user_id',verified\.data\.user\.id\)\.eq\('status','active'\)/);
+  assert.match(await read('supabase/functions/noor-v2-ai/providers.ts'),/GEMINI_API_KEY/);
+  assert.match(code,/auth\.getUser\(token\.slice\(7\)\)/);
   assert.match(code,/verify|institution/);
   assert.doesNotMatch(code,/SUPABASE_SERVICE_ROLE_KEY/);
   const config=await read('config.js');

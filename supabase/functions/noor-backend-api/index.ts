@@ -83,7 +83,7 @@ export async function handle(req: Request): Promise<Response> {
  async function action(name: string, input: Dict): Promise<unknown> {
   if (name === 'status') return {
    project_ref: PROJECT_REF, service: 'noor-backend-api', version: '1.1.0',
-   provider_secrets_present: { gemini: !!Deno.env.get('GEMINI_API_KEY'), openai: !!Deno.env.get('OPENAI_API_KEY'), groq: !!Deno.env.get('GROQ_API_KEY'), anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'), brevo: !!Deno.env.get('BREVO_API_KEY') },
+   provider_secrets_present: { gemini: !!(Deno.env.get('GEMINI_API_KEY')||Deno.env.get('gemini')), openai: !!(Deno.env.get('OPENAI_API_KEY')||Deno.env.get('chatgpt')), groq: !!(Deno.env.get('GROQ_API_KEY')||Deno.env.get('groq')), anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'), brevo: !!(Deno.env.get('BREVO_API_KEY')||Deno.env.get('brevo')) },
    oauth_connections_verified: false, external_task_execution_enabled: false,
    mcp: { transport: 'stateless-streamable-http', authentication: 'NOOR user JWT', external_oauth_ready: false },
   };

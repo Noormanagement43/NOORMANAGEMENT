@@ -151,3 +151,13 @@ html[data-noor-theme][data-noor-mode="light"] #noor-principal :is(.pd-profile h2
 html[data-noor-mode="dark"] .noor-timetable-dialog :is(p,label,h2,small){color:#edf3fa!important}
 html[data-noor-mode="dark"] .noor-timetable-dialog button:hover{background:#45648a!important;color:#fff!important}
 @media(max-width:560px){.noor-tt-form{grid-template-columns:1fr}.noor-timetable-dialog{padding:16px}.noor-tt-row{flex-wrap:wrap}.noor-tt-row>div{flex-basis:65%}}
+
+/* 2026-11-04: contrast and keyboard accessibility fixes, dark mode only. */
+html[data-noor-mode="dark"] #workspace :is(.nav button.active,#noorMobileNav button.active,.tab.active,.pill,.sectionchip){background:#345274!important;color:#f6f9ff!important;border-color:#7898ba!important}
+html[data-noor-mode="dark"] #workspace :is(.btn.light,.btn.soft,.btn.gold,button.light,button.soft,button.gold,.noor-tt-form button){background:#2a405a!important;color:#f6f9ff!important;border-color:#7898ba!important}
+html[data-noor-mode="dark"] :is(.nt-profile-modal,.nt4-dialog,.noor-timetable-dialog) button:not(:disabled){color:#f6f9ff!important;border-color:#7898ba!important}
+html[data-noor-mode="dark"] :is(.nt-profile-modal,.nt4-dialog,.noor-timetable-dialog) :is(button.nt-save,button[type="submit"]){background:#a7c8ef!important;color:#142337!important;border-color:#a7c8ef!important}
+html[data-noor-mode="dark"] #workspace :is(.nav button,#noorMobileNav button,.btn):hover:not(:disabled){border-color:#bed8f4!important}
+html[data-noor-mode="dark"] :is(#workspace,.nt-profile-modal,.nt4-dialog,.noor-timetable-dialog) :is(button,a,input,select,textarea):focus-visible{outline:3px solid #f3d294!important;outline-offset:2px}
+html[data-noor-mode="dark"] #workspace :is(.notice,.notice.info,.notice.success,.notice.error,.noor-ref-search-none){background:#273c53!important;color:#f4f8ff!important;border-color:#7898ba!important}
+@media(max-width:700px){#workspace .noor-t4 .nt-profile .nt-photo img{object-position:center top!important}}

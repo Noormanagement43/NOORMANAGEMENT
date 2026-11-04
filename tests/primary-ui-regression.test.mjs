@@ -35,3 +35,23 @@ test('principal quick actions open distinct notices, meetings and command-centre
  assert.match(html,/onclick="openView\('meetings'\)">Meetings<\/button>/);
  assert.match(html,/\['command-centre','email-automation','school-tasks','school-calendar'/);
 });
+
+test('free AI Manager uses Groq for both planning and drafting',async()=>{
+ const source=await read('supabase/functions/noor-v2-ai/index.ts');
+ assert.match(source,/const manager=config\('groq'\)/);
+ assert.match(source,/const plan=await generate\('groq'/);
+ assert.match(source,/const response=await generate\('groq'/);
+ assert.doesNotMatch(source,/const plan=await generate\('openai'/);
+ assert.doesNotMatch(source,/OPENAI_MANAGER_MODEL in Supabase Secrets to enable the manager/);
+});
+test('canonical student reports and calendar are bound to scoped real records',async()=>{
+ const source=await read('noor-v2.js');
+ for(const route of ['noor_calendar_events','noor_assessment_results','attendance_records']){
+  assert.ok(source.includes("db.from('"+route+"')"),route);
+ }
+ assert.match(source,/eq\('student_membership_id',m\.id\)/);
+ assert.match(source,/function studentAttendanceChart\(\)/);
+ assert.match(source,/function studentMarksChart\(\)/);
+ assert.match(source,/function renderCalendar\(\)/);
+ assert.match(source,/state\.calendarEvents=calendarEvents\.data\|\|\[\]/);
+});

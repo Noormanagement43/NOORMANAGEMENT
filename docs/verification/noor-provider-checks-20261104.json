@@ -58,7 +58,8 @@
       "authentication_successful": false,
       "api_response_successful": false,
       "http_status": 401,
-      "code": "INVALID_KEY"
+      "code": "INVALID_KEY",
+      "diagnosis": "API_KEY_NOT_FOUND_OR_INVALID"
     }
   },
   "database_used": false,

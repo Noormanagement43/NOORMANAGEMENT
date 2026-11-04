@@ -4,14 +4,14 @@ const a=()=>window.NOOR_AI_APP;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const css=document.createElement('style');css.textContent=[
 '.nt-profile-backdrop{position:fixed;inset:0;background:#1e193d91;z-index:100040;display:flex;align-items:center;justify-content:center;padding:15px}',
-'.nt-profile-modal{width:min(450px,100%);max-height:95vh;overflow:auto;background:white;border-radius:23px;padding:24px;box-shadow:0 20px 70px #24173f55;color:#302950}',
-'.nt-profile-modal h2{margin:0 0 5px;font-size:21px;color:#382f60}',
-'.nt-profile-modal p{font-size:12px;color:#776e89}',
-'.nt-profile-modal label{display:grid;gap:6px;margin:15px 0;font-size:12px;font-weight:800;color:#4c416f}',
-'.nt-profile-modal input{border:1px solid #e0d9ef;padding:12px;border-radius:12px;font:inherit;color:#332a53}',
+'.nt-profile-modal{width:min(450px,100%);max-height:95vh;overflow:auto;background:var(--paper,#fff);border:1px solid var(--line,#e0d9ef);border-radius:23px;padding:24px;box-shadow:0 20px 70px #24173f55;color:var(--ink,#302950)}',
+'.nt-profile-modal h2{margin:0 0 5px;font-size:21px;color:var(--ink,#382f60)}',
+'.nt-profile-modal p{font-size:12px;color:var(--muted,#776e89)}',
+'.nt-profile-modal label{display:grid;gap:6px;margin:15px 0;font-size:12px;font-weight:800;color:var(--ink,#4c416f)}',
+'.nt-profile-modal input{border:1px solid #e0d9ef;padding:12px;border-radius:12px;font:inherit;color:var(--ink,#332a53)}',
 '.nt-profile-modal .nt-buttons{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}',
-'.nt-profile-modal button{border-radius:12px;border:1px solid #ddd6ed;padding:11px 15px;background:#f3effc;color:#5a4c98;font-weight:800;cursor:pointer}',
-'.nt-profile-modal button.nt-save{background:#6255a5;color:white}',
+'.nt-profile-modal button{border-radius:12px;border:1px solid #ddd6ed;padding:11px 15px;background:var(--rose-soft,#f3effc);color:var(--ink,#5a4c98);font-weight:800;cursor:pointer}',
+'.nt-profile-modal button.nt-save{background:var(--berry,#6255a5);color:#fff}',
 '.nt-profile-modal button:disabled{opacity:.55}'
 ].join('');document.head.append(css);
 function edit(){

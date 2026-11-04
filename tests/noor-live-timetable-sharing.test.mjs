@@ -41,8 +41,8 @@ test('students see real class and section periods and own attendance, never fake
  assert.match(source,/function renderStudentHome\(\)/);
  assert.match(source,/function renderProgress\(\)/);
  assert.match(source,/\.eq\('student_membership_id',m\.id\)/);
- assert.match(source,/Verified subject marks are not available/);
- assert.match(source,/No percentages are invented/);
+ assert.match(source,/function studentMarksChart\(\)/);
+ assert.match(source,/No verified marks have been published for your account/);
  assert.match(source,/case'progress':if\(isStudent\(\)\)renderProgress\(\)/);
 });
 

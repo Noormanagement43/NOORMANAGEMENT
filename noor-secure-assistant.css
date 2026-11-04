@@ -1,0 +1,13 @@
+.noor-ai-v2-backdrop[hidden]{display:none!important}
+.noor-ai-v2-backdrop{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:#0008;padding:16px}
+.noor-ai-v2-dialog{display:flex;flex-direction:column;width:min(720px,100%);max-height:90dvh;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}
+.noor-ai-v2-heading{display:flex;align-items:center;gap:12px;padding:18px;border-bottom:1px solid var(--line)}
+.noor-ai-v2-heading h2{margin:0;font-size:20px}.noor-ai-v2-heading p{margin:4px 0 0;color:var(--muted)}
+.noor-ai-v2-heading>button{margin-left:auto}.noor-ai-v2-heading button,.noor-ai-v2-chips button{border:1px solid var(--line);border-radius:10px;background:var(--canvas);color:var(--ink);padding:8px 12px}
+.noor-ai-v2-chips{display:flex;gap:8px;flex-wrap:wrap;padding:14px 16px}.noor-ai-v2-messages{overflow-y:auto;min-height:120px;max-height:45dvh;padding:0 18px;overscroll-behavior:contain}
+.noor-ai-v2-reply{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--ink)}
+.noor-ai-v2-reply.user{border-color:var(--rose-line);background:var(--rose-soft);color:var(--ink)}
+.noor-ai-v2-form{display:flex;gap:10px;padding:16px}.noor-ai-v2-form textarea{flex:1;min-width:0;background:var(--canvas);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+.noor-ai-v2-form button{border:0;border-radius:10px;padding:10px 16px;background:var(--berry);color:#fff}.noor-ai-v2-state{padding:0 16px 12px;margin:0;font-size:12px;color:var(--muted)}
+.noor-ai-v2-dialog button:focus-visible,.noor-ai-v2-dialog textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media(max-width:600px){.noor-ai-v2-backdrop{padding:8px}.noor-ai-v2-dialog{max-height:96dvh}.noor-ai-v2-heading{padding:12px}.noor-ai-v2-heading p{font-size:12px}.noor-ai-v2-chips{padding:10px}.noor-ai-v2-chips button{font-size:12px}.noor-ai-v2-form{padding:12px}.noor-ai-v2-form button{padding:8px}#noorAIConnectionTools{flex-wrap:wrap}}

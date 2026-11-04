@@ -21,3 +21,17 @@ test('navigation recovery and teacher-owned periods remain wired',async()=>{
  for(const marker of ['resetPasswordForEmail','PASSWORD_RECOVERY','mobileBackBtn','noorGoBack'])assert.ok(html.includes(marker),marker);
  assert.match(setup,/Period and subject allocation belongs to the signed-in Teacher/);
 });
+
+test('recovery callback cannot enter dashboard before a password reset',async()=>{
+ const html=await read('index.html');
+ assert.match(html,/noorRecoveryActive\s*=\s*\/(?:.|\n)+?type=recovery/);
+ assert.match(html,/if\(session\?\.user&&!noorRecoveryActive\)await enterWorkspace/);
+ assert.match(html,/if\(event==='PASSWORD_RECOVERY'\)\{noorRecoveryActive=true/);
+ assert.match(html,/await supabaseClient\.auth\.signOut\(\);noorRecoveryActive=false/);
+});
+test('principal quick actions open distinct notices, meetings and command-centre routes',async()=>{
+ const html=await read('index.html');
+ assert.match(html,/onclick="openView\('notices'\)">Notices<\/button>/);
+ assert.match(html,/onclick="openView\('meetings'\)">Meetings<\/button>/);
+ assert.match(html,/\['command-centre','email-automation','school-tasks','school-calendar'/);
+});

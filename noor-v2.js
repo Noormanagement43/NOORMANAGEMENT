@@ -12,7 +12,7 @@ const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturda
 const managementRoles=['principal','school_admin','university_admin','academic_admin'];
 const teacherRoles=['teacher','faculty'];
 const studentRoles=['student','university_student'];
-let db=null,authMode='signin',state={user:null,profile:null,groups:[],periods:[],memberships:[],institution:null,membership:null,tab:'home',photoUrl:null,attendance:[],enrollments:[],staffNames:{}};
+let db=null,authMode='signin',state={user:null,profile:null,groups:[],periods:[],memberships:[],institution:null,membership:null,tab:'home',photoUrl:null,attendance:[],enrollments:[],staffNames:{},results:[],calendarEvents:[],calendarMode:'month',calendarAnchor:null};
 let channel=null,bootstrapId=0,loading=false,liveRefreshing=false;
 function say(message,error=false){toast.textContent=message;toast.hidden=false;toast.dataset.error=error?'yes':'no';setTimeout(()=>{if(toast.textContent===message)toast.hidden=true},5200)}
 function err(error){return error?.message||String(error)||'An unexpected error occurred.'}
@@ -71,6 +71,7 @@ function iconMenu(){return [
  ['home','⌂','Dashboard'],
  ['timetable','◷',isStudent()?'My Timetable':canSchedule()?'My Timetable':'School Timetable'],
  ...(isStudent()?[['progress','▥','My Progress']]:[]),
+ ['calendar','▣','Calendar'],
  ['classes','▦',isStudent()?'My Classes':'Classes'],
  ['profile','◉','My Profile']
  ].map(([id,ico,label])=>'<button type="button" data-tab="'+id+'" class="'+(id===state.tab?'active':'')+'"><span>'+ico+'</span><small>'+label+'</small></button>').join('')}
@@ -112,6 +113,68 @@ function renderStudentHome(){
  (stats.total?'<div class="v2-student-progress"><strong>'+stats.rate+'%</strong><span>Attendance from '+stats.total+' recorded entries</span><div class="v2-progress-track"><i style="width:'+stats.rate+'%"></i></div><small>Present: '+stats.counts.present+' · Late: '+stats.counts.late+' · Absent: '+stats.counts.absent+' · Leave: '+stats.counts.leave+'</small></div>':noData('Your teachers have not submitted attendance data for your account yet.'))+
  '</section></div>');
 }
+
+function schoolDate(value){
+ const date=new Date(value),tz=state.institution?.timezone||'Asia/Kolkata';
+ if(Number.isNaN(date.getTime()))return '';
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:tz,day:'2-digit',month:'2-digit',year:'numeric'}).formatToParts(date);
+ const find=type=>parts.find(p=>p.type===type)?.value||'';
+ return find('year')+'-'+find('month')+'-'+find('day');
+}
+function anchorShift(date,days){
+ const value=new Date(date+'T12:00:00Z');if(Number.isNaN(value.getTime()))return date;
+ value.setUTCDate(value.getUTCDate()+days);return value.toISOString().slice(0,10);
+}
+function visibleCalendarEvents(){
+ const memberships=new Set((state.enrollments||[]).map(x=>x.group_id));
+ const allowed=new Set([...memberships]);
+ for(const g of state.groups||[])if(memberships.has(g.id)&&g.parent_group_id)allowed.add(g.parent_group_id);
+ return (state.calendarEvents||[]).filter(e=>!isStudent()||!e.academic_group_id||allowed.has(e.academic_group_id));
+}
+function calendarDateLabel(day){return new Date(day+'T12:00:00Z').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})}
+function renderCalendar(){
+ const today=schoolDate(new Date());
+ if(!state.calendarAnchor)state.calendarAnchor=today;
+ const mode=state.calendarMode||'month',anchor=state.calendarAnchor;
+ const d=new Date(anchor+'T12:00:00Z');
+ let start,end;
+ if(mode==='day'){start=anchor;end=anchor}
+ else if(mode==='week'){start=anchorShift(anchor,-((d.getUTCDay()+6)%7));end=anchorShift(start,6)}
+ else{start=anchor.slice(0,7)+'-01';const next=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));end=next.toISOString().slice(0,10)}
+ const events=visibleCalendarEvents().filter(e=>{const day=schoolDate(e.starts_at);return day>=start&&day<=end}).sort((a,b)=>String(a.starts_at).localeCompare(String(b.starts_at)));
+ const navigation='<div class="v2-cal-controls">'+['day','week','month'].map(v=>'<button type="button" class="v2-btn '+(mode===v?'v2-primary':'v2-outline')+'" data-cal-mode="'+v+'" aria-pressed="'+(mode===v)+'">'+v[0].toUpperCase()+v.slice(1)+'</button>').join('')+
+ '<button type="button" class="v2-btn v2-outline" data-cal-step="-1" aria-label="Previous '+mode+'">‹</button><button type="button" class="v2-btn v2-outline" data-cal-today>Today</button><button type="button" class="v2-btn v2-outline" data-cal-step="1" aria-label="Next '+mode+'">›</button></div>';
+ const entries=events.map(e=>'<div class="v2-list-line v2-cal-event"><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.kind||'School event')+' · '+escapeHTML(calendarDateLabel(schoolDate(e.starts_at)))+' · '+escapeHTML(new Date(e.starts_at).toLocaleTimeString('en-IN',{timeZone:state.institution?.timezone||'Asia/Kolkata',hour:'2-digit',minute:'2-digit'}))+(e.academic_group_id?' · '+escapeHTML(groupLabel(e.academic_group_id)):' · Whole school')+'</small></div>').join('');
+ shell(titleBlock('School Calendar','REAL SCHOOL DATES','Events are shown from your institution database, limited to your authorised classes and sections.')+
+ '<section class="v2-panel"><header><h2>'+escapeHTML(calendarDateLabel(start))+(start!==end?' – '+escapeHTML(calendarDateLabel(end)):'')+'</h2></header>'+navigation+
+ (events.length?entries:noData('No school events scheduled for this '+mode+'.'))+
+ '<p class="v2-panel-note">No fictional holidays or deadlines are added. School staff can publish real events once the school is registered.</p></section>');
+}
+function studentMarksChart(){
+ const results=(state.results||[]).filter(x=>Number(x.max_marks)>0&&Number(x.marks)>=0&&Number(x.marks)<=Number(x.max_marks));
+ if(!results.length)return noData('No verified marks have been published for your account.');
+ const bySubject=new Map();
+ for(const x of results){const key=String(x.subject_name||'Other');const previous=bySubject.get(key);
+  if(!previous||String(x.assessed_on)>String(previous.assessed_on))bySubject.set(key,x);}
+ return '<div class="v2-subject-chart" role="list" aria-label="Latest verified subject marks">'+[...bySubject.entries()].slice(0,12).map(([subject,x])=>{
+  const percent=Math.round(Number(x.marks)/Number(x.max_marks)*100);
+  return '<div class="v2-subject-row" role="listitem"><div><strong>'+escapeHTML(subject)+'</strong><span>'+escapeHTML(String(x.marks))+' / '+escapeHTML(String(x.max_marks))+' · '+escapeHTML(x.assessed_on||'')+'</span></div><div class="v2-progress-track" role="progressbar" aria-label="'+escapeHTML(subject)+' verified marks" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+percent+'"><i style="width:'+percent+'%"></i></div></div>'
+ }).join('')+'</div>';
+}
+function studentAttendanceChart(){
+ const rows=state.attendance||[];
+ if(!rows.length)return noData('No attendance data has been submitted.');
+ const labels=new Map();
+ for(const row of rows){const day=schoolDate(row.marked_at);if(!day)continue;
+  const item=labels.get(day)||{present:0,total:0};
+  item.total++;if(row.attendance_status==='present'||row.attendance_status==='late')item.present++;labels.set(day,item);}
+ const days=[...labels.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);
+ return '<div class="v2-att-chart" role="list" aria-label="Attendance by recorded date">'+days.map(([day,n])=>{
+  const percent=Math.round(n.present/n.total*100);
+  return '<div class="v2-att-day" role="listitem"><small>'+escapeHTML(day.slice(5))+'</small><div class="v2-att-track"><i style="height:'+percent+'%"></i></div><b>'+percent+'%</b></div>'
+ }).join('')+'</div><p class="v2-panel-note">Recorded-date chart, based only on actual saved attendance marks (last '+days.length+' days with entries). Late counts as attended.</p>';
+}
+
 function renderProgress(){
  if(!isStudent())return renderHome();
  const stats=studentAttendanceStats();
@@ -124,9 +187,9 @@ function renderProgress(){
  '<div class="v2-metric v2-lilac"><span>▥</span><small>Attendance Rate</small><strong>'+(stats.rate===null?'—':stats.rate+'%')+'</strong><p>'+(stats.total?stats.total+' submitted marks':'No submitted marks')+'</p></div>'+
  '</div><div class="v2-two-cols"><section class="v2-panel"><header><h2>Recent Attendance</h2></header>'+
  (recent.length?recent.map(x=>'<div class="v2-list-line"><strong>'+escapeHTML(x.attendance_status[0].toUpperCase()+x.attendance_status.slice(1))+'</strong><small>'+dateTime(x.marked_at)+'</small></div>').join(''):noData('No attendance marks are saved for this account yet.'))+'</section>'+
- '<section class="v2-panel"><h2>Subject-wise Marks</h2>'+noData('Verified subject marks are not available in this school database yet. No percentages are invented.')+
+ '<section class="v2-panel"><h2>Subject-wise Marks</h2>'+studentMarksChart()+
  '<p class="v2-panel-note">Your teacher’s timetable is available under My Timetable and changes automatically when saved.</p>'+
- button('My Timetable →','timetable',true)+'</section></div>');
+ button('My Timetable →','timetable',true)+'</section></div><section class="v2-panel"><h2>Attendance Trend</h2>'+studentAttendanceChart()+'</section>');
 }
 function renderHome(){
  if(isStudent())return renderStudentHome();
@@ -186,7 +249,7 @@ function renderProfile(){
  '<p>Your institution: <b>'+escapeHTML(state.institution?.name)+'</b></p><p>Role: <b>'+escapeHTML(state.membership?.role)+'</b></p><p>Signed in as: <b>'+escapeHTML(state.user?.email)+'</b></p></section></div>');
 }
 function renderCurrent(){
- switch(state.tab){case'timetable':renderTimetable();break;case'classes':renderClasses();break;case'profile':renderProfile();break;case'progress':if(isStudent())renderProgress();else renderHome();break;default:renderHome()}
+ switch(state.tab){case'calendar':renderCalendar();break;case'timetable':renderTimetable();break;case'classes':renderClasses();break;case'profile':renderProfile();break;case'progress':if(isStudent())renderProgress();else renderHome();break;default:renderHome()}
 }
 function showDialog(title,body,onSubmit){
  const existing=$('#v2Dialog');if(existing)existing.remove();
@@ -294,7 +357,7 @@ async function reloadSchool(){
  const current=await db.auth.getUser();
  if(current.error||current.data?.user?.id!==state.user.id)throw Error('Your login changed. Sign in again.');
  const student=isStudent();
- const [institution,groups,periods,profile,enrollments,attendance]=await Promise.all([
+ const [institution,groups,periods,profile,enrollments,attendance,calendarEvents,results]=await Promise.all([
   db.from('institutions').select('id,name,institution_type,status,timezone').eq('id',m.institution_id).maybeSingle(),
   db.from('academic_groups').select('id,institution_id,parent_group_id,name,code,group_type,is_active').eq('institution_id',m.institution_id).order('name').limit(1000),
   fetchSchoolPeriods(m.institution_id),
@@ -303,9 +366,11 @@ async function reloadSchool(){
    .eq('institution_id',m.institution_id).eq('membership_id',m.id).eq('status','active').limit(300):Promise.resolve({data:[]}),
   student?db.from('attendance_records').select('attendance_status,marked_at,session_id')
    .eq('institution_id',m.institution_id).eq('student_membership_id',m.id)
-   .order('marked_at',{ascending:false}).limit(600):Promise.resolve({data:[]})
+   .order('marked_at',{ascending:false}).limit(600):Promise.resolve({data:[]}),
+  db.from('noor_calendar_events').select('id,institution_id,academic_group_id,title,kind,starts_at,ends_at').eq('institution_id',m.institution_id).order('starts_at',{ascending:true}).limit(500),
+  student?db.from('noor_assessment_results').select('id,student_membership_id,assessment_title,subject_name,marks,max_marks,assessed_on,feedback').eq('institution_id',m.institution_id).eq('student_membership_id',m.id).order('assessed_on',{ascending:false}).limit(200):Promise.resolve({data:[]})
  ]);
- for(const x of [institution,groups,profile,enrollments,attendance])if(x.error)throw x.error;
+ for(const x of [institution,groups,profile,enrollments,attendance,calendarEvents,results])if(x.error)throw x.error;
  if(institution.data?.status!=='active')throw Error('Your school has not been activated.');
  const stillSigned=await db.auth.getUser();
  if(stillSigned.error||stillSigned.data?.user?.id!==state.user.id)throw Error('Account changed during loading; reload your workspace.');
@@ -315,6 +380,8 @@ async function reloadSchool(){
  state.profile=profile.data||state.profile;
  state.enrollments=enrollments.data||[];
  state.attendance=attendance.data||[];
+ state.calendarEvents=calendarEvents.data||[];
+ state.results=results.data||[];
  state.staffNames={};
  // The school Principal sees teacher names on saved periods. Students receive
  // only the timetable for their class, not the staff directory.
@@ -383,6 +450,8 @@ async function bootstrap(){
    .on('postgres_changes',{event:'*',schema:'public',table:'academic_groups',filter:'institution_id=eq.'+schoolId},refreshLive)
    .on('postgres_changes',{event:'*',schema:'public',table:'academic_group_memberships',filter:'institution_id=eq.'+schoolId},refreshLive)
    .on('postgres_changes',{event:'*',schema:'public',table:'attendance_records',filter:'institution_id=eq.'+schoolId},refreshLive)
+    .on('postgres_changes',{event:'*',schema:'public',table:'noor_calendar_events',filter:'institution_id=eq.'+schoolId},refreshLive)
+    .on('postgres_changes',{event:'*',schema:'public',table:'noor_assessment_results',filter:'institution_id=eq.'+schoolId},refreshLive)
    .subscribe(status=>{
      state.realtimeStatus=status;
      const indicator=root.querySelector('#v2LiveStatus');
@@ -428,6 +497,11 @@ async function saveProfile(form){
  await reloadSchool();renderProfile();say('Your own profile was updated.');
 }
 root.addEventListener('click',async event=>{
+ const mode=event.target.closest('[data-cal-mode]');if(mode){state.calendarMode=mode.dataset.calMode;renderCalendar();return;}
+ const step=event.target.closest('[data-cal-step]');if(step){const amount=Number(step.dataset.calStep);const current=state.calendarAnchor||schoolDate(new Date());const kind=state.calendarMode;
+  if(kind==='month'){const d=new Date(current+'T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+amount,1);state.calendarAnchor=d.toISOString().slice(0,10);}
+  else state.calendarAnchor=anchorShift(current,amount*(kind==='week'?7:1));renderCalendar();return;}
+ if(event.target.closest('[data-cal-today]')){state.calendarAnchor=schoolDate(new Date());renderCalendar();return;}
  const nav=event.target.closest('[data-tab]');if(nav){state.tab=nav.dataset.tab;renderCurrent();return}
  const action=event.target.closest('[data-action]');if(action){
   switch(action.dataset.action){

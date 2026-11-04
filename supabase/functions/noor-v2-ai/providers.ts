@@ -37,13 +37,18 @@ export async function probe(provider: Provider) {
  const urls = {
   gemini: 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(c.model),
   openai: c.model ? 'https://api.openai.com/v1/models/'+encodeURIComponent(c.model) : 'https://api.openai.com/v1/models',
-  groq: 'https://api.groq.com/openai/v1/models/'+encodeURIComponent(c.model),
+  // Groq IDs contain a slash. Check the supported model catalogue rather than
+  // relying on a gateway's treatment of an encoded slash in a model URL.
+  groq: 'https://api.groq.com/openai/v1/models',
  };
  // Metadata probe only: no generation request or institutional data is sent.
  const response = await providerFetch(urls[provider],{ headers: provider==='gemini' ? {'x-goog-api-key':c.apiKey} : {Authorization:'Bearer '+c.apiKey} });
- await response.body?.cancel();
- return { provider, key_saved:true,secret_detected:true,environment_matched:true,secret_name:c.secretName,authentication_successful:response.ok?true:response.status===401?false:null,api_response_successful:response.ok,http_status:response.status, verified: response.ok && !!c.model, model: c.model,
-  code: !c.model ? 'MISSING_MODEL' : response.ok ? 'MODEL_ACCESS_VERIFIED' : response.status===401||response.status===403 ? 'KEY_OR_PERMISSION_INVALID' : response.status===429 ? 'RATE_LIMITED' : 'MODEL_OR_PROVIDER_ERROR',
+ let modelAccessible=!!c.model;
+ if(provider==='groq'&&response.ok){
+  try{const catalogue=await response.json();modelAccessible=Array.isArray(catalogue.data)&&catalogue.data.some((m:{id?:string})=>m.id===c.model)}catch{modelAccessible=false}
+ }else await response.body?.cancel();
+ return { provider, key_saved:true,secret_detected:true,environment_matched:true,secret_name:c.secretName,authentication_successful:response.ok?true:response.status===401?false:null,api_response_successful:response.ok,http_status:response.status, verified: response.ok && modelAccessible, model: c.model,
+  code: !c.model ? 'MISSING_MODEL' : response.ok ? modelAccessible?'MODEL_ACCESS_VERIFIED':'MODEL_UNAVAILABLE' : response.status===401||response.status===403 ? 'KEY_OR_PERMISSION_INVALID' : response.status===429 ? 'RATE_LIMITED' : 'MODEL_OR_PROVIDER_ERROR',
   generation_tested: false };
 }
 export async function probeBrevo(){

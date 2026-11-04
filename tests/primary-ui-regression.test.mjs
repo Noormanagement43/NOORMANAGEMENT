@@ -19,5 +19,5 @@ test('teacher profile dialog follows light/dark design tokens and is loaded',asy
 test('navigation recovery and teacher-owned periods remain wired',async()=>{
  const [html,setup]=await Promise.all([read('index.html'),read('noor-teacher-setup.js')]);
  for(const marker of ['resetPasswordForEmail','PASSWORD_RECOVERY','mobileBackBtn','noorGoBack'])assert.ok(html.includes(marker),marker);
- assert.match(setup,/Period and subject selection belongs to the signed-in Teacher/);
+ assert.match(setup,/Period and subject allocation belongs to the signed-in Teacher/);
 });

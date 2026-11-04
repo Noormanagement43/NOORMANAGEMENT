@@ -1,7 +1,7 @@
 import { generate, probe, primary, config, probeBrevo, probeAll, ProviderError } from './providers.ts';
 import { handle } from './index.ts';
 function assert(v:unknown,m='Assertion failed'):asserts v{if(!v)throw Error(m)}
-const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY','groq','gemini','chatgpt','brevo','BREVO_API_KEY','EMAIL_FROM'];
+const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','GROQ_MODEL','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY','groq','gemini','chatgpt','brevo','BREVO_API_KEY','EMAIL_FROM'];
 async function isolated(run:()=>Promise<void>){const env=names.map(n=>Deno.env.get(n));const old=globalThis.fetch;try{names.forEach(n=>Deno.env.delete(n));await run()}finally{globalThis.fetch=old;names.forEach((n,i)=>env[i]===undefined?Deno.env.delete(n):Deno.env.set(n,env[i]!))}}
 const response=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}});
 Deno.test('provider routing is explicit, metadata probe sends no prompt, keys never enter URL',()=>isolated(async()=>{
@@ -68,4 +68,12 @@ Deno.test('each provider probe reports independently and never treats missing cr
  const result=await probeAll() as Record<string,{secret_detected:boolean;authentication_successful:boolean|null;code:string}>;
  assert(result.groq.secret_detected===true&&result.groq.authentication_successful===false);
  assert(result.gemini.code==='MISSING_KEY'&&result.openai.code==='MISSING_KEY'&&result.brevo.code==='MISSING_KEY'&&calls===1);
+}));
+
+Deno.test('Groq metadata uses its model catalogue and distinguishes model absence from invalid authentication',()=>isolated(async()=>{
+ Deno.env.set('groq','test-groq-key');
+ globalThis.fetch=async(input,init)=>{assert(String(input)==='https://api.groq.com/openai/v1/models');assert(new Headers(init?.headers).get('Authorization')==='Bearer test-groq-key');return response({data:[{id:'openai/gpt-oss-120b'}]})};
+ const available=await probe('groq');assert(available.authentication_successful===true&&available.verified===true&&available.code==='MODEL_ACCESS_VERIFIED');
+ globalThis.fetch=async()=>response({data:[{id:'another-model'}]});
+ const absent=await probe('groq');assert(absent.authentication_successful===true&&absent.verified===false&&absent.code==='MODEL_UNAVAILABLE');
 }));

@@ -1,5 +1,7 @@
 # NOOR AI brain, manager and connector setup — 4 November 2026
 
+**Secret-name compatibility update:** existing lowercase `gemini`, `groq`, `chatgpt`, `brevo` names are accepted by the canonical AI/diagnostic code. Conflicting canonical/alias values fail closed. See [current backend audit](NOOR_SECRETS_BACKEND_AUDIT_20261104.md). Brevo delivery and Auth SMTP are still separate, unverified integrations.
+
 ## Add credentials here
 
 Open https://supabase.com/dashboard/project/ayrryemawwplguaauxij/functions/secrets → Add secret → name/value → Save.

@@ -1,5 +1,7 @@
 # NOOR secrets compatibility and backend audit — 4 November 2026
 
+**Live verification update:** Gemini and Groq authenticated and generated the expected test reply. OpenAI authenticated but has no manager model configured. Brevo rejected its stored key with HTTP 401. The initial unverified status below is historical; see [live verification](NOOR_PROVIDER_LIVE_VERIFICATION_20261104.md) for current results.
+
 ## Scope and evidence
 
 Inspected GitHub main `a779e2b43c850118f677eb49995d606089ac9f4c`, fetched deployed function source and deployment metadata, and ran read-only Supabase metadata queries and security advisors. Local audited file hashes matched GitHub main. Used the existing connected project `ayrryemawwplguaauxij` (ACTIVE_HEALTHY); no reconnection requested.

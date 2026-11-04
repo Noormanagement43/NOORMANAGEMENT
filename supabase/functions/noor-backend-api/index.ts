@@ -43,6 +43,8 @@ export async function readBody(req: Request): Promise<Dict> {
  catch { throw new InputError('Valid JSON object required'); }
 }
 const tools = [
+ { name: 'noor_ask_brain', description: 'Generate an academic draft with the configured brain provider. Sends your prompt to that provider and consumes AI quota; does not execute school or external actions.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' }, message: { type: 'string', minLength: 1, maxLength: 3000 } }, required: ['institution_id','message'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
+ { name: 'noor_manager_plan', description: 'Ask the configured OpenAI manager for a proposed plan and the primary brain for a draft. Sends your prompt to both providers and consumes two AI quota units. Does not execute external actions.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' }, message: { type: 'string', minLength: 1, maxLength: 3000 } }, required: ['institution_id','message'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
  { name: 'noor_list_connections', description: 'List provider registrations for an authorised institution. Registration does not imply OAuth connection.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' } }, required: ['institution_id'], additionalProperties: false }, annotations: { readOnlyHint: true } },
  { name: 'noor_list_task_drafts', description: 'List saved workflow drafts. These tasks have not executed.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' } }, required: ['institution_id'], additionalProperties: false }, annotations: { readOnlyHint: true } },
  { name: 'noor_draft_task', description: 'Save a durable task draft only. Does not send messages, execute code or call a provider.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' }, connection_id: { type: 'string', format: 'uuid' }, operation: { type: 'string', enum: ['ai.generate','github.read','gmail.draft','brevo.draft','supabase.report'] }, payload: { type: 'object' }, idempotency_key: { type: 'string', minLength: 8, maxLength: 120 } }, required: ['institution_id','connection_id','operation','payload','idempotency_key'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
@@ -80,8 +82,8 @@ export async function handle(req: Request): Promise<Response> {
  // All school data access runs under the user's JWT, never a service-role key.
  async function action(name: string, input: Dict): Promise<unknown> {
   if (name === 'status') return {
-   project_ref: PROJECT_REF, service: 'noor-backend-api', version: '1.0.0',
-   provider_secrets_present: { gemini: !!Deno.env.get('GEMINI_API_KEY'), openai: !!Deno.env.get('OPENAI_API_KEY'), anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'), brevo: !!Deno.env.get('BREVO_API_KEY') },
+   project_ref: PROJECT_REF, service: 'noor-backend-api', version: '1.1.0',
+   provider_secrets_present: { gemini: !!Deno.env.get('GEMINI_API_KEY'), openai: !!Deno.env.get('OPENAI_API_KEY'), groq: !!Deno.env.get('GROQ_API_KEY'), anthropic: !!Deno.env.get('ANTHROPIC_API_KEY'), brevo: !!Deno.env.get('BREVO_API_KEY') },
    oauth_connections_verified: false, external_task_execution_enabled: false,
    mcp: { transport: 'stateless-streamable-http', authentication: 'NOOR user JWT', external_oauth_ready: false },
   };
@@ -97,6 +99,11 @@ export async function handle(req: Request): Promise<Response> {
   const inst = await db.from('institutions').select('id').eq('id', institution).eq('status', 'active').maybeSingle();
   if (inst.error) throw inst.error;
   if (!inst.data) throw { code: '42501' };
+  if (name === 'ai.assist' || name === 'ai.plan') {
+   const generated = await db.functions.invoke('noor-v2-ai', { body: { action: name === 'ai.plan' ? 'manager_plan' : 'chat_assist', institution_id: institution, message: string(input.message,3000) } });
+   if (generated.error || generated.data?.error) throw { code: 'AI_UNAVAILABLE' };
+   return generated.data;
+  }
   if (name === 'connections.list' || name === 'tasks.list') {
    const table = name === 'connections.list' ? 'noor_connections' : 'noor_workflow_jobs';
    // Bounded feeds. For the next page, pass both timestamp and UUID from next_cursor.
@@ -143,12 +150,12 @@ export async function handle(req: Request): Promise<Response> {
    if (body.method === 'initialize') {
     const version = typeof params.protocolVersion === 'string' && PROTOCOLS.includes(params.protocolVersion) ? params.protocolVersion : PROTOCOLS[0];
     headers['Mcp-Protocol-Version'] = version;
-    return rpc({ protocolVersion: version, capabilities: { tools: {} }, serverInfo: { name: 'noor-internal-gateway', version: '1.0.0' }, instructions: 'Internal JWT connection. Workflow tools save drafts only; external provider execution and OAuth are not enabled.' });
+    return rpc({ protocolVersion: version, capabilities: { tools: {} }, serverInfo: { name: 'noor-internal-gateway', version: '1.1.0' }, instructions: 'Internal JWT connection. AI tools generate drafts through configured providers; workflow tools save drafts only. External school-app actions and OAuth are not enabled.' });
    }
    if (body.method === 'ping') return rpc({});
    if (body.method === 'tools/list') return rpc({ tools });
    if (body.method !== 'tools/call') return rpcError(-32601,'Method not found');
-   const map: Record<string,string> = { noor_list_connections: 'connections.list', noor_list_task_drafts: 'tasks.list', noor_draft_task: 'tasks.draft' };
+   const map: Record<string,string> = { noor_ask_brain: 'ai.assist', noor_manager_plan: 'ai.plan', noor_list_connections: 'connections.list', noor_list_task_drafts: 'tasks.list', noor_draft_task: 'tasks.draft' };
    if (typeof params.name !== 'string' || !Object.hasOwn(map,params.name)) return rpcError(-32602,'Unknown tool');
    const result = await action(map[params.name],object(params.arguments));
    return rpc({ content: [{ type: 'text', text: JSON.stringify(result) }] });

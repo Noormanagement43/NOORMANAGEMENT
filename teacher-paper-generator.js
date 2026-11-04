@@ -138,10 +138,7 @@ async function generate(){
  };
  let o=null;
  try {
-   let req=await a().db.functions.invoke('noor-ai',{body:payload});
-   if(req.error||!req.data?.output){
-     req=await a().db.functions.invoke('noor-ai-academic-assistant',{body:payload});
-   }
+   const req=await a().db.functions.invoke('noor-v2-ai',{body:{...payload,institution_id:a().schoolId}});
    if(req.data?.output&&Array.isArray(req.data.output.questions)&&req.data.output.questions.length){
      o=req.data.output;
    }

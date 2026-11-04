@@ -1,6 +1,6 @@
 /* Canonical institution backend. Provider credentials remain in Edge Secrets. */
 import { createClient } from 'npm:@supabase/supabase-js@2.57.0';
-import { config, primary, generate, probe, ProviderError } from './providers.ts';
+import { config, primary, generate, probeAll, ProviderError } from './providers.ts';
 const leadership=new Set(['principal','school_admin','university_admin','academic_admin']);
 const staff=new Set([...leadership,'teacher','faculty']);
 const safe=(x:unknown,n=160)=>String(x??'').trim().slice(0,n);
@@ -32,8 +32,8 @@ export async function handle(req:Request):Promise<Response>{
  const supported=['status','probe','chat_assist','paper','notes','extract_text','weekly_plan','format_report','insights','manager_plan'];
  if(!supported.includes(action))return send(400,{error:'Unsupported AI action'});
  try{
- const provider=primary(),c=config(provider),manager=config('openai');
- if(action==='status')return send(200,{service:'noor-v2-ai',configured:c.configured,provider,model:c.model,manager:{provider:'openai',configured:manager.configured,model:manager.model},credentials_verified:false,actions:supported});
+ const provider=primary();
+ if(action==='status'){const c=config(provider);let managerStatus;try{const manager=config('openai');managerStatus={provider:'openai',configured:manager.configured,model:manager.model,secret_name:manager.secretName}}catch{managerStatus={provider:'openai',configured:false,code:'AMBIGUOUS_SECRET'}}return send(200,{service:'noor-v2-ai',configured:c.configured,provider,model:c.model,secret_name:c.secretName,manager:managerStatus,credentials_verified:false,actions:supported})}
  const institution=safe(input.institution_id||input.school_id,60);
  if(!/^[0-9a-f-]{36}$/i.test(institution))return send(400,{error:'Choose your institution before using AI'});
  const mr=await db.from('institution_memberships').select('role,status').eq('institution_id',institution).eq('user_id',verified.data.user.id).eq('status','active').maybeSingle();
@@ -47,17 +47,19 @@ export async function handle(req:Request):Promise<Response>{
  const budget=await db.rpc('noor_take_ai_budget',{p_institution:institution,p_units:units});
  if(budget.error)return send(503,{error:'AI budget could not be checked'});
  if(budget.data!==true)return send(429,{error:'AI request budget reached. Retry later or ask the platform owner to review your plan limits.'});
- if(action==='probe')return send(200,{brain:await probe(provider),manager:await probe('openai'),external_apps_connected:false});
+ if(action==='probe'){const providers=await probeAll();return send(200,{brain:providers[provider],manager:providers.openai,providers,external_apps_connected:false,email_delivery_tested:false})}
  const images=Array.isArray(input.images)?input.images:[];
  if(images.some(x=>typeof x!=='string'))return send(400,{error:'Invalid syllabus image'});
  const photos=images as string[];
  const context='Institution: '+safe(ir.data.name,160)+'. Role: '+mr.data.role+'. Language: '+safe(input.language||'English',40)+'. Subject: '+safe(input.subject_name||'General',140)+'.\n';
  const source=safe(input.reviewed_source_text||input.rough_text||input.message||input.topic,50000);
+ const c=config(provider);
  if(action==='chat_assist'){
   if(!safe(input.message,3000))return send(400,{error:'Enter a question'});
   return send(200,{response:await generate(provider,context+safe(input.message,3000)),provider,model:c.model});
  }
  if(action==='manager_plan'){
+  const manager=config('openai');
   if(!manager.configured)return send(503,{error:'Set OPENAI_API_KEY and OPENAI_MANAGER_MODEL in Supabase Secrets to enable the manager'});
   if(!c.configured)return send(503,{error:'Configure the primary brain provider first'});
   if(!source)return send(400,{error:'Describe the task'});

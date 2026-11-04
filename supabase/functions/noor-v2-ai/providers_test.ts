@@ -1,7 +1,7 @@
-import { generate, probe, primary, ProviderError } from './providers.ts';
+import { generate, probe, primary, config, probeBrevo, probeAll, ProviderError } from './providers.ts';
 import { handle } from './index.ts';
 function assert(v:unknown,m='Assertion failed'):asserts v{if(!v)throw Error(m)}
-const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY'];
+const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY','groq','gemini','chatgpt','brevo','BREVO_API_KEY','EMAIL_FROM'];
 async function isolated(run:()=>Promise<void>){const env=names.map(n=>Deno.env.get(n));const old=globalThis.fetch;try{names.forEach(n=>Deno.env.delete(n));await run()}finally{globalThis.fetch=old;names.forEach((n,i)=>env[i]===undefined?Deno.env.delete(n):Deno.env.set(n,env[i]!))}}
 const response=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}});
 Deno.test('provider routing is explicit, metadata probe sends no prompt, keys never enter URL',()=>isolated(async()=>{
@@ -46,4 +46,26 @@ Deno.test('missing keys and unsupported image adapters fail before network acces
  Deno.env.set('GROQ_API_KEY','test-only');
  try{await generate('groq','image',false,['data:image/png;base64,AAAA']);throw Error('Expected unsupported image error')}catch(e){assert(e instanceof ProviderError&&e.code==='IMAGE_PROVIDER_UNSUPPORTED')}
  assert(calls===0);
+}));
+
+Deno.test('saved lowercase secrets are accepted; conflicting copies fail closed without exposing values',()=>isolated(async()=>{
+ Deno.env.set('groq','alias-groq');Deno.env.set('gemini','alias-gemini');Deno.env.set('chatgpt','alias-openai');
+ assert(config('groq').secretName==='groq'&&config('gemini').secretName==='gemini'&&config('openai').secretName==='chatgpt');
+ Deno.env.set('GEMINI_API_KEY','different-value');
+ try{config('gemini');throw Error('Expected conflict')}catch(e){assert(e instanceof ProviderError&&e.code==='AMBIGUOUS_SECRET'&&!e.message.includes('different-value')&&!e.message.includes('alias-gemini'))}
+ Deno.env.set('GEMINI_API_KEY','alias-gemini');assert(config('gemini').secretName==='GEMINI_API_KEY');
+}));
+Deno.test('Brevo diagnostics verify metadata only and never return account information or send email',()=>isolated(async()=>{
+ Deno.env.set('brevo','fake-brevo-secret');let calls=0;
+ globalThis.fetch=async(input,init)=>{calls++;assert(String(input)==='https://api.brevo.com/v3/account');assert(new Headers(init?.headers).get('api-key')==='fake-brevo-secret');assert(!init?.method||init.method==='GET');assert(!init?.body);return response({email:'account-private@example.invalid',plan:[{credits:99}]})};
+ const result=await probeBrevo();const text=JSON.stringify(result);
+ assert(result.secret_name==='brevo'&&result.authentication_successful===true&&result.email_delivery_tested===false&&calls===1);
+ assert(!text.includes('account-private')&&!text.includes('fake-brevo-secret')&&!text.includes('credits'));
+}));
+Deno.test('each provider probe reports independently and never treats missing credentials as success',()=>isolated(async()=>{
+ Deno.env.set('groq','fake-groq');let calls=0;
+ globalThis.fetch=async(input)=>{calls++;assert(String(input).startsWith('https://api.groq.com/'));return response({error:'raw private error'},401)};
+ const result=await probeAll() as Record<string,{secret_detected:boolean;authentication_successful:boolean|null;code:string}>;
+ assert(result.groq.secret_detected===true&&result.groq.authentication_successful===false);
+ assert(result.gemini.code==='MISSING_KEY'&&result.openai.code==='MISSING_KEY'&&result.brevo.code==='MISSING_KEY'&&calls===1);
 }));

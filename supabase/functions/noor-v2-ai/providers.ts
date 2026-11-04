@@ -1,15 +1,20 @@
 export type Provider = 'gemini' | 'openai' | 'groq';
 export class ProviderError extends Error { constructor(public code: string, message: string) { super(message); } }
+export function resolveSecret(canonical: string, alias: string) {
+ const preferred=Deno.env.get(canonical)||'', compatible=Deno.env.get(alias)||'';
+ if(preferred&&compatible&&preferred!==compatible)throw new ProviderError('AMBIGUOUS_SECRET',`Conflicting ${canonical} and ${alias} secrets. Keep one value consistently configured.`);
+ return {value:preferred||compatible,name:preferred?canonical:compatible?alias:null};
+}
 export function config(provider: Provider) {
  const values = {
-  gemini: { key: 'GEMINI_API_KEY', model: 'GEMINI_MODEL', fallback: 'gemini-3.5-flash-lite' },
-  openai: { key: 'OPENAI_API_KEY', model: 'OPENAI_MANAGER_MODEL', fallback: '' },
-  groq: { key: 'GROQ_API_KEY', model: 'GROQ_MODEL', fallback: 'openai/gpt-oss-120b' },
+  gemini: { key: 'GEMINI_API_KEY', alias: 'gemini', model: 'GEMINI_MODEL', fallback: 'gemini-3.5-flash-lite' },
+  openai: { key: 'OPENAI_API_KEY', alias: 'chatgpt', model: 'OPENAI_MANAGER_MODEL', fallback: '' },
+  groq: { key: 'GROQ_API_KEY', alias: 'groq', model: 'GROQ_MODEL', fallback: 'openai/gpt-oss-120b' },
  }[provider];
  if (!values) throw new ProviderError('INVALID_PROVIDER','Unsupported provider');
- const apiKey = Deno.env.get(values.key) || '';
+ const resolved=resolveSecret(values.key,values.alias),apiKey=resolved.value;
  const model = Deno.env.get(values.model) || values.fallback;
- return { provider, apiKey, model, keyName: values.key, modelName: values.model, configured: !!apiKey && !!model };
+ return { provider, apiKey, model, keyName: values.key, secretName:resolved.name, modelName: values.model, configured: !!apiKey && !!model };
 }
 export function primary(): Provider {
  const name = Deno.env.get('NOOR_AI_PROVIDER') || 'gemini';
@@ -28,7 +33,7 @@ function requireConfig(provider: Provider) {
 }
 export async function probe(provider: Provider) {
  const c = config(provider);
- if (!c.apiKey) return { provider, key_saved: false, verified: false, code: 'MISSING_KEY', model: c.model };
+ if (!c.apiKey) return { provider, key_saved:false, secret_detected:false, environment_matched:false, secret_name:null, authentication_successful:null, api_response_successful:null, verified:false, code:'MISSING_KEY', model:c.model, generation_tested:false };
  const urls = {
   gemini: 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(c.model),
   openai: c.model ? 'https://api.openai.com/v1/models/'+encodeURIComponent(c.model) : 'https://api.openai.com/v1/models',
@@ -37,9 +42,26 @@ export async function probe(provider: Provider) {
  // Metadata probe only: no generation request or institutional data is sent.
  const response = await providerFetch(urls[provider],{ headers: provider==='gemini' ? {'x-goog-api-key':c.apiKey} : {Authorization:'Bearer '+c.apiKey} });
  await response.body?.cancel();
- return { provider, key_saved: true, verified: response.ok && !!c.model, model: c.model,
+ return { provider, key_saved:true,secret_detected:true,environment_matched:true,secret_name:c.secretName,authentication_successful:response.ok?true:response.status===401?false:null,api_response_successful:response.ok,http_status:response.status, verified: response.ok && !!c.model, model: c.model,
   code: !c.model ? 'MISSING_MODEL' : response.ok ? 'MODEL_ACCESS_VERIFIED' : response.status===401||response.status===403 ? 'KEY_OR_PERMISSION_INVALID' : response.status===429 ? 'RATE_LIMITED' : 'MODEL_OR_PROVIDER_ERROR',
   generation_tested: false };
+}
+export async function probeBrevo(){
+ const resolved=resolveSecret('BREVO_API_KEY','brevo');
+ const base={provider:'brevo',secret_name:resolved.name,secret_detected:!!resolved.value,environment_matched:!!resolved.name,key_saved:!!resolved.value,sender_configured:!!Deno.env.get('EMAIL_FROM'),sender_verified:null,email_delivery_tested:false};
+ if(!resolved.value)return {...base,verified:false,authentication_successful:null,api_response_successful:null,code:'MISSING_KEY'};
+ const response=await providerFetch('https://api.brevo.com/v3/account',{headers:{'api-key':resolved.value,Accept:'application/json'}});
+ // Account details are neither parsed, returned nor logged. This sends no email.
+ await response.body?.cancel();
+ return {...base,verified:response.ok,authentication_successful:response.ok?true:response.status===401?false:null,api_response_successful:response.ok,http_status:response.status,code:response.ok?'AUTH_API_VERIFIED':response.status===401?'INVALID_KEY':response.status===429?'RATE_LIMITED':'PROVIDER_OR_PERMISSION_ERROR'};
+}
+export async function probeAll(){
+ const results:Record<string,unknown>={};
+ for(const provider of ['gemini','groq','openai','brevo'] as const){
+  try{results[provider]=provider==='brevo'?await probeBrevo():await probe(provider)}
+  catch(error){results[provider]={provider,verified:false,secret_detected:null,environment_matched:null,authentication_successful:null,api_response_successful:null,code:error instanceof ProviderError?error.code:'PROBE_UNAVAILABLE',generation_tested:false,email_delivery_tested:false}}
+ }
+ return results;
 }
 export async function generate(provider: Provider, prompt: string, structured=false, images: string[]=[]): Promise<string> {
  const c = requireConfig(provider);

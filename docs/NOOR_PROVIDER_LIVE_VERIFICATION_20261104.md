@@ -15,7 +15,7 @@ The earlier metadata probe used a model-specific URL containing an encoded slash
 
 ## Brevo next action
 
-Replace the value of the existing `brevo` secret in Supabase using a valid Brevo API credential. Do not paste it in chat or GitHub. HTTP 401 does not establish whether the current value is revoked, copied incorrectly or a different credential type. No value was inspected to guess the cause.
+Replace the value of the existing `brevo` secret in Supabase using a valid Brevo API credential. Do not paste it in chat or GitHub. A follow-up server-side classification of the Brevo error identified `API_KEY_NOT_FOUND_OR_INVALID`; raw error text was not returned or logged. This does not identify whether the value was copied incorrectly, revoked or is a different credential type. No value was inspected to guess its format.
 
 A verified sender (`EMAIL_FROM`) and Supabase Auth SMTP/Send Email Hook configuration remain separate. This test does not prove sender verification, confirmation/recovery email delivery, or attendance/announcement delivery. Legacy email automation remains undeployed and requires its canonical data-contract work.
 

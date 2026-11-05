@@ -8,6 +8,7 @@ async function profile(db,id){try{
  if(pr.error)throw pr.error;if(mr.error)throw mr.error;if(!pr.data)return{data:null,error:null};
  const available=(mr.data||[]).filter(m=>m.status==='active');if(available.length>1)throw Error('This account belongs to multiple schools. Choose your school before opening the dashboard.');
  const assigned=(mr.data||[])[0],m=available[0],p={...pr.data,email:auth.data.user.email,role:m?role(m.role):'student',status:m?'active':assigned?'inactive':'pending',school_id:m?.institution_id||null,institution_id:m?.institution_id||null,membership_id:m?.id||null};
+ const contact=auth.data.user.user_metadata?.noor_contact||{};p.mobile_number=typeof contact.phone==='string'?contact.phone:'';p.city_or_area=typeof contact.location==='string'?contact.location:'';p.date_of_birth=typeof contact.date_of_birth==='string'?contact.date_of_birth:'';
  const platform=await db.from('platform_roles').select('role').eq('user_id',id);if(platform.error)throw platform.error;
  if((platform.data||[]).some(x=>['platform_owner','platform_admin'].includes(x.role))){p.role='creator';p.status='active';}
  if(m&&p.role==='student'){

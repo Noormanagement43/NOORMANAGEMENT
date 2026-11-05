@@ -121,7 +121,8 @@ async function render(){
  const validNotices=(notices.data||[]).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  const events=(calendar.data||[]).filter(x=>!x.teacher_id||x.teacher_id===uid).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  const now=new Date().toTimeString().slice(0,5);
- const currentPeriod=approved.find(x=>runByPeriod.get(x.id)?.status==='ongoing')||approved.find(x=>fmt(x.start_time)<=now&&fmt(x.end_time)>now);
+ const todayPeriods=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='approved');
+ const currentPeriod=todayPeriods.find(x=>runByPeriod.get(x.id)?.status==='ongoing')||todayPeriods.find(x=>fmt(x.start_time)<=now&&fmt(x.end_time)>now);
  const name=app.profile.full_name||'Teacher',initials=name.split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase();
  current={details,periods:allPeriods,runs:allRuns,checkin:checkin.data,assignments:assignment.data||[],notices:validNotices,events,avatar};
  const rejectedToday=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='rejected');

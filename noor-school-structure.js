@@ -32,5 +32,6 @@ async function render(){const root=document.getElementById('view-classes');root.
  root.querySelector('[data-lab-form]')?.addEventListener('submit',e=>{e.preventDefault();const f=e.target;action(()=>saveLab({name:f.elements.name.value,description:f.elements.description.value,education_path:area}));});
  root.querySelectorAll('[data-edit-lab]').forEach(b=>b.onclick=()=>{const l=labs.find(x=>x.id===b.dataset.editLab),name=window.prompt('Lab name',l.name);if(name===null)return;const description=window.prompt('Practical work / instructions',l.description);if(description!==null)action(()=>saveLab({name,description,is_active:l.is_active},l));});
  root.querySelectorAll('[data-toggle-lab]').forEach(b=>b.onclick=()=>{const l=labs.find(x=>x.id===b.dataset.toggleLab);action(()=>saveLab({...l,is_active:!l.is_active},l));});
+ await window.NOOR_DASHBOARD_CHARTS?.mount(root,rows);
  }catch(e){root.textContent='School structure could not load: '+e.message;}}
 window.NOOR_SCHOOL_STRUCTURE={current,childSections,fetchGroups,saveGroup,saveLab,areaCards,render};})();

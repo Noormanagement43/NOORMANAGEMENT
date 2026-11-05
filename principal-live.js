@@ -162,13 +162,13 @@ function form(title,fields,save){
     return `<label>${e(label)}<input name="${e(key)}" type="${type}" value="${e(value)}" ${['full_name','subject_name','start_time','end_time','name','class_name'].includes(key)?'required':''} maxlength="500"></label>`;
   }).join('');
   r.querySelector('#pd-form').onsubmit=async ev=>{
-    ev.preventDefault();const b=ev.submitter;b.disabled=true;
+    ev.preventDefault();const b=ev.submitter||ev.target.querySelector('[type="submit"]');if(b)b.disabled=true;
     try{
       if(!permitted())throw Error('School access is no longer active.');
       await save(Object.fromEntries(new FormData(ev.target)));
       dlg.close();await refresh();
     }catch(err){r.querySelector('#pd-save-status').textContent=err.message||'Could not save.'}
-    finally{b.disabled=false}
+    finally{if(b)b.disabled=false}
   };
   dlg.showModal();
 }
@@ -421,6 +421,7 @@ async function showStudentDashboard(studentId){
 
 function editProfile(){
   const p=a().profile;
+  if(window.NOOR_PRINCIPAL_DATA?.current())return form('Edit my profile',[['full_name','Full name',p.full_name]],async values=>{const uid=a().user.id;await window.NOOR_AVATAR_SAFE.ownUser(a().db,uid);const r=await a().db.from('profiles').update({full_name:values.full_name.trim()}).eq('id',uid).select('full_name').single();if(r.error)throw r.error;if(a().user?.id!==uid)throw Error('Account changed.');p.full_name=r.data.full_name;});
   form('Edit my school profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
     const {data,error}=await a().db.from('profiles').update(values).eq('id',a().user.id).select('full_name,mobile_number,city_or_area').single();
     if(error)throw error;
@@ -477,6 +478,7 @@ function aggregate(students,sessions,records,day){
 }
 
 function graph(classes,sections,students,sessions,records,day){
+  if(window.NOOR_DASHBOARD_CHARTS&&window.NOOR_PRINCIPAL_DATA?.current())return window.NOOR_DASHBOARD_CHARTS.graph(classes,sections,students,sessions,records,day,aggregate);
   const cs=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
   if(!cs.length)return '<p class="pd-empty">No classes 6–10 have been created yet. Add classes and sections for real attendance charts.</p>';
 
@@ -589,6 +591,7 @@ async function refresh(){
     const settings=canonical?{data:{timezone:ctx.school?.timezone}}:await db.from('school_settings').select('timezone').eq('school_id',sid).maybeSingle();
     const pref=canonical?{data:null}:await db.from('noor_principal_dashboard_settings').select('insight').eq('school_id',sid).maybeSingle();
     if(pref.error)throw pref.error;
+    if(canonical)await window.NOOR_DASHBOARD_CHARTS?.load(db,sid);
     
     // Check dynamic quotes
     if(window.NOOR_DAILY_QUOTES){
@@ -659,14 +662,14 @@ async function refresh(){
 
     // Pastel KPI Metrics
     q('#pd-kpis').innerHTML=metric('Students Present Today',attError?'—':`${today.marked?today.present:'—'} <em>/ ${today.total}</em>`,today.marked?`${today.marked} marked · ${today.total-today.marked} unmarked`:'Attendance not submitted','#8e4359',!attError&&today.marked?percent(today.present,today.total):null)+
-      metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${staffPresent} <em>/ ${teachers.length}</em>`,canonical?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
+      metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${rows('staff').length?staffPresent:'—'} <em>/ ${teachers.length}</em>`,canonical?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
       metric('Overall Attendance',attError||!total?'—':percent(present,total)+'%','Last 7 days · submitted marks','#3d795b',null)+
       metric(canonical?'Scheduled Classes Now':'Active Classes Now',res.periods.error||res.runs.error?'—':active,canonical?'Scheduled time · not a staff check-in':'Teacher started · within scheduled time','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
     const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
     const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
-    q('#pd-greeting').textContent=`${h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
+    q('#pd-greeting').textContent=`Hello, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
     
     q('#pd-profile').innerHTML=`<button class="pd-photo" data-route="profile" aria-label="Change profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</button>
       <div class="pd-profile-info">
@@ -679,7 +682,7 @@ async function refresh(){
         <button class="pd-link" id="pd-edit-profile">Edit profile ✎</button>
         <div class="pd-quote">“${getInsight()}”</div>
       </div>`;
-    q('#pd-edit-profile').onclick=canonical?()=>a().openView?.('profile'):editProfile;
+    q('#pd-edit-profile').onclick=editProfile;
 
     // Primary Classes
     q('#pd-classes').innerHTML=res.classes.error||res.sections.error||attError?empty('Class attendance could not be loaded.'):`<div class="pd-class-grid">${classes.filter(c=>classNumber(c)>=1&&classNumber(c)<=5).map((c,i)=>`<article class="pd-class c${i%5}"><h3>${e(c.name)} <span>♙</span></h3>${sections.filter(s=>s.class_id===c.id).map(s=>{const group=students.filter(p=>p.class_id===c.id&&p.section_id===s.id),m=aggregate(group,sessions,records,d.day);return `<button data-route="attendance"><span>${e(/^section/i.test(s.name)?s.name:'Section '+s.name)}</span><strong>${m.marked?m.present:'—'} / ${m.total}</strong></button><small>${m.marked?m.marked+' marked':'Not marked'}</small>`}).join('')||empty('Add sections')}</article>`).join('')}</div>`;

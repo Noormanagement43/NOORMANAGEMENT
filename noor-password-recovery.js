@@ -43,7 +43,7 @@
  if(!root.document?.getElementById('passwordRecoveryApp'))return;
  const $=id=>document.getElementById(id),message=(text,type='info')=>{const el=$('recoveryMessage');el.textContent=text;el.className='notice '+type;el.hidden=false;};
  const config=root.NOOR_CONFIG||{};
- if(!config.SUPABASE_URL||!config.SUPABASE_PUBLISHABLE_KEY||!root.supabase?.createClient){message('Secure connection unavailable. Please try again later.','error');return;}
+ if(config.SUPABASE_URL!=='https://ayrryemawwplguaauxij.supabase.co'||!config.SUPABASE_PUBLISHABLE_KEY||!root.supabase?.createClient){message('Secure connection unavailable. Please try again later.','error');return;}
  const linkParams=new URLSearchParams(root.location.hash.slice(1));
  const recoveryLink=linkParams.get('type')==='recovery';
  const db=root.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:true,storageKey:'noor.password-recovery'}});

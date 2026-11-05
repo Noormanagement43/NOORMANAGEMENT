@@ -550,6 +550,7 @@ $('#v2Theme').onclick=()=>{
 };
 try{
  const saved=localStorage.getItem('noor.v2.theme');if(['pastel-aurora','linen-pearl','porcelain-blue','rose-whisper','rose-gold'].includes(saved))document.documentElement.dataset.noorTheme=saved;
+ if(conf.SUPABASE_URL!=='https://ayrryemawwplguaauxij.supabase.co')throw Error('NOOR accepts only its current school database.');
  if(!window.supabase?.createClient)throw Error('Supabase JavaScript could not be loaded.');
  db=window.supabase.createClient(conf.SUPABASE_URL,conf.SUPABASE_PUBLISHABLE_KEY,{
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.sessionStorage,storageKey:'noor.v2.auth.'+new URL(conf.SUPABASE_URL).hostname}

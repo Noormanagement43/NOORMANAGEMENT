@@ -246,7 +246,7 @@ let schoolRows = [], classRows = [], sectionRows = [], studentRows = [], student
 const ROLE_LABEL = {creator:'Platform Creator',owner:'Principal / School Admin',principal:'Principal / Headmaster',manager:'School Manager',teacher:'Teacher',student:'Student',parent:'Parent / Guardian'};
 let noorRecoveryActive = /(?:^|[&#?])type=recovery(?:&|$)/.test(window.location.hash + '&' + window.location.search);
 const AUTH_REDIRECT_URL = (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file')) ? (window.location.origin + window.location.pathname) : 'https://noormanagement43.github.io/NOORMANAGEMENT/';
-const isConfigured = Boolean(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_PUBLISHABLE_KEY && window.supabase?.createClient);
+const isConfigured = Boolean(CONFIG.SUPABASE_URL === 'https://ayrryemawwplguaauxij.supabase.co' && CONFIG.SUPABASE_PUBLISHABLE_KEY && window.supabase?.createClient);
 if (isConfigured) { try { supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_PUBLISHABLE_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.sessionStorage,storageKey:'noor.private.'+new URL(CONFIG.SUPABASE_URL).hostname}}); $('dbState').classList.add('ready'); $('dbStateText').textContent='Secure connection configured'; } catch(e) { console.error(e); } }
 $('year').textContent = new Date().getFullYear();
 function escapeHtml(v=''){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

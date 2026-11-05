@@ -18,3 +18,4 @@ test('principal, teacher and student login enter with the authenticated user via
  }
 });
 test('college/university registration preserves the selected institution type',async()=>{const {api,db,calls}=setup();await api.register(db,{id:'own'},{school_name:'Example College',institution_type:'university'});assert.equal(calls[0].args.p_type,'university');});
+test('role-specific admission is verified by server instead of granting a frontend role',async()=>{const x=setup();await x.api.join(x.db,'41000000-0000-4000-8000-000000000002','test-code','own','manager');assert.equal(x.calls[0].name,'noor_join_selected_institution');assert.equal(x.calls[0].args.p_kind,'manager');});

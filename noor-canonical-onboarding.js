@@ -11,11 +11,11 @@ async function register(db,user,setup){
  const slug=(name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'school')+'-'+crypto.randomUUID().slice(0,8);
  const r=await db.rpc('register_institution_for_current_user',{p_name:name,p_slug:slug,p_type:setup.institution_type==='university'?'university':'school'});if(r.error)throw r.error;return r.data;
 }
-async function join(db,institution,code,expectedUserId){
+async function join(db,institution,code,expectedUserId,kind){
  const auth=await db.auth.getUser();if(auth.error||!auth.data?.user||expectedUserId&&auth.data.user.id!==expectedUserId)throw Error('Your sign-in changed. Please sign in again.');
- if(!uuid.test(String(institution)))throw Error('Enter the School ID shared by your principal.');
+ if(!uuid.test(String(institution)))throw Error('Select your school from the name suggestions.');
  if(!String(code||'').trim())throw Error('Enter the joining code shared by your principal.');
- const r=await db.rpc('noor_join_institution',{p_institution:institution,p_code:code.trim()});if(r.error)throw r.error;return r.data;
+ const r=await db.rpc(kind?'noor_join_selected_institution':'noor_join_institution',{p_institution:institution,p_code:code.trim(),...(kind?{p_kind:kind}:{})});if(r.error)throw r.error;return r.data;
 }
 function boundDraft(raw,user){if(!raw)return null;try{const d=JSON.parse(raw);return d.pending_auth_uid===user.id&&d.pending_email===String(user.email||'').toLowerCase()&&Date.now()-Number(d.pending_created_at||0)<7*86400000?d:null;}catch{return null;}}
 function install({db,enter,message,showLogin,redirectTo}){
@@ -27,9 +27,9 @@ function install({db,enter,message,showLogin,redirectTo}){
   const old=$('canonicalCodes');if(old)old.remove();const panel=document.createElement('div');panel.id='canonicalCodes';panel.className='modal-backdrop show';panel.style.cssText='display:grid;place-items:center;position:fixed;inset:0;z-index:200;background:#20101c99;padding:20px;overflow:auto';
   const card=document.createElement('section');card.className='auth-card';card.style.cssText='max-width:560px;width:100%;padding:24px';
   const title=document.createElement('h2');title.textContent='School created — save your joining details';card.append(title);
-  const hint=document.createElement('p');hint.textContent='Share the School ID and Student code with students; share the Staff code with teachers. Codes expire after 30 days.';card.append(hint);
-  for(const [name,val] of [['School ID',institution],['Student Joining Code',codes.student||'Not generated — retry from school setup'],['Staff Joining Code',codes.teacher||'Not generated — retry from school setup']]){const label=document.createElement('label');label.textContent=name;const input=document.createElement('input');input.readOnly=true;input.value=val;input.style.cssText='width:100%;margin:8px 0 14px';input.onclick=()=>input.select();card.append(label,input);}
-  const share=document.createElement('button');share.type='button';share.className='btn light';share.textContent='Copy school joining link';share.onclick=async()=>{const link=new URL(redirectTo);link.searchParams.set('school',institution);try{await navigator.clipboard.writeText(link.href);share.textContent='School link copied — share code separately';}catch{message('Copy the School ID above and share it with the joining code.','info');}};card.append(share);
+  const hint=document.createElement('p');hint.textContent='Share your school name and the correct Student or Staff code. Management codes can be set separately in Settings. Codes expire after 30 days.';card.append(hint);
+  for(const [name,val] of [['Student Joining Code',codes.student||'Not generated — retry from school setup'],['Staff Joining Code',codes.teacher||'Not generated — retry from school setup']]){const label=document.createElement('label');label.textContent=name;const input=document.createElement('input');input.readOnly=true;input.value=val;input.style.cssText='width:100%;margin:8px 0 14px';input.onclick=()=>input.select();card.append(label,input);}
+  const share=document.createElement('button');share.type='button';share.className='btn light';share.textContent='Copy school joining link';share.onclick=async()=>{const link=new URL(redirectTo);link.searchParams.set('school',institution);try{await navigator.clipboard.writeText(link.href);share.textContent='School link copied — share code separately';}catch{message('Share your school name and the correct joining code.','info');}};card.append(share);
   const close=document.createElement('button');close.className='btn';close.textContent='Continue to dashboard';close.onclick=()=>panel.remove();card.append(close);panel.append(card);document.body.append(panel);
  }
  async function create(user,draft){
@@ -39,10 +39,10 @@ function install({db,enter,message,showLogin,redirectTo}){
  }
  function finish(user){
   $('loginForm').classList.add('hidden');let panel=$('finishSchoolSetup');if(panel)panel.remove();panel=document.createElement('section');panel.id='finishSchoolSetup';panel.className='notice info';
-  panel.innerHTML='<h3>Finish your school connection</h3><p>Your account is signed in. No school membership has been saved yet.</p><form id="finishCreateSchool"><label>Institution type<select name="institution_type"><option value="school">School</option><option value="university">College / University</option></select></label><label>New school name<input name="school" minlength="2" maxlength="160" required></label><button type="submit" class="btn">Create my school & open Principal dashboard</button></form><hr><form id="finishJoinSchool"><label>School ID from principal<input name="institution" required></label><label>Student / Staff Joining Code<input name="code" required autocomplete="off" maxlength="128"></label><button type="submit" class="btn">Join my school</button></form><p>Existing teachers and students should use the school details from their principal.</p>';
-  $('loginForm').after(panel);
+  panel.innerHTML='<h3>Finish your school connection</h3><p>Your account is signed in. No school membership has been saved yet.</p><form id="finishCreateSchool"><label>Institution type<select name="institution_type"><option value="school">School</option><option value="university">College / University</option></select></label><label>New school name<input name="school" minlength="2" maxlength="160" required></label><button type="submit" class="btn">Create my school & open Principal dashboard</button></form><hr><form id="finishJoinSchool"><label>School / university name<input name="institution" required></label><label>Joining group<select name="kind"><option value="student">Student</option><option value="teacher">Staff / Teacher</option><option value="manager">Management</option></select></label><label>Student / Staff Joining Code<input name="code" required autocomplete="off" maxlength="128"></label><button type="submit" class="btn">Join my school</button></form><p>Existing teachers and students should use the school details from their principal.</p>';
+  $('loginForm').after(panel);window.NOOR_INSTITUTION_ACCESS?.picker($('finishJoinSchool').elements.institution,db);
   capture('finishCreateSchool',async()=>{await create(user,{school_name:$('finishCreateSchool').elements.school.value,institution_type:$('finishCreateSchool').elements.institution_type.value});panel.remove();});
-  capture('finishJoinSchool',async()=>{const f=$('finishJoinSchool');await join(db,f.elements.institution.value.trim(),f.elements.code.value,user.id);panel.remove();await resume(user);});
+  capture('finishJoinSchool',async()=>{const f=$('finishJoinSchool');await join(db,f.elements.institution.dataset.institution,f.elements.code.value,user.id,f.elements.kind.value);panel.remove();await resume(user);});
  }
  async function resume(user){
   const profile=await window.NOOR_ACCOUNT_CONTEXT.profile(db,user.id);if(profile.error)throw profile.error;
@@ -51,7 +51,7 @@ function install({db,enter,message,showLogin,redirectTo}){
   const draft=boundDraft(localStorage.getItem('noor.pendingOwnerSetup'),user);if(draft){await create(user,draft);return;}
   let pending;try{pending=JSON.parse(sessionStorage.getItem('noor.pendingJoin')||'null');}catch{}
   const meta=user.user_metadata||{};
-  if(pending?.user_id===user.id){await join(db,pending.institution,pending.code,user.id);sessionStorage.removeItem('noor.pendingJoin');await resume(user);return;}
+  if(pending?.user_id===user.id){try{await join(db,pending.institution,pending.code,user.id,pending.kind);}catch(error){sessionStorage.removeItem('noor.pendingJoin');finish(user);message('Your account is preserved. Select your school and enter the correct code. '+generic(error),'error');return;}sessionStorage.removeItem('noor.pendingJoin');await resume(user);return;}
   if(meta.school_id&&meta.noor_join_code){await join(db,meta.school_id,meta.noor_join_code,user.id);await resume(user);return;}
   finish(user);
  }
@@ -67,18 +67,20 @@ function install({db,enter,message,showLogin,redirectTo}){
  for(const kind of ['student','staff'])capture(kind==='student'?'registerForm':'staffJoinForm',async()=>{
   const student=kind==='student',email=value(student?'studentEmail':'joinStaffEmail'),password=$(student?'studentPassword':'joinStaffPassword').value;
   if(password!==$(student?'studentConfirmPassword':'joinStaffConfirmPassword').value)throw Error('Passwords do not match.');
-  const institution=value(student?'schoolSelect':'joinStaffSchoolSelect'),code=value(student?'joinCode':'joinStaffCode');if(!uuid.test(institution)||!code)throw Error('Enter the School ID and joining code shared by your principal.');
-  if(!student&&value('joinStaffRole')==='manager')throw Error('Manager access must be granted by your principal. Use a teacher code only for teacher accounts.');
+  const institution=$(student?'schoolSelect':'joinStaffSchoolSelect')?.dataset.institution,code=value(student?'joinCode':'joinStaffCode'),kind=student?'student':value('joinStaffRole')==='manager'?'manager':'teacher';if(!uuid.test(institution)||!code)throw Error('Select your school by name and enter its joining code.');
   const r=await db.auth.signUp({email,password,options:{data:{full_name:value(student?'studentName':'joinFullName'),mobile_number:value(student?'studentMobile':'joinStaffMobile'),parent_name:student?value('parentName'):undefined,roll_number:student?value('rollNumber'):undefined},emailRedirectTo:redirectTo}});if(r.error)throw r.error;if(!r.data?.user||r.data.user.identities?.length===0)throw Error('This account may already exist. Sign in instead.');
-  sessionStorage.setItem('noor.pendingJoin',JSON.stringify({user_id:r.data.user.id,institution,code}));
-  if(r.data.session){await join(db,institution,code,r.data.user.id);sessionStorage.removeItem('noor.pendingJoin');await resume(r.data.user);}else{showLogin();$('loginEmail').value=email;message('Verify your email, then sign in. Your school connection will finish securely.','success');}
+  sessionStorage.setItem('noor.pendingJoin',JSON.stringify({user_id:r.data.user.id,institution,code,kind}));
+  if(r.data.session){try{await join(db,institution,code,r.data.user.id,kind);}catch(error){sessionStorage.removeItem('noor.pendingJoin');finish(r.data.user);message('Account created. Select your school and retry its joining code. '+generic(error),'error');return;}sessionStorage.removeItem('noor.pendingJoin');await resume(r.data.user);}else{showLogin();$('loginEmail').value=email;message('Verify your email, then sign in. Your school connection will finish securely.','success');}
  });
  return {resume};
 }
 function prepare(){
  if(!enabled())return;
- for(const id of ['schoolSelect','joinStaffSchoolSelect']){const el=document.getElementById(id);if(!el)continue;if(el.tagName==='SELECT'){const input=document.createElement('input');input.id=id;input.type='text';input.required=true;input.placeholder='School ID shared by your principal';input.pattern='[0-9a-fA-F-]{36}';el.replaceWith(input);document.querySelector('label[for="'+id+'"]')?.replaceChildren(document.createTextNode('School ID (from principal)'));}}
- const linkedSchool=new URLSearchParams(window.location?.search||'').get('school');if(linkedSchool&&uuid.test(linkedSchool)){for(const id of ['schoolSelect','joinStaffSchoolSelect']){const input=document.getElementById(id);if(input&&!input.value)input.value=linkedSchool;}}
+ for(const id of ['schoolSelect','joinStaffSchoolSelect']){const el=document.getElementById(id);if(!el)continue;let input=el;if(el.tagName==='SELECT'){input=document.createElement('input');input.id=id;input.type='text';input.required=true;el.replaceWith(input);}window.NOOR_INSTITUTION_ACCESS?.picker(input,window.NOOR_AI_APP?.db);document.querySelector('label[for="'+id+'"]')?.replaceChildren(document.createTextNode('School / university name *'));}
+ const staffForm=document.querySelector('#staffJoinForm .formgrid');if(staffForm){const school=document.getElementById('joinStaffSchoolSelect')?.closest('.field'),code=document.getElementById('joinStaffCode')?.closest('.field');if(school&&code){staffForm.prepend(code);staffForm.prepend(school);}}
+ for(const [id,text] of [['btnRoleTeacher','Staff / Teacher Joining Code *'],['btnRoleManagement','Management Joining Code *']]){const button=document.getElementById(id);if(button&&!button.dataset.canonicalLabel){button.dataset.canonicalLabel='yes';button.addEventListener('click',()=>{document.querySelector('label[for="joinStaffCode"]').textContent=text;});}}
+ const studentForm=document.querySelector('#registerForm .formgrid');if(studentForm){const school=document.getElementById('schoolSelect')?.closest('.field'),code=document.getElementById('joinCode')?.closest('.field');if(school&&code){studentForm.prepend(code);studentForm.prepend(school);}}
+ for(const id of ['classSelect','sectionSelect']){const field=document.getElementById(id)?.closest('.field');if(field)field.hidden=true;}
  for(const id of ['ownerStudentJoinCode','ownerStaffJoinCode']){const input=document.getElementById(id);if(input){input.required=false;input.disabled=true;input.closest('.field').hidden=true;}}
  for(const id of ['joinCode','joinStaffCode']){const code=document.getElementById(id);if(code){code.maxLength=128;code.removeAttribute('pattern');code.inputMode='text';}}
  for(const id of ['classSelect','sectionSelect']){const el=document.getElementById(id);if(el){el.required=false;el.disabled=true;el.innerHTML='<option value="">Assigned by your school after joining</option>';}}

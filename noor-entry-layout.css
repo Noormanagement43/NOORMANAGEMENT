@@ -1,0 +1,33 @@
+/* Full-width entry page; preserve the active school theme and accessible page scrolling. */
+#authApp{--noor-entry-gutter:clamp(16px,3vw,48px);width:100%;min-height:100vh;min-height:100svh;margin:0}
+#authApp .topline,#authApp .wrap{box-sizing:border-box;width:100%;max-width:none;margin-inline:0;padding-left:max(var(--noor-entry-gutter),env(safe-area-inset-left));padding-right:max(var(--noor-entry-gutter),env(safe-area-inset-right))}
+#authApp .topline{padding-block:18px;gap:16px;flex-wrap:wrap}
+#authApp .wrap{padding-bottom:28px}
+#authApp .auth-layout{grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:clamp(24px,4vw,72px);align-items:start;min-height:calc(100svh - 100px);padding:clamp(20px,3vw,40px) 0 28px}
+#authApp .hero{min-width:0;min-height:calc(100svh - 180px);padding:24px 0;position:sticky;top:24px;justify-content:center}
+#authApp .hero h1{font-size:clamp(40px,4.8vw,76px);max-width:15ch;overflow-wrap:normal}
+#authApp .hero>p{max-width:60ch}
+#authApp .auth-card{width:100%;min-width:0;max-width:none;margin:0;align-self:start;padding:clamp(24px,2.5vw,40px)}
+#authApp :is(.formgrid,.formcols,.field,.auth-head,.brand){min-width:0}
+#authApp :is(input,select,textarea){max-width:100%;min-width:0}
+#authApp .noor-vision{width:100%;margin-top:24px}
+@media(max-width:900px){
+ #authApp{--noor-entry-gutter:clamp(16px,3vw,28px)}
+ #authApp .auth-layout{grid-template-columns:minmax(0,1fr);min-height:0;gap:22px;padding-top:20px}
+ #authApp .hero{position:static;min-height:0;padding:8px 0 4px}
+ #authApp .hero h1{font-size:clamp(34px,6vw,52px);max-width:22ch;margin-top:12px;letter-spacing:-1.5px}
+ #authApp .hero>p{max-width:none;margin-top:0;line-height:1.7}
+ #authApp .hero-tags{margin-top:12px}
+ #authApp .hero-card{display:none}
+ #authApp .auth-card{padding:clamp(20px,4vw,32px)}
+}
+@media(max-width:480px){
+ #authApp .topline{padding-block:12px;gap:10px}
+ #authApp .topline .brand{flex:1;gap:8px}
+ #authApp .topline .brand small{font-size:8px;letter-spacing:1.1px}
+ #authApp .dbstate{margin-left:auto;max-width:100%;white-space:normal}
+ #authApp .auth-layout{gap:18px;padding-bottom:20px}
+ #authApp .auth-card{padding:20px 16px;border-radius:18px}
+ #authApp .hero h1{font-size:clamp(32px,9vw,43px);letter-spacing:-1.3px}
+ #authApp .auth-head h2{font-size:24px}
+}

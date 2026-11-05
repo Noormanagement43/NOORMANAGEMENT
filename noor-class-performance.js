@@ -26,4 +26,4 @@ async function mount(host){const a=A(),uid=a.user?.id,sid=a.schoolId;if(!host||!
  }catch(e){host.textContent='Class performance unavailable: '+e.message;}}
 function open(){A().openView?.('class-performance');}
 function addLauncher(){const nav=document.getElementById('mainNav');if(!nav||nav.querySelector('[data-class-progress-launch]')||!A().schoolId)return;const b=document.createElement('button');b.type='button';b.dataset.classProgressLaunch='';b.dataset.view='class-performance';b.textContent='▥ '+title();b.onclick=open;nav.append(b);}
-window.addEventListener?.('load',addLauncher);window.NOOR_CLASS_PERFORMANCE={mount,open,report,grade,meter,ring,badge,title,subjectDialog,addLauncher};})();
+window.addEventListener?.('load',addLauncher);window.addEventListener?.('noor:workspace-ready',addLauncher);window.NOOR_CLASS_PERFORMANCE={mount,open,report,grade,meter,ring,badge,title,subjectDialog,addLauncher};})();

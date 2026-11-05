@@ -25,7 +25,7 @@ test('navigation recovery and teacher-owned periods remain wired',async()=>{
 test('recovery callback cannot enter dashboard before a password reset',async()=>{
  const html=await read('index.html');
  assert.match(html,/noorRecoveryActive\s*=\s*\/(?:.|\n)+?type=recovery/);
- assert.match(html,/if\(session\?\.user&&!noorRecoveryActive\)await enterWorkspace/);
+ assert.match(html,/if\(session\?\.user&&!noorRecoveryActive\)\{if\(canonicalOnboarding\)await canonicalOnboarding.resume/);
  assert.match(html,/if\(event==='PASSWORD_RECOVERY'\)\{noorRecoveryActive=true/);
  assert.match(html,/await supabaseClient\.auth\.signOut\(\);noorRecoveryActive=false/);
 });

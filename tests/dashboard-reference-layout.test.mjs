@@ -52,7 +52,7 @@ test('search routes to actual authorised nav entries; demo hub cannot rewrite sc
 
 test('student screenshot actions resolve to real accessible routes',async()=>{
  const [student,html]=await Promise.all([read('student-portal.js'),read('index.html')]);
- const ids=['student-schedule','student-learning','student-homework','student-questions','student-progress','student-attendance','student-calendar','notices','profile'];
+ const ids=['student-schedule','student-learning','student-homework','student-questions','student-progress','student-attendance','school-calendar','notices','profile'];
  for(const id of ids){
   assert.ok(student.includes(id),'Missing student destination '+id);
   assert.ok(html.includes("id:'"+id+"'")||['profile','notices'].includes(id),'Missing nav route '+id);

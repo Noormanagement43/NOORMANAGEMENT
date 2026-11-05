@@ -32,7 +32,7 @@ async function read(){
  for(const result of [periods,groups,slots,lessons])if(result.error)throw result.error;
  if(A().user?.id!==c.userId)throw Error('Your account changed. Reopen the timetable.');
  const gs=groups.data||[];
- const data=(periods.data||[]).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
+ const data=(periods.data||[]).filter(p=>{const g=gs.find(x=>x.id===p.academic_group_id);return g&&(g.group_type!=='section'||gs.some(parent=>parent.id===g.parent_group_id&&parent.is_active!==false));}).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
  return{...c,data,groups:gs,slots:slots.data||[]};
 }
 async function load(){try{const r=await read();return{data:r.data,error:null}}catch(error){return{data:[],error}}}

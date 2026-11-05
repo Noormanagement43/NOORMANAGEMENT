@@ -1,7 +1,7 @@
 /* Read legacy dashboard identity from verified destination memberships. No roles are granted here. */
 (()=>{'use strict';
 const enabled=()=>window.NOOR_CONFIG?.SUPABASE_URL==='https://ayrryemawwplguaauxij.supabase.co';
-const role=value=>({school_admin:'principal',faculty:'teacher',university_admin:'principal',academic_admin:'principal',university_student:'student'})[value]||value;
+const role=value=>({school_admin:'manager',faculty:'teacher',university_admin:'principal',academic_admin:'principal',university_student:'student'})[value]||value;
 async function profile(db,id){try{
  const auth=await db.auth.getUser();if(auth.error)throw auth.error;if(auth.data?.user?.id!==id)throw Error('Sign in again to load your own account.');
  const [pr,mr]=await Promise.all([db.from('profiles').select('*').eq('id',id).maybeSingle(),db.from('institution_memberships').select('id,institution_id,user_id,role,status,joined_at').eq('user_id',id)]);

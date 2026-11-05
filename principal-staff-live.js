@@ -4,6 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const date=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 let loading=false;
 async function refresh(){
+if(window.NOOR_ACCOUNT_CONTEXT?.enabled())return;
 const api=window.NOOR_AI_APP,root=document.getElementById('view-overview');
 if(!api?.schoolId||!['owner','principal','manager'].includes(api.profile?.role)||!root||document.getElementById('workspace')?.classList.contains('hidden')||loading)return;
 loading=true;

@@ -118,7 +118,7 @@ function setup(){
 
   r.querySelector('#pd-refresh').onclick=refresh;
 
-  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('staff-management');
+  const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('teacher-directory');
   r.querySelector('#pd-timetable').onclick=showTimetable;
   r.querySelector('#pd-mode').onclick=()=>{
     const dark=document.documentElement.dataset.noorMode==='dark';

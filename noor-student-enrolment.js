@@ -11,10 +11,10 @@ async function choices(db,profile){
 async function save(db,profile,rows,classId,sectionId){
  if(!classes(rows,profile.institution_id).some(x=>x.id===classId)||!sections(rows,profile.institution_id,classId).some(x=>x.id===sectionId))throw Error('Select your school’s class and one of its sections.');
  const auth=await db.auth.getUser();if(auth.error||auth.data?.user?.id!==profile.id)throw Error('Your account changed. Sign in again.');
- const result=await db.rpc('noor_select_student_section',{p_institution:profile.institution_id,p_class:classId,p_section:sectionId});if(result.error)throw result.error;return result.data;
+ const result=await db.rpc(profile.role==='teacher'?'noor_select_teacher_section':'noor_select_student_section',{p_institution:profile.institution_id,p_class:classId,p_section:sectionId});if(result.error)throw result.error;return result.data;
 }
 async function ensure({db,user,profile,enter,message}){
- if(profile.role!=='student'||profile.class_id&&profile.section_id)return false;
+ if(!['student','teacher'].includes(profile.role)||profile.class_id&&profile.section_id)return false;
  const rows=await choices(db,profile),list=classes(rows,profile.institution_id);
  const old=document.getElementById('studentSchoolChoice');if(old)old.remove();
  const panel=document.createElement('section');panel.id='studentSchoolChoice';panel.className='notice info';

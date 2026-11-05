@@ -11,8 +11,8 @@ async function profile(db,id){try{
  const contact=auth.data.user.user_metadata?.noor_contact||{};p.mobile_number=typeof contact.phone==='string'?contact.phone:'';p.city_or_area=typeof contact.location==='string'?contact.location:'';p.date_of_birth=typeof contact.date_of_birth==='string'?contact.date_of_birth:'';
  const platform=await db.from('platform_roles').select('role').eq('user_id',id);if(platform.error)throw platform.error;
  if((platform.data||[]).some(x=>['platform_owner','platform_admin'].includes(x.role))){p.role='creator';p.status='active';}
- if(m&&p.role==='student'){
- const enrolled=await db.from('academic_group_memberships').select('group_id').eq('membership_id',m.id).eq('institution_id',m.institution_id).eq('status','active').eq('group_role','student');
+ if(m&&['student','teacher'].includes(p.role)){
+ const enrolled=await db.from('academic_group_memberships').select('group_id').eq('membership_id',m.id).eq('institution_id',m.institution_id).eq('status','active').in('group_role',p.role==='teacher'?['teacher','faculty']:['student']);
  if(enrolled.error)throw enrolled.error;
  if(enrolled.data?.length){const groups=await db.from('academic_groups').select('id,name,group_type,parent_group_id').eq('institution_id',m.institution_id).eq('is_active',true).in('id',enrolled.data.map(x=>x.group_id));if(groups.error)throw groups.error;const section=groups.data?.find(g=>g.group_type==='section'),cl=groups.data?.find(g=>g.group_type==='class');p.section_id=section?.id||null;p.class_id=section?.parent_group_id||cl?.id||null;}
  }

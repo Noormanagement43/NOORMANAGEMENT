@@ -42,17 +42,17 @@ function install({db,enter,message,showLogin,redirectTo}){
   panel.innerHTML='<h3>Finish your school connection</h3><p>Your account is signed in. No school membership has been saved yet.</p><form id="finishCreateSchool"><label>New school name<input name="school" minlength="2" maxlength="160" required></label><button type="submit" class="btn">Create my school & open Principal dashboard</button></form><hr><form id="finishJoinSchool"><label>School ID from principal<input name="institution" required></label><label>Student / Staff Joining Code<input name="code" required autocomplete="off" maxlength="128"></label><button type="submit" class="btn">Join my school</button></form><p>Existing teachers and students should use the school details from their principal.</p>';
   $('loginForm').after(panel);
   capture('finishCreateSchool',async()=>{await create(user,{school_name:$('finishCreateSchool').elements.school.value});panel.remove();});
-  capture('finishJoinSchool',async()=>{const f=$('finishJoinSchool');await join(db,f.elements.institution.value.trim(),f.elements.code.value,user.id);await enter(user);panel.remove();});
+  capture('finishJoinSchool',async()=>{const f=$('finishJoinSchool');await join(db,f.elements.institution.value.trim(),f.elements.code.value,user.id);panel.remove();await resume(user);});
  }
  async function resume(user){
   const profile=await window.NOOR_ACCOUNT_CONTEXT.profile(db,user.id);if(profile.error)throw profile.error;
-  if(profile.data?.status==='active'){localStorage.removeItem('noor.pendingOwnerSetup');await enter(user);return;}
+  if(profile.data?.status==='active'){localStorage.removeItem('noor.pendingOwnerSetup');if(window.NOOR_STUDENT_ENROLMENT&&await window.NOOR_STUDENT_ENROLMENT.ensure({db,user,profile:profile.data,enter,message}))return;await enter(user);return;}
   if(profile.data?.status==='inactive')throw Error('Your school access is paused. Ask your principal to reactivate the same account.');
   const draft=boundDraft(localStorage.getItem('noor.pendingOwnerSetup'),user);if(draft){await create(user,draft);return;}
   let pending;try{pending=JSON.parse(sessionStorage.getItem('noor.pendingJoin')||'null');}catch{}
   const meta=user.user_metadata||{};
-  if(pending?.user_id===user.id){await join(db,pending.institution,pending.code,user.id);sessionStorage.removeItem('noor.pendingJoin');await enter(user);return;}
-  if(meta.school_id&&meta.noor_join_code){await join(db,meta.school_id,meta.noor_join_code,user.id);await enter(user);return;}
+  if(pending?.user_id===user.id){await join(db,pending.institution,pending.code,user.id);sessionStorage.removeItem('noor.pendingJoin');await resume(user);return;}
+  if(meta.school_id&&meta.noor_join_code){await join(db,meta.school_id,meta.noor_join_code,user.id);await resume(user);return;}
   finish(user);
  }
  capture('loginForm',async()=>{const r=await db.auth.signInWithPassword({email:value('loginEmail'),password:$('loginPassword').value});if(r.error)throw r.error;if(!r.data?.user)throw Error('Sign-in did not finish.');await resume(r.data.user);});
@@ -71,7 +71,7 @@ function install({db,enter,message,showLogin,redirectTo}){
   if(!student&&value('joinStaffRole')==='manager')throw Error('Manager access must be granted by your principal. Use a teacher code only for teacher accounts.');
   const r=await db.auth.signUp({email,password,options:{data:{full_name:value(student?'studentName':'joinFullName'),mobile_number:value(student?'studentMobile':'joinStaffMobile'),parent_name:student?value('parentName'):undefined,roll_number:student?value('rollNumber'):undefined},emailRedirectTo:redirectTo}});if(r.error)throw r.error;if(!r.data?.user||r.data.user.identities?.length===0)throw Error('This account may already exist. Sign in instead.');
   sessionStorage.setItem('noor.pendingJoin',JSON.stringify({user_id:r.data.user.id,institution,code}));
-  if(r.data.session){await join(db,institution,code,r.data.user.id);sessionStorage.removeItem('noor.pendingJoin');await enter(r.data.user);}else{showLogin();$('loginEmail').value=email;message('Verify your email, then sign in. Your school connection will finish securely.','success');}
+  if(r.data.session){await join(db,institution,code,r.data.user.id);sessionStorage.removeItem('noor.pendingJoin');await resume(r.data.user);}else{showLogin();$('loginEmail').value=email;message('Verify your email, then sign in. Your school connection will finish securely.','success');}
  });
  return {resume};
 }

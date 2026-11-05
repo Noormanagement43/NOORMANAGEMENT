@@ -730,7 +730,7 @@ function connect(){
   if(channel)a().db.removeChannel(channel);identity=key;
   const db=a().db;channel=db.channel('noor-principal-'+key);
   if(window.NOOR_PRINCIPAL_DATA?.current()){
-    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
+    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons','noor_staff_checkins'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
   }else{
   for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
   channel.on('postgres_changes',{event:'*',schema:'public',table:'sections'},refresh);

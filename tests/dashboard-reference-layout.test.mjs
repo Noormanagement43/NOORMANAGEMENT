@@ -16,7 +16,7 @@ test('all three dashboards use reference design components without inventing sch
  }
  assert.match(student,/No teacher-marked assessment results available yet/);
  assert.doesNotMatch(student,/demoMarks|activeVals = vals\.length/);
- for(const item of ['realTeachingAnalytics','Subject-Wise Teaching Progress','Teaching Period Timeline','Today’s Status Overview']){
+ for(const item of ['realTeachingAnalytics','Subject-Wise Teaching Progress','Period Timeline','Period Completion']){
   assert.ok(teacher.includes(item),'Teacher missing '+item);
  }
  assert.match(teacher,/runs\.get\(period\.id\)\?\.status==='done'/);

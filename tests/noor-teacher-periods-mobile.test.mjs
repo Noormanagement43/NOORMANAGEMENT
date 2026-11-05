@@ -19,16 +19,7 @@ test('teacher can type freeform subject with automatic icon, no subject suggesti
  assert.doesNotMatch(s,/option value="Maths"|suggestedSubjects|datalist/);
 });
 
-test('teacher optional tools and diary/report icons are at scroll end, not inside profile hero',async()=>{
- const s=await read('teacher-reference.js'),css=await read('noor-mobile-teacher-principal.css');
- const index=s.indexOf("dash.append(quickCard)"),advanced=s.indexOf("dash.append(advance)"),end=s.indexOf("dash.append(toolkit)");
- assert.ok(index>0&&advanced>index&&end>advanced);
- for(const name of ['Teaching Diary','Daily School Report','Weekly Planner','Learning Insights'])assert.ok(s.includes(name));
- assert.match(css,/nt-toolkit-grid/);
- assert.match(css,/nt-toolkit-glyph/);
- assert.match(css,/nt-bottom-actions/);
- assert.doesNotMatch(s,/profileQuote\.append\(quickCard\)/);
-});
+test('teacher quick actions stay at the bottom without diary/report toolkits',async()=>{const s=await read('teacher-reference.js');assert.ok(s.includes('dash.append(quickCard)'));assert.doesNotMatch(s,/dash.append\(advance\)|dash.append\(toolkit\)/);for(const name of ['Take Attendance','Create Assignment','Smart Notes','Weekly Planner'])assert.ok(s.includes(name));assert.doesNotMatch(s,/Daily School Report/);});
 
 test('principal/manager phone content uses single column and restores real bottom navigation',async()=>{
  const html=await read('index.html'),css=await read('noor-mobile-teacher-principal.css'),principal=await read('principal-live.js');

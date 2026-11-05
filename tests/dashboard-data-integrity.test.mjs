@@ -29,7 +29,7 @@ test('principal analytics use recorded submissions and no benchmark fallback',as
 test('teacher dashboard metrics are drawn from real period records',async()=>{
   const code=await source('teacher-reference.js');
   assert.doesNotMatch(code,/Avg 86\.6%|85% Peak|100 \/ 85 ✓|Chat with NOOR AI Jinni/);
-  assert.match(code,/Today’s periods/);
+  assert.match(code,/Selected day’s periods/);
   assert.match(code,/dataset\.action==='take-attendance'/);
   assert.match(code,/dataset\.action==='upload-resource'/);
 });

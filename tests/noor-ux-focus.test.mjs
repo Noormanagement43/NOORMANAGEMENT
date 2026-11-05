@@ -4,13 +4,13 @@ import {readFile} from 'node:fs/promises';
 import {Script} from 'node:vm';
 const read=name=>readFile(new URL('../'+name,import.meta.url),'utf8');
 
-test('teacher has one concise navigation list with twelve relevant destinations',async()=>{
+test('teacher has one concise navigation list with eleven relevant destinations',async()=>{
   const page=await read('index.html');
   const menu=page.split("if(role==='teacher')return ")[1]?.split("if(role==='parent')return ")[0];
   assert.ok(menu,'Teacher navigation must exist');
   const ids=[...menu.matchAll(/\{id:'([^']+)'/g)].map(m=>m[1]);
-  assert.equal(ids.length,12);
-  assert.equal(new Set(ids).size,12);
+  assert.equal(ids.length,11);
+  assert.equal(new Set(ids).size,11);
   assert.deepEqual(ids.slice(0,5),['overview','attendance','schedules','teacher-classroom','paper-generator']);
   assert.ok(!ids.includes('rubric-assistant')&&!ids.includes('teaching-diary')&&!ids.includes('student-gaps'),'Specialist tools should stay inside the advanced studio, not duplicate sidebar entries');
   assert.ok(page.includes('noor-role-focus.css'));
@@ -26,12 +26,12 @@ test('teacher first viewport has exactly four high-value quick actions and atten
   assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,4);
   assert.match(section,/Take Attendance/);
   assert.match(section,/Create Assignment/);
-  assert.match(section,/Share Smart Notes/);
-  assert.match(section,/Marks & Results/);
+  assert.match(section,/Smart Notes/);
+  assert.match(section,/Weekly Planner/);
   assert.match(code,/profileNode\?\.insertAdjacentElement\('afterend',priority\)/);
   assert.match(code,/priorityGrid\.append\(attendance\)/);
-  assert.match(code,/const advance=document\.createElement\('details'\)/);
-  assert.equal((code.match(/id="ntTeacherIntelligence"/g)||[]).length,1);
+  assert.doesNotMatch(code,/dash.append\(advance\)|dash.append\(toolkit\)/);
+  assert.equal((code.match(/id="ntTeacherIntelligence"/g)||[]).length,0);
   assert.ok(!code.includes('nt-reference-panels'),'No duplicate legacy dashboard panels');
 });
 

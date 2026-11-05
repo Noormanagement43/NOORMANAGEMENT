@@ -27,7 +27,7 @@ function install({db,enter,message,showLogin,redirectTo}){
   const old=$('canonicalCodes');if(old)old.remove();const panel=document.createElement('div');panel.id='canonicalCodes';panel.className='modal-backdrop show';panel.style.cssText='display:grid;place-items:center;position:fixed;inset:0;z-index:200;background:#20101c99;padding:20px;overflow:auto';
   const card=document.createElement('section');card.className='auth-card';card.style.cssText='max-width:560px;width:100%;padding:24px';
   const title=document.createElement('h2');title.textContent='School created — save your joining details';card.append(title);
-  const hint=document.createElement('p');hint.textContent='Share your school name and the correct Student or Staff code. Management codes can be set separately in Settings. Codes expire after 30 days.';card.append(hint);
+  const hint=document.createElement('p');hint.textContent='Share your school name and the correct Student or Staff code. Management codes can be set separately in Settings. Codes remain active until you change them in Settings.';card.append(hint);
   for(const [name,val] of [['Student Joining Code',codes.student||'Not generated — retry from school setup'],['Staff Joining Code',codes.teacher||'Not generated — retry from school setup']]){const label=document.createElement('label');label.textContent=name;const input=document.createElement('input');input.readOnly=true;input.value=val;input.style.cssText='width:100%;margin:8px 0 14px';input.onclick=()=>input.select();card.append(label,input);}
   const share=document.createElement('button');share.type='button';share.className='btn light';share.textContent='Copy school joining link';share.onclick=async()=>{const link=new URL(redirectTo);link.searchParams.set('school',institution);try{await navigator.clipboard.writeText(link.href);share.textContent='School link copied — share code separately';}catch{message('Share your school name and the correct joining code.','info');}};card.append(share);
   const close=document.createElement('button');close.className='btn';close.textContent='Continue to dashboard';close.onclick=()=>panel.remove();card.append(close);panel.append(card);document.body.append(panel);
@@ -46,7 +46,7 @@ function install({db,enter,message,showLogin,redirectTo}){
  }
  async function resume(user){
   const profile=await window.NOOR_ACCOUNT_CONTEXT.profile(db,user.id);if(profile.error)throw profile.error;
-  if(profile.data?.status==='active'){localStorage.removeItem('noor.pendingOwnerSetup');if(window.NOOR_STUDENT_ENROLMENT&&await window.NOOR_STUDENT_ENROLMENT.ensure({db,user,profile:profile.data,enter,message}))return;await enter(user);return;}
+  if(profile.data?.status==='active'){let choice;try{choice=JSON.parse(sessionStorage.getItem('noor.pendingClass')||'null');}catch{}if(choice?.user_id===user.id&&choice.institution===profile.data.institution_id&&['student','teacher'].includes(profile.data.role)){const selected=await db.rpc(profile.data.role==='teacher'?'noor_select_teacher_section':'noor_select_student_section',{p_institution:choice.institution,p_class:choice.class_id,p_section:choice.section_id});if(selected.error)throw selected.error;sessionStorage.removeItem('noor.pendingClass');Object.assign(profile.data,{class_id:choice.class_id,section_id:choice.section_id});}localStorage.removeItem('noor.pendingOwnerSetup');if(window.NOOR_STUDENT_ENROLMENT&&await window.NOOR_STUDENT_ENROLMENT.ensure({db,user,profile:profile.data,enter,message}))return;await enter(user);return;}
   if(profile.data?.status==='inactive')throw Error('Your school access is paused. Ask your principal to reactivate the same account.');
   const draft=boundDraft(localStorage.getItem('noor.pendingOwnerSetup'),user);if(draft){await create(user,draft);return;}
   let pending;try{pending=JSON.parse(sessionStorage.getItem('noor.pendingJoin')||'null');}catch{}
@@ -69,8 +69,9 @@ function install({db,enter,message,showLogin,redirectTo}){
   const student=kind==='student',email=value(student?'studentEmail':'joinStaffEmail'),password=$(student?'studentPassword':'joinStaffPassword').value;
   if(password!==$(student?'studentConfirmPassword':'joinStaffConfirmPassword').value)throw Error('Passwords do not match.');
   const institution=$(student?'schoolSelect':'joinStaffSchoolSelect')?.dataset.institution,code=value(student?'joinCode':'joinStaffCode'),joiningKind=student?'student':value('joinStaffRole')==='manager'?'manager':'teacher';if(!uuid.test(institution)||!code)throw Error('Select your school by name and enter its joining code.');
+  const choice=joiningKind==='manager'?null:window.NOOR_SIGNUP_GROUPS?.validate(student?'student':'teacher');
   const r=await db.auth.signUp({email,password,options:{data:{full_name:value(student?'studentName':'joinFullName'),mobile_number:value(student?'studentMobile':'joinStaffMobile'),parent_name:student?value('parentName'):undefined,roll_number:student?value('rollNumber'):undefined},emailRedirectTo:redirectTo}});if(r.error)throw r.error;if(!r.data?.user||r.data.user.identities?.length===0)throw Error('This account may already exist. Sign in instead.');
-  sessionStorage.setItem('noor.pendingJoin',JSON.stringify({user_id:r.data.user.id,institution,code,kind:joiningKind}));
+  sessionStorage.setItem('noor.pendingJoin',JSON.stringify({user_id:r.data.user.id,institution,code,kind:joiningKind}));if(choice)sessionStorage.setItem('noor.pendingClass',JSON.stringify({user_id:r.data.user.id,institution,...choice}));
   if(r.data.session){try{await join(db,institution,code,r.data.user.id,joiningKind);}catch(error){sessionStorage.removeItem('noor.pendingJoin');finish(r.data.user);message('Account created. Select your school and retry its joining code. '+generic(error),'error');return;}sessionStorage.removeItem('noor.pendingJoin');await resume(r.data.user);}else{showLogin();$('loginEmail').value=email;message('Verify your email, then sign in. Your school connection will finish securely.','success');}
  });
  if(document.createElement&&document.querySelector){
@@ -85,10 +86,10 @@ function prepare(){
  const staffForm=document.querySelector('#staffJoinForm .formgrid');if(staffForm){const school=document.getElementById('joinStaffSchoolSelect')?.closest('.field'),code=document.getElementById('joinStaffCode')?.closest('.field');if(school&&code){staffForm.prepend(code);staffForm.prepend(school);}}
  for(const [id,text] of [['btnRoleTeacher','Staff / Teacher Joining Code *'],['btnRoleManagement','Management Joining Code *']]){const button=document.getElementById(id);if(button&&!button.dataset.canonicalLabel){button.dataset.canonicalLabel='yes';button.addEventListener('click',()=>{document.querySelector('label[for="joinStaffCode"]').textContent=text;});}}
  const studentForm=document.querySelector('#registerForm .formgrid');if(studentForm){const school=document.getElementById('schoolSelect')?.closest('.field'),code=document.getElementById('joinCode')?.closest('.field');if(school&&code){studentForm.prepend(code);studentForm.prepend(school);}}
- for(const id of ['classSelect','sectionSelect']){const field=document.getElementById(id)?.closest('.field');if(field)field.hidden=true;}
+
  for(const id of ['ownerStudentJoinCode','ownerStaffJoinCode']){const input=document.getElementById(id);if(input){input.required=false;input.disabled=true;input.closest('.field').hidden=true;}}
  for(const id of ['joinCode','joinStaffCode']){const code=document.getElementById(id);if(code){code.maxLength=128;code.removeAttribute('pattern');code.inputMode='text';}}
- for(const id of ['classSelect','sectionSelect']){const el=document.getElementById(id);if(el){el.required=false;el.disabled=true;el.innerHTML='<option value="">Assigned by your school after joining</option>';}}
+ window.NOOR_SIGNUP_GROUPS?.install(window.NOOR_AI_APP?.db);
  const note=document.querySelector('#ownerRegisterForm .notice');if(note)note.textContent='Create your school once. Secure Student and Staff joining codes are generated after the school is saved.';
  const schoolName=document.getElementById('ownerSchoolName');if(schoolName)schoolName.maxLength=160;
  const photo=document.getElementById('studentPhoto');if(photo)photo.required=false;

@@ -7,7 +7,9 @@ async function profile(db,id){try{
  const [pr,mr]=await Promise.all([db.from('profiles').select('*').eq('id',id).maybeSingle(),db.from('institution_memberships').select('id,institution_id,user_id,role,status,joined_at').eq('user_id',id)]);
  if(pr.error)throw pr.error;if(mr.error)throw mr.error;if(!pr.data)return{data:null,error:null};
  const available=(mr.data||[]).filter(m=>m.status==='active');if(available.length>1)throw Error('This account belongs to multiple schools. Choose your school before opening the dashboard.');
- const m=available[0],p={...pr.data,email:auth.data.user.email,role:m?role(m.role):'student',status:m?'active':'pending',school_id:m?.institution_id||null,institution_id:m?.institution_id||null,membership_id:m?.id||null};
+ const assigned=(mr.data||[])[0],m=available[0],p={...pr.data,email:auth.data.user.email,role:m?role(m.role):'student',status:m?'active':assigned?'inactive':'pending',school_id:m?.institution_id||null,institution_id:m?.institution_id||null,membership_id:m?.id||null};
+ const platform=await db.from('platform_roles').select('role').eq('user_id',id);if(platform.error)throw platform.error;
+ if((platform.data||[]).some(x=>['platform_owner','platform_admin'].includes(x.role))){p.role='creator';p.status='active';}
  if(m&&p.role==='student'){
  const enrolled=await db.from('academic_group_memberships').select('group_id').eq('membership_id',m.id).eq('institution_id',m.institution_id).eq('status','active').eq('group_role','student');
  if(enrolled.error)throw enrolled.error;

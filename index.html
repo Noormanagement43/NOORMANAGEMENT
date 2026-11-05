@@ -61,7 +61,8 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
 <link rel="stylesheet" href="./student-portal.css?v=20261020-student-lc4">
 <link rel="stylesheet" href="./command-centre.css?v=20261019-principal-v2">
 <link rel="stylesheet" href="./sounds/sound.css?v=20261016"><link rel="stylesheet" href="./theme-system.css?v=20261018">
-<script src="./config.js"></script><script src="./noor-account-context.js?v=20261028-1"></script><script src="./noor-shared-timetable.js?v=20261028-destination-1"></script><script src="./noor-school-branding.js?v=20261028-branding-persist"></script>
+<script src="./config.js"></script><script src="./noor-account-context.js?v=20261105-login-1"></script><script src="./noor-shared-timetable.js?v=20261028-destination-1"></script><script src="./noor-school-branding.js?v=20261028-branding-persist"></script>
+<script src="./noor-canonical-onboarding.js?v=20261105-login-1"></script>
 <script src="./daily-quotes.js"></script>
 <script src="./noor-subject-icons.js?v=20261028-1"></script>
 <script src="./noor-avatar-isolation.js?v=20261028-1"></script>
@@ -257,6 +258,7 @@ window.NOOR_SELECTED_ROLE=()=>{const base=document.querySelector('.portal-option
 $('studentPhoto').addEventListener('change',()=>{const f=$('studentPhoto').files?.[0];studentPhotoFile=f||null;if(!f){$('photoPreview').textContent='＋';return;}if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>3*1024*1024){studentPhotoFile=null;$('studentPhoto').value='';$('photoPreview').textContent='＋';authMessage('Please select a JPG, PNG or WebP photo smaller than 3 MB.','error');return;}const reader=new FileReader();reader.onload=()=>{$('photoPreview').innerHTML='<img alt="Student photo preview" src="'+reader.result+'">';};reader.readAsDataURL(f);});
 async function requireBackend(){if(!supabaseClient){authMessage('Secure database connection is not configured yet. Registration and sign-in are paused so real student details are not falsely shown as saved. The NOOR AI backend setup must be completed first.','error');return false;}return true;}
 async function loadSchools(){
+  if(window.NOOR_CANONICAL_ONBOARDING?.enabled()){window.NOOR_CANONICAL_ONBOARDING.prepare();return;}
   const selects=[$('schoolSelect'),$('joinStaffSchoolSelect')].filter(Boolean);
   const previous=selects.map(el=>el.value);
   if(!supabaseClient){selects.forEach(el=>el.innerHTML='<option value="">Database setup required</option>');return;}
@@ -268,6 +270,7 @@ async function loadSchools(){
 }
 let classChoicesRequest=0,sectionChoicesRequest=0,registrationChoicesReady=false;
 async function loadClassChoices(schoolId,classTarget='classSelect',sectionTarget='sectionSelect',selectedClass='',selectedSection=''){
+  if(window.NOOR_CANONICAL_ONBOARDING?.enabled()){registrationChoicesReady=true;return;}
   const request=++classChoicesRequest; ++sectionChoicesRequest;if(classTarget==='classSelect')registrationChoicesReady=false;
   const cls=$(classTarget),sec=$(sectionTarget),registration=classTarget==='classSelect';
   cls.innerHTML='<option value="">'+(schoolId?'Loading classes…':'Select school first')+'</option>';
@@ -991,8 +994,10 @@ $('staffJoinForm').addEventListener('submit',async e=>{
 
 
 window.NOOR_AI_APP={get db(){return supabaseClient;},get profile(){return currentProfile;},get user(){return currentUser;},get school(){return currentSchool;},get schoolId(){return currentProfile?.role==='creator'?(currentSchool?.id||null):(currentProfile?.school_id||currentSchool?.id||null);},escapeHtml,toast,openView};
+const canonicalOnboarding=window.NOOR_CANONICAL_ONBOARDING?.install({db:supabaseClient,enter:enterWorkspace,message:authMessage,showLogin:()=>showAuthTab('login'),redirectTo:AUTH_REDIRECT_URL});
+window.NOOR_CANONICAL_ONBOARDING?.prepare();
 // Resume an existing Supabase session; direct route always checks the authenticated profile and database policies.
-(async()=>{if(!isConfigured){$('dbStateText').textContent='Backend setup required';$('dbState').classList.remove('ready');return;}try{const {data:{session}}=await supabaseClient.auth.getSession();if(session?.user&&!noorRecoveryActive)await enterWorkspace(session.user);else if(!session?.user)await loadSchools();}catch(e){console.warn('Session restore failed',e);}})();
+(async()=>{if(!isConfigured){$('dbStateText').textContent='Backend setup required';$('dbState').classList.remove('ready');return;}try{const {data:{session}}=await supabaseClient.auth.getSession();if(session?.user&&!noorRecoveryActive){if(canonicalOnboarding)await canonicalOnboarding.resume(session.user);else await enterWorkspace(session.user);}else if(!session?.user)await loadSchools();}catch(e){authMessage(friendlyError(e),'error');}})();
 </script>
 <script src="./academic.js?v=20261104-provider-1"></script>
 <script src="./academic-extras.js"></script>

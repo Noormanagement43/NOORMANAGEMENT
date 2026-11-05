@@ -1,0 +1,13 @@
+{
+  "checked_at": "2026-11-04T10:37:44.977596+00:00",
+  "project_ref": "ayrryemawwplguaauxij",
+  "check": "Live Brevo MCP initialize and tools/list; no tools/call or customer data",
+  "secret_detected": true,
+  "environment_matched": true,
+  "authentication_successful": true,
+  "handshake_successful": true,
+  "tools_list_successful": true,
+  "tool_count": 291,
+  "external_actions_enabled": false,
+  "error": ""
+}

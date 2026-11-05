@@ -1,3 +1,4 @@
+import { probeBrevoMcp } from './brevo-mcp.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.0';
 
 export const PROJECT_REF = 'ayrryemawwplguaauxij';
@@ -43,6 +44,7 @@ export async function readBody(req: Request): Promise<Dict> {
  catch { throw new InputError('Valid JSON object required'); }
 }
 const tools = [
+ { name: 'noor_check_brevo_connection', description: 'Check server-side Brevo MCP authentication and tool discovery. Returns sanitized connection flags only. Does not read contacts or send messages.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' } }, required: ['institution_id'], additionalProperties: false }, annotations: { readOnlyHint: true } },
  { name: 'noor_ask_brain', description: 'Generate an academic draft with the configured brain provider. Sends your prompt to that provider and consumes AI quota; does not execute school or external actions.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' }, message: { type: 'string', minLength: 1, maxLength: 3000 } }, required: ['institution_id','message'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
  { name: 'noor_manager_plan', description: 'Ask the configured OpenAI manager for a proposed plan and the primary brain for a draft. Sends your prompt to both providers and consumes two AI quota units. Does not execute external actions.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' }, message: { type: 'string', minLength: 1, maxLength: 3000 } }, required: ['institution_id','message'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
  { name: 'noor_list_connections', description: 'List provider registrations for an authorised institution. Registration does not imply OAuth connection.', inputSchema: { type: 'object', properties: { institution_id: { type: 'string', format: 'uuid' } }, required: ['institution_id'], additionalProperties: false }, annotations: { readOnlyHint: true } },
@@ -99,6 +101,7 @@ export async function handle(req: Request): Promise<Response> {
   const inst = await db.from('institutions').select('id').eq('id', institution).eq('status', 'active').maybeSingle();
   if (inst.error) throw inst.error;
   if (!inst.data) throw { code: '42501' };
+  if (name === 'brevo.mcp.check') return await probeBrevoMcp(Deno.env.toObject());
   if (name === 'ai.assist' || name === 'ai.plan') {
    const generated = await db.functions.invoke('noor-v2-ai', { body: { action: name === 'ai.plan' ? 'manager_plan' : 'chat_assist', institution_id: institution, message: string(input.message,3000) } });
    if (generated.error || generated.data?.error) throw { code: 'AI_UNAVAILABLE' };
@@ -155,7 +158,7 @@ export async function handle(req: Request): Promise<Response> {
    if (body.method === 'ping') return rpc({});
    if (body.method === 'tools/list') return rpc({ tools });
    if (body.method !== 'tools/call') return rpcError(-32601,'Method not found');
-   const map: Record<string,string> = { noor_ask_brain: 'ai.assist', noor_manager_plan: 'ai.plan', noor_list_connections: 'connections.list', noor_list_task_drafts: 'tasks.list', noor_draft_task: 'tasks.draft' };
+   const map: Record<string,string> = { noor_check_brevo_connection: 'brevo.mcp.check', noor_ask_brain: 'ai.assist', noor_manager_plan: 'ai.plan', noor_list_connections: 'connections.list', noor_list_task_drafts: 'tasks.list', noor_draft_task: 'tasks.draft' };
    if (typeof params.name !== 'string' || !Object.hasOwn(map,params.name)) return rpcError(-32602,'Unknown tool');
    const result = await action(map[params.name],object(params.arguments));
    return rpc({ content: [{ type: 'text', text: JSON.stringify(result) }] });

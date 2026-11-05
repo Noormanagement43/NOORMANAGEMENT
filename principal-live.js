@@ -421,7 +421,7 @@ async function showStudentDashboard(studentId){
 
 function editProfile(){
   const p=a().profile;
-  if(window.NOOR_PRINCIPAL_DATA?.current())return form('Edit my profile',[['full_name','Full name',p.full_name]],async values=>{const uid=a().user.id;await window.NOOR_AVATAR_SAFE.ownUser(a().db,uid);const r=await a().db.from('profiles').update({full_name:values.full_name.trim()}).eq('id',uid).select('full_name').single();if(r.error)throw r.error;if(a().user?.id!==uid)throw Error('Account changed.');p.full_name=r.data.full_name;});
+  if(window.NOOR_PRINCIPAL_DATA?.current())return window.NOOR_PROFILE_EDITOR.open(refresh);
   form('Edit my school profile',[['full_name','Full name',p.full_name],['mobile_number','Phone',p.mobile_number],['city_or_area','City / area',p.city_or_area]],async values=>{
     const {data,error}=await a().db.from('profiles').update(values).eq('id',a().user.id).select('full_name,mobile_number,city_or_area').single();
     if(error)throw error;
@@ -678,11 +678,11 @@ async function refresh(){
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||school?.address||'School Campus')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>
-        <p>☎ ${e(p.mobile_number||'Add phone number')}</p>
+        <p><button class="pd-link" id="pd-edit-phone" type="button">☎ ${e(p.mobile_number||'Add phone number')}</button></p>
         <button class="pd-link" id="pd-edit-profile">Edit profile ✎</button>
         <div class="pd-quote">“${getInsight()}”</div>
       </div>`;
-    q('#pd-edit-profile').onclick=editProfile;
+    q('#pd-edit-profile').onclick=editProfile;q('#pd-edit-phone').onclick=editProfile;
 
     // Primary Classes
     q('#pd-classes').innerHTML=res.classes.error||res.sections.error||attError?empty('Class attendance could not be loaded.'):`<div class="pd-class-grid">${classes.filter(c=>classNumber(c)>=1&&classNumber(c)<=5).map((c,i)=>`<article class="pd-class c${i%5}"><h3>${e(c.name)} <span>♙</span></h3>${sections.filter(s=>s.class_id===c.id).map(s=>{const group=students.filter(p=>p.class_id===c.id&&p.section_id===s.id),m=aggregate(group,sessions,records,d.day);return `<button data-route="attendance"><span>${e(/^section/i.test(s.name)?s.name:'Section '+s.name)}</span><strong>${m.marked?m.present:'—'} / ${m.total}</strong></button><small>${m.marked?m.marked+' marked':'Not marked'}</small>`}).join('')||empty('Add sections')}</article>`).join('')}</div>`;

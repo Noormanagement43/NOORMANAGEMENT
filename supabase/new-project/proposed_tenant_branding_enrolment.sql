@@ -1,5 +1,5 @@
--- REVIEW ONLY: additive tenant branding and student initial class/section selection.
--- Apply only after owner approval. Existing records and policies are not replaced.
+-- Approved and applied 2026-11-05: additive tenant branding and student section selection.
+-- Historical migration snapshot; do not re-run. Existing records and policies were not replaced.
 BEGIN;
 CREATE TABLE public.institution_branding (
  institution_id uuid PRIMARY KEY REFERENCES public.institutions(id) ON DELETE CASCADE,

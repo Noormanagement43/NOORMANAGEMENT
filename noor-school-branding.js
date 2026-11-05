@@ -5,6 +5,8 @@ let interval=null,loading=null;
 const same=(userId,school)=>app().user?.id===userId&&app().school===school;
 function paint(school){
  if(app().school!==school)return;
+ const brandTitle=document.querySelector('#sidebar .brand b');if(brandTitle)brandTitle.textContent=school.name||'School';
+ const crumb=document.getElementById('crumbBrand');if(crumb)crumb.textContent=school.name||'School';
  const schoolName=document.getElementById('sidebarSchoolName');if(schoolName)schoolName.textContent=school.name||'School workspace';
  const badge=document.getElementById('sidebarSchoolLogo');
  if(badge){if(school.logo_url){const img=document.createElement('img');img.src=school.logo_url;img.alt=(school.name||'School')+' logo';badge.replaceChildren(img);}else badge.textContent=(school.name||'School').slice(0,1).toUpperCase();}

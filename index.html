@@ -61,7 +61,8 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
 <link rel="stylesheet" href="./student-portal.css?v=20261020-student-lc4">
 <link rel="stylesheet" href="./command-centre.css?v=20261019-principal-v2">
 <link rel="stylesheet" href="./sounds/sound.css?v=20261016"><link rel="stylesheet" href="./theme-system.css?v=20261018">
-<script src="./config.js"></script><script src="./noor-account-context.js?v=20261105-login-1"></script><script src="./noor-shared-timetable.js?v=20261028-destination-1"></script><script src="./noor-school-branding.js?v=20261105-tenant-1"></script>
+<script src="./config.js"></script><script src="./noor-account-context.js?v=20261105-structure-1"></script><script src="./noor-shared-timetable.js?v=20261105-bell-daily-1"></script><script src="./noor-school-branding.js?v=20261105-tenant-1"></script>
+<script src="./noor-school-structure.js?v=20261105-structure-1"></script>
 <script src="./noor-student-enrolment.js?v=20261105-tenant-1"></script>
 <script src="./noor-canonical-onboarding.js?v=20261105-tenant-1"></script>
 <script src="./daily-quotes.js"></script>
@@ -147,6 +148,7 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
         <form id="ownerRegisterForm" class="hidden">
 <div class="notice info">Create your school once. You choose both private joining codes; valid codes connect students and staff directly without invitation acceptance.</div>
 <div class="formgrid">
+<div class="field full"><label for="ownerInstitutionType">Institution type</label><select id="ownerInstitutionType"><option value="school">School</option><option value="university">College / University</option></select></div>
 <div class="field full"><label for="ownerSchoolName">School name *</label><input id="ownerSchoolName" required maxlength="180" autocomplete="organization"></div>
 <div class="field"><label for="ownerContactPhone">School office number *</label><input id="ownerContactPhone" type="tel" required inputmode="tel" pattern="[+0-9 ()-]{8,20}" maxlength="20" placeholder="Official office number"></div>
 <div class="field"><label for="ownerOfficialEmail">School email / Principal login *</label><input id="ownerOfficialEmail" type="email" required maxlength="254" autocomplete="email" placeholder="school@example.com"></div>
@@ -402,6 +404,7 @@ $('deleteStudentBtn')?.addEventListener('click',()=>{if(pendingEditId)removeStud
 let noorActiveStructureTab = 'school';
 
 async function renderClasses(){
+  if(window.NOOR_SCHOOL_STRUCTURE?.current())return await window.NOOR_SCHOOL_STRUCTURE.render();
   const role = currentProfile?.role;
   if (!['creator','principal','manager','teacher','owner'].includes(role)) {
     $('view-classes').innerHTML = '<div class="empty">This area is not available for your role.</div>';
@@ -1068,7 +1071,7 @@ window.NOOR_CANONICAL_ONBOARDING?.prepare();
 <script src="./noor-school-calendar.js?v=20261020-calendar-v1"></script>
 <script src="./teacher-reference.js?v=20261028-destination-timetable-4"></script>
 <script src="./teacher-profile-editor.js?v=20261104-dark-profile-1"></script>
-<script src="./student-portal.js?v=20261105-today-attendance"></script>
+<script src="./student-portal.js?v=20261105-structure-1"></script>
 <script src="./teacher-classroom.js?v=20261020-student-lc4"></script>
 <script src="./guide-avatar.js?v=20261027"></script>
 <script src="./noor-dashboard-navigation.js?v=20261027-reference-1"></script>

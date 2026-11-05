@@ -4,6 +4,7 @@ function classes(rows,institution){return rows.filter(g=>g.institution_id===inst
 function sections(rows,institution,classId){return rows.filter(g=>g.institution_id===institution&&g.is_active===true&&g.group_type==='section'&&g.parent_group_id===classId);}
 async function choices(db,profile){
  const auth=await db.auth.getUser();if(auth.error||auth.data?.user?.id!==profile.id)throw Error('Your account changed. Sign in again.');
+ if(window.NOOR_SCHOOL_STRUCTURE?.fetchGroups)return (await window.NOOR_SCHOOL_STRUCTURE.fetchGroups(db,profile.institution_id)).filter(x=>x.is_active);
  const result=await db.from('academic_groups').select('id,institution_id,name,group_type,parent_group_id,is_active').eq('institution_id',profile.institution_id).eq('is_active',true).order('name');
  if(result.error)throw result.error;return result.data||[];
 }

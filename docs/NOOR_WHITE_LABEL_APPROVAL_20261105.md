@@ -1,23 +1,31 @@
-# Tenant classes, sections and white-label branding — proposed activation
+# Tenant branding, structure and teacher timetable — 2026-11-05
 
-## Prepared implementation
+Owner approved database activation and the expanded school/college structure and period workflow in this conversation.
 
-- After a school's joining code is verified and the student has an active membership, list only that institution's active academic_groups with group_type=class.
-- The section picker lists only active sections whose institution_id matches that school AND parent_group_id matches the selected class. Preserve school-defined names such as Mango and Apple; never fabricate A/B sections. Changing class clears the previous section.
-- No anonymous directory or public access to academic groups. Student enrollment uses a server-validated, current-user-only RPC; initial selection cannot transfer an existing student to another class.
-- School name continues to come from institutions.name. Shared school logo uses an institution-scoped branding record and a new private storage bucket, read by active members and written by authorized leadership only. Signed URLs are renewed; no device-only per-account logo storage.
-- Clearing/switching school clears old logo state to prevent another tenant's logo appearing. All roles use the same school branding loader.
+## Implemented
 
-## Exact database changes needing owner approval
+- Active classes/years/streams and their own child sections, with custom names. School leadership can create Class 1–10 on demand, add further classes/streams, rename and archive/reactivate. College/university registration preserves its selected institution type; BiPC/HEC/MPC are examples, not fixed categories.
+- School-verified students select from their institution's own active classes and matching sections. Changing class clears the old section. Group reads paginate beyond the default PostgREST page size. The enrollment RPC validates own active student membership and blocks cross-school groups and self-transfer of existing assignments.
+- Institution name and private shared school logos for all active members. Leadership alone can save logos/names. Account/tenant switches clear stale logo state. Existing data and accounts preserved.
+- Principal/authorized school leadership sets period timings once. Backend rejects overlapping slots and derives teacher period times from these slots, including direct API writes. Timing changes propagate to linked active weekly periods.
+- Teachers add/edit/remove only their own recurring weekday/class/section/subject/room periods. Daily lesson/topic/completed notes are separate date-specific rows; saving a daily note does not rewrite the recurring schedule. Principal/student reads retain existing class/section RLS.
 
-Review: supabase/new-project/proposed_tenant_branding_enrolment.sql
+## Applied database migrations
 
-1. Add institution_branding table (institution_id primary key, own-tenant logo_path, updated_at) with RLS. Members read their own school; authorized leadership writes.
-2. Add private noor-school-logos bucket, 3 MB JPG/PNG/WebP, tenant-scoped read and leadership-only insert policies. Logo replacement creates a new object, with no extra overwrite/delete permissions.
-3. Add noor_select_student_section RPC backed by an authenticated private function. It validates active student membership, active same-school class and its section, rate limits and locks the membership, and records the initial assignment/audit event. Existing class transfers remain a leadership action.
+- tenant_branding_and_student_section_selection
+- principal_period_slots_and_teacher_daily_lessons
+- period_slot_propagation_index
 
-No live schema, data, policies, bucket or membership has been modified. Existing school/account records are preserved. Frontend changes must not be merged/deployed until this migration has been approved, reviewed against the latest live schema and applied successfully.
+SQL snapshots are in supabase/new-project; migration history is stored by Supabase. No old schema, policies, user accounts or school records were deleted or replaced. No automatic production class/section seed was inserted.
 
-## Verification limits
+## Verification
 
-Unit tests use synthetic Al Iqra Class 1 Mango/Apple rows, other-school and other-class sections, inactive sections, account switching and validated RPC arguments. The existing branding tests cover account/tenant isolation and saved object paths. These tests do not prove live enrollment, signed-logo access, browser role dashboards or SQL execution. After activation, test with an approved school and two separate tenants; do not manufacture production records without authorization.
+- 122 Node regression tests passed before release, including account isolation, role ownership, school-specific Mango/Apple choices, school versus college type, custom stream names, pagination, principal slot control and separate daily notes.
+- Supabase applied/compiled both feature migrations successfully.
+- Live database rollback test: leadership slot creation, overlapping slot rejection, teacher time normalization, teacher denial of slot writes, class enrollment, section-specific timetable visibility, daily lesson visibility, other-school group exclusion, own-school branding reads, student branding write denial, cross-school section rejection, self-transfer denial and timing propagation all passed.
+- All synthetic Auth, school, membership, class, period and note rows were rolled back; remaining test Auth users = 0.
+- Security advisor reported no new findings; existing leaked-password-protection warning remains.
+
+## Remaining limits
+
+Real school user walkthrough, actual logo upload/signed-image rendering and phone/laptop visual verification are not established by database/mocked tests. SMTP/inbox delivery is a separate outstanding account setting. Broader legacy academic adapters are outside this feature.

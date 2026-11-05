@@ -9,7 +9,7 @@ async function register(db,user,setup){
  if(existing.data?.length)throw Error('Your existing school access needs management review. Do not create another school.');
  const name=String(setup.school_name||'').trim();if(name.length<2||name.length>160)throw Error('Enter a school name between 2 and 160 characters.');
  const slug=(name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'school')+'-'+crypto.randomUUID().slice(0,8);
- const r=await db.rpc('register_institution_for_current_user',{p_name:name,p_slug:slug,p_type:'school'});if(r.error)throw r.error;return r.data;
+ const r=await db.rpc('register_institution_for_current_user',{p_name:name,p_slug:slug,p_type:setup.institution_type==='university'?'university':'school'});if(r.error)throw r.error;return r.data;
 }
 async function join(db,institution,code,expectedUserId){
  const auth=await db.auth.getUser();if(auth.error||!auth.data?.user||expectedUserId&&auth.data.user.id!==expectedUserId)throw Error('Your sign-in changed. Please sign in again.');
@@ -39,9 +39,9 @@ function install({db,enter,message,showLogin,redirectTo}){
  }
  function finish(user){
   $('loginForm').classList.add('hidden');let panel=$('finishSchoolSetup');if(panel)panel.remove();panel=document.createElement('section');panel.id='finishSchoolSetup';panel.className='notice info';
-  panel.innerHTML='<h3>Finish your school connection</h3><p>Your account is signed in. No school membership has been saved yet.</p><form id="finishCreateSchool"><label>New school name<input name="school" minlength="2" maxlength="160" required></label><button type="submit" class="btn">Create my school & open Principal dashboard</button></form><hr><form id="finishJoinSchool"><label>School ID from principal<input name="institution" required></label><label>Student / Staff Joining Code<input name="code" required autocomplete="off" maxlength="128"></label><button type="submit" class="btn">Join my school</button></form><p>Existing teachers and students should use the school details from their principal.</p>';
+  panel.innerHTML='<h3>Finish your school connection</h3><p>Your account is signed in. No school membership has been saved yet.</p><form id="finishCreateSchool"><label>Institution type<select name="institution_type"><option value="school">School</option><option value="university">College / University</option></select></label><label>New school name<input name="school" minlength="2" maxlength="160" required></label><button type="submit" class="btn">Create my school & open Principal dashboard</button></form><hr><form id="finishJoinSchool"><label>School ID from principal<input name="institution" required></label><label>Student / Staff Joining Code<input name="code" required autocomplete="off" maxlength="128"></label><button type="submit" class="btn">Join my school</button></form><p>Existing teachers and students should use the school details from their principal.</p>';
   $('loginForm').after(panel);
-  capture('finishCreateSchool',async()=>{await create(user,{school_name:$('finishCreateSchool').elements.school.value});panel.remove();});
+  capture('finishCreateSchool',async()=>{await create(user,{school_name:$('finishCreateSchool').elements.school.value,institution_type:$('finishCreateSchool').elements.institution_type.value});panel.remove();});
   capture('finishJoinSchool',async()=>{const f=$('finishJoinSchool');await join(db,f.elements.institution.value.trim(),f.elements.code.value,user.id);panel.remove();await resume(user);});
  }
  async function resume(user){
@@ -58,7 +58,7 @@ function install({db,enter,message,showLogin,redirectTo}){
  capture('loginForm',async()=>{const r=await db.auth.signInWithPassword({email:value('loginEmail'),password:$('loginPassword').value});if(r.error)throw r.error;if(!r.data?.user)throw Error('Sign-in did not finish.');await resume(r.data.user);});
  capture('ownerRegisterForm',async()=>{
   const password=$('ownerPassword').value;if(password!==$('ownerConfirmPassword').value)throw Error('Passwords do not match.');
-  const email=value('ownerOfficialEmail'),draft={school_name:value('ownerSchoolName'),pending_email:email.toLowerCase(),pending_created_at:Date.now()};
+  const email=value('ownerOfficialEmail'),draft={school_name:value('ownerSchoolName'),institution_type:value('ownerInstitutionType')||'school',pending_email:email.toLowerCase(),pending_created_at:Date.now()};
   const r=await db.auth.signUp({email,password,options:{data:{full_name:value('ownerFullName'),noor_onboarding:{school_name:draft.school_name,office_phone:value('ownerContactPhone')}},emailRedirectTo:redirectTo}});if(r.error)throw r.error;if(!r.data?.user)throw Error('Account was not created.');
   if(r.data.user.identities?.length===0)throw Error('This account may already exist. Sign in with its password to finish school setup.');
   localStorage.setItem('noor.pendingOwnerSetup',JSON.stringify({...draft,pending_auth_uid:r.data.user.id}));

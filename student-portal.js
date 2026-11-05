@@ -169,7 +169,7 @@ function topicBars(m){
 
 function scheduleRows(weekday){
  const rows=(data.periods||[]).filter(x=>x.weekday===weekday).sort((a,b)=>a.start_time.localeCompare(b.start_time));
- return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.schedule_status||x.block_type||'Class'))).join('')+'</div>':empty('No saved periods for this day.');
+ return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.schedule_status||x.block_type||'Class')+(x.lesson?' · Lesson: '+x.lesson:'')+(x.topic?' · Topic: '+x.topic:'')+(x.completed?' · Completed':''))).join('')+'</div>':empty('No saved periods for this day.');
 }
 function schedule(){
  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

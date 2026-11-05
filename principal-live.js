@@ -33,7 +33,7 @@ function setup(){
             <div>
               <div style="font-size:11px;font-weight:800;color:#6b2649;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px">
                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,0.2)"></span>
-                LIVE SCHOOL HEALTH & ACTIVE MONITORING · AUTO-LOADED (Asia/Kolkata)
+                LIVE SCHOOL OVERVIEW · VERIFIED DATABASE RECORDS
               </div>
               <h2 style="font:800 18px Manrope;color:#3b1827;margin:4px 0 2px" id="pd-pulse-title">School status: awaiting verified records</h2>
               <p style="margin:0;font-size:12px;color:#786470" id="pd-pulse-desc">Live metrics appear once your authenticated school data has been loaded.</p>
@@ -208,13 +208,15 @@ async function openPeopleSearchModal(){
   `;
   dlg.showModal();
   const input=body.querySelector('#pd-quick-search-input');
+  if(window.NOOR_PRINCIPAL_DATA?.current())input.placeholder='Search students or teachers by name…';
   input.focus();
   input.oninput=async()=>{
     const q=input.value.trim().toLowerCase();
     const resBox=body.querySelector('#pd-quick-search-results');
     if(q.length<2){resBox.innerHTML='<p class="pd-empty">Type at least 2 characters to search.</p>';return;}
     resBox.innerHTML='<p class="pd-empty">Searching school directory…</p>';
-    const {data,error}=await a().db.from('profiles').select('id,full_name,email,role,roll_number,mobile_number,class_id,section_id,avatar_path').eq('school_id',a().schoolId).in('role',['student','teacher']).order('full_name').limit(40);
+    const canonical=window.NOOR_PRINCIPAL_DATA?.current();
+    const {data,error}=canonical?(snapshot?.sid===a().schoolId&&snapshot?.uid===a().user?.id?{data:[...snapshot.students,...snapshot.teachers]}:{error:{message:'Refresh the school dashboard before searching.'}}):await a().db.from('profiles').select('id,full_name,email,role,roll_number,mobile_number,class_id,section_id,avatar_path').eq('school_id',a().schoolId).in('role',['student','teacher']).order('full_name').limit(40);
     if(error){resBox.innerHTML=`<p class="pd-alert">${e(error.message)}</p>`;return;}
     const matched=(data||[]).filter(p=>[p.full_name,p.email,p.roll_number,p.mobile_number].some(v=>String(v||'').toLowerCase().includes(q)));
     if(!matched.length){resBox.innerHTML='<p class="pd-empty">No matching students or teachers found.</p>';return;}
@@ -234,7 +236,19 @@ async function openPeopleSearchModal(){
   };
 }
 
+function showCanonicalPerson(id){
+ const s=snapshot,r=root();if(!permitted()||s?.sid!==a().schoolId||s?.uid!==a().user?.id)throw Error('Refresh your school dashboard first.');
+ const person=[...s.students,...s.teachers].find(p=>p.id===id);if(!person)throw Error('This person is not in your active school roster.');
+ const body=r.querySelector('#pd-detail-body');r.querySelector('#pd-detail-title').textContent=person.full_name||'School profile';
+ const cl=s.classes.find(c=>c.id===person.class_id),sec=s.sections.find(c=>c.id===person.section_id);
+ const attendance=aggregate([person],s.sessions,s.records,s.day);
+ body.innerHTML='<h3>'+e(person.full_name||'School member')+'</h3><p>'+e(person.role==='teacher'?'Teacher':'Student')+' · '+e(a().school?.name||'School')+'</p>'+(person.role==='student'?'<p>Class: '+e(cl?.name||'Not assigned')+' · Section: '+e(sec?.name||'Not assigned')+'</p><p>Today: '+(attendance.marked?(attendance.present?'Present / late':'Absent'):'Not marked')+'</p>':'<p>Today’s saved periods</p>'+s.periods.filter(p=>p.teacher_id===id).map(p=>'<div class="pd-item"><strong>'+e(p.subject_name)+'</strong><p>'+e(p.class_label)+' · '+e(p.start_time.slice(0,5)+'–'+p.end_time.slice(0,5))+'</p><small>'+e(p.topic||'No daily topic recorded')+'</small></div>').join(''));
+ if(person.role==='teacher'&&!s.periods.some(p=>p.teacher_id===id))body.innerHTML+=empty('No periods scheduled today. Open the full timetable for the weekly schedule.');
+ r.querySelector('#pd-detail-dialog').showModal();
+}
+
 async function showStaffProfile(teacherId){
+  if(window.NOOR_PRINCIPAL_DATA?.current())return showCanonicalPerson(teacherId);
   const r=root(),dlg=r.querySelector('#pd-detail-dialog');
   r.querySelector('#pd-detail-title').textContent='Staff Profile & Teaching Records';
   const body=r.querySelector('#pd-detail-body');
@@ -318,6 +332,7 @@ async function showStaffProfile(teacherId){
 }
 
 async function showStudentDashboard(studentId){
+  if(window.NOOR_PRINCIPAL_DATA?.current())return showCanonicalPerson(studentId);
   const r=root(),dlg=r.querySelector('#pd-detail-dialog');
   r.querySelector('#pd-detail-title').textContent='Student Full Academic Dashboard';
   const body=r.querySelector('#pd-detail-body');
@@ -570,8 +585,9 @@ async function refresh(){
   const ctx=a(),sid=ctx.schoolId,uid=ctx.user.id,db=ctx.db,r=root(),q=s=>r.querySelector(s);
   q('#pd-status').textContent='Syncing school records…';
   try{
-    const settings=await db.from('school_settings').select('timezone').eq('school_id',sid).maybeSingle();
-    const pref=await db.from('noor_principal_dashboard_settings').select('insight').eq('school_id',sid).maybeSingle();
+    const canonical=window.NOOR_PRINCIPAL_DATA?.current();
+    const settings=canonical?{data:{timezone:ctx.school?.timezone}}:await db.from('school_settings').select('timezone').eq('school_id',sid).maybeSingle();
+    const pref=canonical?{data:null}:await db.from('noor_principal_dashboard_settings').select('insight').eq('school_id',sid).maybeSingle();
     if(pref.error)throw pref.error;
     
     // Check dynamic quotes
@@ -607,9 +623,10 @@ async function refresh(){
       lessons:()=>db.from('noor_teacher_lesson_logs').select('id,teacher_id,topic,homework').eq('school_id',sid).eq('class_date',d.day).order('id')
     };
 
-    const res=Object.fromEntries(await Promise.all(Object.entries(spec).map(async([k,f])=>[k,await allRows(f)])));
+    const res=canonical?await window.NOOR_PRINCIPAL_DATA.load({from,day:d.day,weekday:d.weekday}):Object.fromEntries(await Promise.all(Object.entries(spec).map(async([k,f])=>[k,await allRows(f)])));
     const rows=k=>res[k]?.data||[];
 
+    if(!canonical){
     res.sections={data:[],error:null};
     for(let i=0;i<rows('classes').length;i+=100){
       const part=await allRows(()=>db.from('sections').select('id,name,class_id').eq('is_active',true).in('class_id',rows('classes').slice(i,i+100).map(c=>c.id)).order('id'));
@@ -621,8 +638,9 @@ async function refresh(){
       res.records.data.push(...part.data);if(part.error)res.records.error=part.error;
     }
 
+    }
     if(a().schoolId!==sid||a().user?.id!==uid||!permitted())return;
-    snapshot={periods:rows('periods'),teacherNames:Object.fromEntries(rows('teachers').map(t=>[t.id,t.full_name]))};
+    snapshot={sid,uid,students:rows('students'),teachers:rows('teachers'),classes:rows('classes'),sections:rows('sections'),records:rows('records'),sessions:rows('sessions'),day:d.day,periods:rows('periods'),teacherNames:Object.fromEntries(rows('teachers').map(t=>[t.id,t.full_name]))};
     const students=rows('students'),classes=rows('classes').sort((a,b)=>classNumber(a)-classNumber(b)),sections=rows('sections'),sessions=rows('sessions'),records=rows('records'),teachers=rows('teachers'),teacherMap=new Map(teachers.map(t=>[t.id,t.full_name])),runs=new Map(rows('runs').map(x=>[x.period_id,x]));
     const today=aggregate(students,sessions,records,d.day),attError=res.students.error||res.sessions.error||res.records.error;
     let total=0,present=0;
@@ -632,18 +650,18 @@ async function refresh(){
       total+=agg.marked;present+=agg.present;
     }
     const staffPresent=new Set(rows('staff').filter(s=>s.status==='present'&&teacherMap.has(s.teacher_id)).map(s=>s.teacher_id)).size;
-    const active=rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
+    const active=canonical?rows('periods').filter(p=>p.schedule_status==='Scheduled now'&&!runs.get(p.id)?.status).length:rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
     // Verified daily summary only, never a synthetic school-health percentage.
     q('#pd-pulse-title').textContent='Live School Overview';
-    q('#pd-pulse-desc').textContent=classes.length+' active class records · '+today.marked+' student attendance marks today · '+active+' active teaching periods';
+    q('#pd-pulse-desc').textContent=classes.length+' active class records · '+today.marked+' student attendance marks today · '+active+(canonical?' periods scheduled now':' active teaching periods');
     q('#pd-pulse-active-classes').textContent=classes.length+' School Classes';
     q('#pd-pulse-reports').textContent=today.marked?today.marked+' Attendance Marks':'Attendance not submitted';
 
     // Pastel KPI Metrics
     q('#pd-kpis').innerHTML=metric('Students Present Today',attError?'—':`${today.marked?today.present:'—'} <em>/ ${today.total}</em>`,today.marked?`${today.marked} marked · ${today.total-today.marked} unmarked`:'Attendance not submitted','#8e4359',!attError&&today.marked?percent(today.present,today.total):null)+
-      metric('Teachers Present Today',res.staff.error||res.teachers.error?'—':`${staffPresent} <em>/ ${teachers.length}</em>`,'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
+      metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${staffPresent} <em>/ ${teachers.length}</em>`,canonical?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
       metric('Overall Attendance',attError||!total?'—':percent(present,total)+'%','Last 7 days · submitted marks','#3d795b',null)+
-      metric('Active Classes Now',res.periods.error||res.runs.error?'—':active,'Teacher started · within scheduled time','#3e6b82',null);
+      metric(canonical?'Scheduled Classes Now':'Active Classes Now',res.periods.error||res.runs.error?'—':active,canonical?'Scheduled time · not a staff check-in':'Teacher started · within scheduled time','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
     const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
@@ -661,7 +679,7 @@ async function refresh(){
         <button class="pd-link" id="pd-edit-profile">Edit profile ✎</button>
         <div class="pd-quote">“${getInsight()}”</div>
       </div>`;
-    q('#pd-edit-profile').onclick=editProfile;
+    q('#pd-edit-profile').onclick=canonical?()=>a().openView?.('profile'):editProfile;
 
     // Primary Classes
     q('#pd-classes').innerHTML=res.classes.error||res.sections.error||attError?empty('Class attendance could not be loaded.'):`<div class="pd-class-grid">${classes.filter(c=>classNumber(c)>=1&&classNumber(c)<=5).map((c,i)=>`<article class="pd-class c${i%5}"><h3>${e(c.name)} <span>♙</span></h3>${sections.filter(s=>s.class_id===c.id).map(s=>{const group=students.filter(p=>p.class_id===c.id&&p.section_id===s.id),m=aggregate(group,sessions,records,d.day);return `<button data-route="attendance"><span>${e(/^section/i.test(s.name)?s.name:'Section '+s.name)}</span><strong>${m.marked?m.present:'—'} / ${m.total}</strong></button><small>${m.marked?m.marked+' marked':'Not marked'}</small>`}).join('')||empty('Add sections')}</article>`).join('')}</div>`;
@@ -672,7 +690,7 @@ async function refresh(){
 
     // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
     q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
-      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=p.schedule_status|| (done?'Completed':now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
+      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':p.schedule_status|| (now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
       return `<tr>
         <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
         <td>${e(p.subject_name)}</td>
@@ -681,7 +699,7 @@ async function refresh(){
         <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
         <td><span class="pd-tag ${done?'done':status==='Teaching'?'now':''}">● ${status}</span></td>
       </tr>`;
-    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No approved class periods for today.');
+    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No saved class periods for today.');
 
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
@@ -692,8 +710,8 @@ async function refresh(){
     q('#pd-tasks').innerHTML=res.tasks.error?empty('Tasks unavailable.'):rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status)).slice(0,5).map(x=>`<button class="pd-item" data-route="school-tasks"><strong>${e(x.title)}</strong><small>${e(x.status)}${x.due_at?' · '+e(new Date(x.due_at).toLocaleDateString('en-IN',{timeZone:d.tz})):''}</small></button>`).join('')||empty('No pending tasks.');
     q('#pd-lessons').innerHTML=res.lessons.error?empty('Lessons unavailable.'):rows('lessons').slice(0,5).map(x=>`<button class="pd-item" data-route="academic-monitoring"><strong>${e(teacherMap.get(x.teacher_id)||'Teacher')}</strong><p>${e(x.topic)}</p><small>${e(x.homework||'')}</small></button>`).join('')||empty('No lessons recorded today.');
 
-    const errors=Object.entries(res).filter(([,v])=>v.error).map(([k])=>k);
-    q('#pd-errors').innerHTML=errors.length?`<p class="pd-alert">Unable to load: ${e(errors.join(', '))}. Missing data has not been estimated.</p>`:'';
+    const errors=Object.entries(res).filter(([,v])=>v.error&&!v.unavailable).map(([k])=>k);
+    q('#pd-errors').innerHTML=(errors.length?`<p class="pd-alert">Unable to load: ${e(errors.join(', '))}. Missing data has not been estimated.</p>`:'')+(res.staff.unavailable?'<p class="pd-muted">Staff check-ins are not configured yet. Scheduled periods do not confirm teacher attendance.</p>':'');
     q('#pd-status').textContent='Last updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:d.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+d.tz;
   }catch(err){
     if(q('#pd-errors'))q('#pd-errors').innerHTML=`<p class="pd-alert">${e(err.message||'Unable to refresh records.')}</p>`;
@@ -708,8 +726,12 @@ function connect(){
   const key=a().user?.id+':'+a().schoolId;if(channel&&key===identity)return;
   if(channel)a().db.removeChannel(channel);identity=key;
   const db=a().db;channel=db.channel('noor-principal-'+key);
+  if(window.NOOR_PRINCIPAL_DATA?.current()){
+    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
+  }else{
   for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
   channel.on('postgres_changes',{event:'*',schema:'public',table:'sections'},refresh);
+  }
   channel.subscribe();
   if(!timer)timer=setInterval(()=>{if(!document.hidden)refresh()},30000);
 }

@@ -13,11 +13,11 @@ async function profile(db,id){try{
  if(m&&p.role==='student'){
  const enrolled=await db.from('academic_group_memberships').select('group_id').eq('membership_id',m.id).eq('institution_id',m.institution_id).eq('status','active').eq('group_role','student');
  if(enrolled.error)throw enrolled.error;
- if(enrolled.data?.length){const groups=await db.from('academic_groups').select('id,name,group_type,parent_group_id').eq('institution_id',m.institution_id).in('id',enrolled.data.map(x=>x.group_id));if(groups.error)throw groups.error;const section=groups.data?.find(g=>g.group_type==='section'),cl=groups.data?.find(g=>g.group_type==='class');p.section_id=section?.id||null;p.class_id=section?.parent_group_id||cl?.id||null;}
+ if(enrolled.data?.length){const groups=await db.from('academic_groups').select('id,name,group_type,parent_group_id').eq('institution_id',m.institution_id).eq('is_active',true).in('id',enrolled.data.map(x=>x.group_id));if(groups.error)throw groups.error;const section=groups.data?.find(g=>g.group_type==='section'),cl=groups.data?.find(g=>g.group_type==='class');p.section_id=section?.id||null;p.class_id=section?.parent_group_id||cl?.id||null;}
  }
  return{data:p,error:null};
 }catch(error){return{data:null,error};}}
 async function membership(db,id,schoolId){const r=await db.from('institution_memberships').select('role,status').eq('user_id',id).eq('institution_id',schoolId).maybeSingle();return{...r,data:r.data?{...r.data,role:role(r.data.role)}:null};}
-async function school(db,id){const r=await db.from('institutions').select('id,name,status,timezone,created_at').eq('id',id).maybeSingle();return{...r,data:r.data?{...r.data,is_active:r.data.status==='active',account_status:r.data.status==='active'?'active':'pending',verification_status:r.data.status==='active'?'verified':'pending'}:null};}
+async function school(db,id){const r=await db.from('institutions').select('id,name,institution_type,status,timezone,created_at').eq('id',id).maybeSingle();return{...r,data:r.data?{...r.data,is_active:r.data.status==='active',account_status:r.data.status==='active'?'active':'pending',verification_status:r.data.status==='active'?'verified':'pending'}:null};}
 window.NOOR_ACCOUNT_CONTEXT=Object.freeze({enabled,profile,membership,school});
 })();

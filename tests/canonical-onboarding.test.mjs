@@ -17,3 +17,4 @@ test('principal, teacher and student login enter with the authenticated user via
   let stopped=false;await listeners.loginForm({preventDefault(){},stopImmediatePropagation(){stopped=true;}});assert.equal(entered,'own');assert.equal(stopped,true);
  }
 });
+test('college/university registration preserves the selected institution type',async()=>{const {api,db,calls}=setup();await api.register(db,{id:'own'},{school_name:'Example College',institution_type:'university'});assert.equal(calls[0].args.p_type,'university');});

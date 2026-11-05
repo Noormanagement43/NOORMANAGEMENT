@@ -17,8 +17,20 @@ let data={},errors=[],calMonth=new Date(new Date().getFullYear(),new Date().getM
 const mine=()=>p()?.role==='student'&&sid()&&u()&&db();
 function view(id){let v=document.getElementById('view-'+id);if(!v){v=document.createElement('section');v.className='view';v.id='view-'+id;document.querySelector('#workspace .content')?.append(v)}return v}
 function renderShell(id,title,subtitle,content){view(id).innerHTML='<div class="sp-root"><header class="sp-head"><div><span class="sp-kicker">NOOR · MY LEARNING CENTRE</span><h1>'+E(title)+'</h1><p class="sp-muted">'+E(subtitle||'')+'</p></div><button type="button" class="sp-action secondary" data-sp-refresh>↻ Refresh</button></header>'+content+'</div>'}
+function attendanceSchoolDay(value){
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:app().school?.timezone||'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
+ const get=type=>parts.find(x=>x.type===type)?.value;return get('year')+'-'+get('month')+'-'+get('day');
+}
+function todayAttendance(rows,today,unavailable=false){
+ if(unavailable)return 'Unavailable';
+ const marks=rows.filter(x=>x.day===today).map(x=>x.status);
+ if(!marks.length)return 'Not marked';
+ const labels={present:'Present',absent:'Absent',late:'Late',leave:'On leave',excused:'On leave'};
+ const values=[...new Set(marks.map(x=>labels[x]||'Unavailable'))];
+ return values.length===1?values[0]:'Mixed attendance';
+}
 async function readAll(){
- if(!mine())return;window.NOOR_SHARED_TIMETABLE?.subscribe();const school=sid(),me=p(),id=u().id;
+ if(!mine())return;window.NOOR_SHARED_TIMETABLE?.subscribe();const school=sid(),me=p(),id=u().id;const canonical=!!window.NOOR_ACCOUNT_CONTEXT?.enabled();
  const jobs={
   classes:db().from('classes').select('id,name').eq('school_id',school).eq('is_active',true),
   sections:db().from('sections').select('id,name,class_id').eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000'),
@@ -29,7 +41,7 @@ async function readAll(){
   events:db().from('calendar_events').select('id,title,description,event_type,starts_at,ends_at,location').eq('school_id',school).gte('starts_at',new Date(Date.now()-90*86400000).toISOString()).order('starts_at').limit(500),
   assessments:db().from('school_assessments').select('id,title,assessment_date,max_marks,subject_id,assessment_type,status,section_id').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').in('status',['planned','conducted','marked']).order('assessment_date',{ascending:false}).limit(250),
   results:db().from('assessment_results').select('id,assessment_id,marks_obtained,grade_label,teacher_feedback,marked_at').eq('school_id',school).eq('student_id',id).order('marked_at',{ascending:false}).limit(400),
-  attendance:db().from('attendance_records').select('id,session_id,status,marked_at').eq('school_id',school).eq('student_id',id).order('marked_at',{ascending:false}).limit(420),
+  attendance:canonical?db().from('attendance_records').select('id,session_id,status:attendance_status,marked_at').eq('institution_id',school).eq('student_membership_id',me.membership_id).order('marked_at',{ascending:false}).limit(420):db().from('attendance_records').select('id,session_id,status,marked_at').eq('school_id',school).eq('student_id',id).order('marked_at',{ascending:false}).limit(420),
   assignments:db().from('noor_student_assignments').select('id,title,instructions,paper_text,assignment_type,max_marks,due_at,published_at,subject_id,section_id').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('is_active',true).lte('published_at',new Date().toISOString()).order('published_at',{ascending:false}).limit(250),
   submissions:db().from('noor_student_submissions').select('id,assignment_id,answer_text,file_path,status,marks_obtained,teacher_feedback,reviewed_at,submitted_at').eq('school_id',school).eq('student_id',id).order('submitted_at',{ascending:false}).limit(250),
   plans:db().from('noor_student_study_plans').select('id,title,planned_for,is_done').eq('school_id',school).eq('student_id',id).order('planned_for').limit(250),
@@ -41,7 +53,7 @@ async function readAll(){
  errors=[];data={};ans.forEach(([k,r])=>{data[k]=r.data||[];if(r.error)errors.push(k+': '+(r.error.message||String(r.error)))});
  const sessionIds=[...new Set(data.attendance.map(x=>x.session_id).filter(Boolean))];
  data.sessions=[];
- if(sessionIds.length){const z=await db().from('attendance_sessions').select('id,attendance_date,status').in('id',sessionIds).in('status',['submitted','corrected']);if(z.error)errors.push('attendance sessions: '+z.error.message);else data.sessions=z.data||[];}
+ if(sessionIds.length){const z=canonical?await db().from('class_sessions').select('id,starts_at,session_status').eq('institution_id',school).in('id',sessionIds):await db().from('attendance_sessions').select('id,attendance_date,status').eq('school_id',school).in('id',sessionIds).in('status',['submitted','corrected']);if(z.error)errors.push('attendance sessions: '+z.error.message);else data.sessions=canonical?(z.data||[]).filter(x=>x.session_status!=='cancelled').map(x=>({...x,attendance_date:attendanceSchoolDay(x.starts_at)})):z.data||[];}
  const sectionId=me.section_id;
  data.assignments=data.assignments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.assessments=data.assessments.filter(x=>!x.section_id||x.section_id===sectionId);
@@ -98,7 +110,8 @@ function overview(){
  const refAction=(icon,label,route,tone)=>'<button type="button" class="sp-ref-action '+E(tone)+'" data-sp-nav="'+E(route)+'"><span class="sp-ref-action-icon" aria-hidden="true">'+icon+'</span><strong>'+E(label)+'</strong></button>';
  const records=dayRecords.length?dayRecords.map(x=>'<span class="sp-ref-day '+E(x.status)+'" title="'+E(date(x.day)+' · '+x.status)+'"><small>'+E(new Date(x.day+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short'}))+'</small><b>'+(x.status==='present'?'✓':x.status==='absent'?'×':x.status==='late'?'◷':'•')+'</b></span>').join(''):empty('No recorded school attendance yet.');
  const pct=rate===null?null:Math.max(0,Math.min(100,rate));
- const attendanceHTML='<div class="sp-ref-att-visual"><div class="sp-ref-att-ring" style="--attendance:'+(pct===null?0:pct)+'"><div><strong>'+(pct===null?'—':pct+'%')+'</strong><small>Attendance</small></div></div><div class="sp-ref-att-details"><div class="sp-ref-days">'+records+'</div><div class="sp-ref-att-counts"><span><b>'+totalPresent+'</b> Present</span><span><b>'+totalAbsent+'</b> Absent</span><span><b>'+totalLate+'</b> Late</span>'+(totalLeave?'<span><b>'+totalLeave+'</b> Leave</span>':'')+'</div></div></div>';
+ const todayStatus=todayAttendance(attendanceRows,attendanceSchoolDay(new Date()),errors.some(x=>/^attendance(?: sessions)?:/.test(x)));
+ const attendanceHTML='<div class="sp-status'+(todayStatus==='Absent'?' error':'')+'" role="status"><strong>Today: '+E(todayStatus)+'</strong></div><div class="sp-ref-att-visual"><div class="sp-ref-att-ring" style="--attendance:'+(pct===null?0:pct)+'"><div><strong>'+(pct===null?'—':pct+'%')+'</strong><small>Attendance</small></div></div><div class="sp-ref-att-details"><div class="sp-ref-days">'+records+'</div><div class="sp-ref-att-counts"><span><b>'+totalPresent+'</b> Present</span><span><b>'+totalAbsent+'</b> Absent</span><span><b>'+totalLate+'</b> Late</span>'+(totalLeave?'<span><b>'+totalLeave+'</b> Leave</span>':'')+'</div></div></div>';
  const attendanceCard=box('Today’s Attendance','Recorded school sessions · '+E(new Date().toLocaleDateString('en-IN',{month:'short',year:'numeric'})),attendanceHTML,btn('Details','student-attendance'));
  const performanceCard=box('Subject-Wise Performance','Actual teacher-marked results',barsMarkup(markList),btn('This term','student-progress'));
  const actionsCard=box('Quick Actions','Open your school tools','<div class="sp-ref-action-grid">'+[
@@ -266,7 +279,7 @@ function connectLive(){
  activeStudent=current;
  const tables=['noor_student_assignments','noor_student_submissions','school_notices','calendar_events','smart_notes','assessment_results','attendance_records'];
  const c=db().channel('noor-student-live-'+u().id);
- tables.forEach(table=>c.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+sid()},()=>{
+ tables.forEach(table=>c.on('postgres_changes',{event:'*',schema:'public',table,filter:(table==='attendance_records'&&window.NOOR_ACCOUNT_CONTEXT?.enabled()?'institution_id':'school_id')+'=eq.'+sid()},()=>{
    if(document.visibilityState==='visible')refresh(true);
  }));
  channel=c.subscribe();

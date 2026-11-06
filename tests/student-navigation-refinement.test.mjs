@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('function navConfig()'),html.indexOf('function renderMobileNav()'));
+function nav(role){const ctx=vm.createContext({currentProfile:{role,status:'active'},currentSchool:{verification_status:'verified',account_status:'active',is_active:true}});vm.runInContext(source,ctx);return Array.from(ctx.navConfig(),x=>({id:x.id,label:x.label}));}
+test('student menu is ordered, has one period schedule and leaves My Profile last',()=>{const list=nav('student');assert.deepEqual(list.map(x=>x.label),['Dashboard','My Period Schedule','Attendance','Smart Notes','Assignments','Progress','School Calendar','Ask My Teacher','Notices & Meetings','Study Planner','My Profile']);assert.equal(new Set(list.map(x=>x.id)).size,list.length);});
+test('principal, teacher and student use the same school calendar route',()=>{for(const role of ['principal','teacher','student'])assert.equal(nav(role).filter(x=>x.id==='school-calendar').length,1);});

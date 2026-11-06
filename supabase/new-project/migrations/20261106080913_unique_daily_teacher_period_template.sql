@@ -1,0 +1,1 @@
+create unique index noor_daily_teacher_period_unique on public.teacher_timetable_periods(teacher_membership_id,period_number) where repeats_daily;

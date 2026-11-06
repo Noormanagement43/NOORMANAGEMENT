@@ -13,7 +13,7 @@ test('edit-profile portrait uses a bounded frame while retaining photo editing a
  assert.match(html,/id="noorProfilePhotoInput"/);
  assert.match(html,/id="noorProfilePhotoSave"/);
  assert.match(html,/await uploadPendingPhoto\(currentUser\.id,file\)/);
- assert.match(html,/noor-profile-portraits\.css\?v=20261028-principal-size-v3/);
+ assert.match(html,/noor-profile-portraits\.css\?v=20261106-period-profile-3/);
  assert.match(css,/#view-profile \.noor-profile-main\{/);
  assert.match(css,/#view-profile \.noor-profile-photo-col\{/);
  assert.match(css,/\.noor-profile-avatar\.avatar[,\{]/);

@@ -7,5 +7,5 @@ test('all role portraits use the principal reference dimensions, without oversiz
  assert.match(s,/width:115px!important;height:150px!important/);
  assert.doesNotMatch(s,/min-height:(?:475|425|385|310|265)px/);
  assert.match(s,/object-fit:cover!important/);
- assert.match(await get('index.html'),/noor-profile-portraits\.css\?v=20261028-principal-size-v3/);
+ assert.match(await get('index.html'),/noor-profile-portraits\.css\?v=20261106-period-profile-3/);
 });

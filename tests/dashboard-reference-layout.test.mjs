@@ -58,6 +58,6 @@ test('student screenshot actions resolve to real accessible routes',async()=>{
   assert.ok(html.includes("id:'"+id+"'")||['profile','notices'].includes(id),'Missing nav route '+id);
  }
  assert.match(student,/data-sp-nav/);
- assert.match(student,/School Notices/);
- assert.match(student,/Today’s Schedule/);
+ assert.match(student,/Notices & Meetings/);
+ assert.match(student,/Today’s Period Schedule/);
 });

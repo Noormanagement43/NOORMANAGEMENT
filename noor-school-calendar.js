@@ -30,7 +30,7 @@ function open(){
  if(st.school!==app.schoolId){st.school=app.schoolId;st.selected=now;st.year=Number(now.slice(0,4));st.month=Number(now.slice(5,7))-1}
  const tz=getSchoolTimezone();const addr=app.school?.name||'My school';
  r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>'+E(app.school?.name||'My school')+' · Year Planner</small><h1>📅 School Calendar</h1><p>Interactive school & university events, exams, meetings, and localized holiday references.</p><div class="nsc-tz-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;font-size:11px;font-weight:700;color:#4338ca;margin-top:6px">📍 '+E(addr)+' · Timezone: '+E(tz)+'</div></div>'+
- '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'<button '+btn+' class="btn light" id="nscTimetable">Timetable</button>'+'</div></header>'+
+ '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'<button '+btn+' class="btn light" id="nscTimetable">Period Schedule</button>'+'</div></header>'+
  '<section class="nsc-card"><div class="nsc-month"><button '+btn+' id="nscPrev" aria-label="Previous month">‹</button><h2 id="nscMonth"></h2><button '+btn+' id="nscNext" aria-label="Next month">›</button></div>'+
  '<div class="nsc-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;padding:8px 12px;background:#fdf8fa;border-radius:10px;border:1px solid #f1e2ea">'+
   '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#be185d"><span style="width:10px;height:10px;border-radius:50%;background:#be185d"></span> 🏫 School Events</span>'+
@@ -78,10 +78,6 @@ async function load(){
  const query=canonical()?a.db.from('noor_calendar_events').select('*').eq('institution_id',a.schoolId).gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):a.db.from('calendar_events').select('id,title,description,starts_at,event_type,status,teacher_id,target_roles,created_by').eq('school_id',a.schoolId).gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).neq('status','cancelled').order('starts_at').limit(450);
 
  let holidaysData=[];
- try{
-   const hRes=await fetch('https://date.nager.at/api/v3/PublicHolidays/'+y+'/IN');
-   if(hRes.ok)holidaysData=await hRes.json();
- }catch(e){}
 
  const [ev,tt]=await Promise.all([query,canonical()?window.NOOR_SHARED_TIMETABLE.load():Promise.resolve({data:[]})]);
  st.periods=tt.data||[];
@@ -94,7 +90,7 @@ async function load(){
  [...regional, ...apiHolidays].forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
  st.holidays=[...holidayMap.entries()].map(([date,title])=>({date,title}));
  st.source=(tt.error?'Timetable could not load: '+tt.error.message+'. ':'')+(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+
-  (st.holidays.length?'Public holiday data: India national & regional observances.':'National holiday reference active.');
+  (st.holidays.length?'Fixed national dates are shown here. Live religious holiday dates appear in Google Calendar below.':'National holiday reference active.');
  draw();
 }
 

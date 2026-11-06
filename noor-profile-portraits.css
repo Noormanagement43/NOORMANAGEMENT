@@ -13,6 +13,7 @@
 #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo,
 #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo,
 #noor-principal .pd-profile .pd-photo,
+.sp-reference-dashboard .sp-ref-hero .sp-avatar,
 .sp-root .sp-intro .sp-avatar{
  width:140px!important;height:185px!important;min-width:140px!important;max-width:140px!important;
  min-height:0!important;max-height:185px!important;aspect-ratio:auto!important;
@@ -22,6 +23,7 @@
 #view-profile .noor-profile-main .noor-profile-avatar img,
 #workspace .noor-t4 .nt-profile .nt-photo img,
 #noor-principal .pd-profile .pd-photo img,
+.sp-reference-dashboard .sp-ref-hero .sp-avatar img,
 .sp-root .sp-intro .sp-avatar img{
  width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;
  object-fit:cover!important;object-position:center top!important;display:block!important;
@@ -48,5 +50,16 @@
  #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo,
  #workspace.noor-teacher-handset .noor-t4 .nt-profile .nt-photo,
  #noor-principal .pd-profile .pd-photo,
- .sp-root .sp-intro .sp-avatar{width:115px!important;height:150px!important;min-width:115px!important;max-width:115px!important;max-height:150px!important}
+ .sp-reference-dashboard .sp-ref-hero .sp-avatar,
+.sp-root .sp-intro .sp-avatar{width:115px!important;height:150px!important;min-width:115px!important;max-width:115px!important;max-height:150px!important}
 }
+
+.sp-reference-dashboard .sp-ref-hero{grid-template-columns:140px minmax(0,1fr) auto!important;gap:20px!important;align-items:start!important}
+.sp-reference-dashboard .sp-ref-hero-quote{padding:0!important;background:none!important;align-self:start!important}
+.sp-reference-dashboard .sp-ref-hero-quote:after{display:none!important}
+.sp-reference-dashboard .sp-ref-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+@media(max-width:700px){.sp-reference-dashboard .sp-ref-hero{grid-template-columns:140px minmax(0,1fr)!important;gap:12px!important}.sp-reference-dashboard .sp-ref-hero-quote{grid-column:2!important;min-height:0!important}.sp-reference-dashboard .sp-ref-detail-grid{grid-template-columns:1fr!important}.sp-reference-dashboard .sp-ref-hero .sp-avatar{grid-row:1/3!important}}
+
+@media(max-width:520px){.sp-reference-dashboard .sp-ref-hero{grid-template-columns:115px minmax(0,1fr)!important}}
+
+.sp-reference-dashboard .sp-ref-edit{position:static!important;white-space:nowrap}

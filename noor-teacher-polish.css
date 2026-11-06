@@ -1,0 +1,59 @@
+/* Teacher daily workspace: clear type, restrained detail, existing burgundy theme. */
+#workspace.noor-teacher-activated .noor-t4{font-family:Inter,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55;letter-spacing:0;color:var(--ink,#382832)}
+#workspace.noor-teacher-activated .noor-t4 :is(button,input,select,textarea){font-family:inherit;font-size:14px}
+#workspace.noor-teacher-activated .noor-t4 h1{font-family:inherit!important;font-size:clamp(26px,2.6vw,34px)!important;font-weight:650!important;letter-spacing:-.7px}
+#workspace.noor-teacher-activated .noor-t4 h2{font-family:inherit!important;font-size:19px!important;font-weight:650!important;line-height:1.35;letter-spacing:-.2px}
+#workspace.noor-teacher-activated .noor-t4 .nt-person-head h2{font-size:26px!important;text-align:left}
+#workspace.noor-teacher-activated .noor-t4 .nt-person-head{justify-content:space-between;text-align:left}
+#workspace.noor-teacher-activated .noor-t4 .nt-person-head .nt-row{width:auto;justify-content:start}
+#workspace.noor-teacher-activated .noor-t4 :is(.nt-muted,.nt-empty,.nt-status-box small,.nt-activity-row small,.nt-subject small,.nt-event small){font-size:14px!important;line-height:1.5}
+#workspace.noor-teacher-activated .noor-t4 .nt-kicker{font:600 11px/1.5 Inter,'Segoe UI',sans-serif;letter-spacing:1.2px}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile-grid{gap:16px 20px!important;margin-top:20px}
+#workspace.noor-teacher-activated .noor-t4 .nt-detail{display:flex;flex-direction:column;gap:3px;font-size:15px!important;line-height:1.45}
+#workspace.noor-teacher-activated .noor-t4 .nt-detail .nt-detail-label{font-size:12px!important;font-weight:500;color:var(--muted,#7d6972)}
+#workspace.noor-teacher-activated .noor-t4 .nt-detail .nt-detail-value{font-size:15px!important;font-weight:500;color:var(--ink,#382832);overflow-wrap:anywhere}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile{align-items:start!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote{position:relative;display:flex!important;min-height:160px!important;padding:22px!important;overflow:hidden!important;background:linear-gradient(135deg,var(--paper,#fffaf7),var(--soft,#faedf0))!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote:before{display:none!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote:after{content:''!important;position:absolute;inset:auto -14px -30px auto;width:130px;height:150px;transform:rotate(-18deg);opacity:.25;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 150' fill='none' stroke='%23934c65' stroke-width='1.5'%3E%3Cpath d='M65 145Q50 85 95 8M63 118Q14 110 30 75Q61 80 63 118ZM68 93Q115 89 119 53Q83 51 68 93ZM79 61Q40 57 53 28Q80 34 79 61Z'/%3E%3C/svg%3E")!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-quote p{font:italic 19px/1.55 Georgia,serif!important;max-width:none!important;margin:0!important;z-index:1}
+#workspace.noor-teacher-activated .noor-t4 :is(.nt-icon,.nt-status-box>.nt-round,.nt-event>.nt-round){display:none!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-summary{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 24px;margin:0 0 18px;border:1px solid var(--line,#ead9df);border-radius:18px;background:var(--paper,#fffaf7);box-shadow:0 4px 16px #4c102406}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-summary :is(h2,p){margin:3px 0}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-totals{display:flex;gap:clamp(20px,4vw,56px);margin:0}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-totals div{min-width:85px}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-totals dt{font-size:13px;color:var(--muted,#7d6972)}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-totals dd{font-size:30px;font-weight:650;line-height:1.25;margin:4px 0;color:var(--ink,#512337)}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-totals small{font-size:11px}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))!important;gap:12px!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-3d-quick-btn{align-items:start;justify-content:center;text-align:left;min-height:88px;padding:16px 18px!important;border-radius:12px;box-shadow:none;transform:none}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-quick-text{display:flex;flex-direction:column;gap:6px}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-quick-text b{font-size:15px!important;font-weight:600!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-quick-text small{font-size:13px!important;font-weight:400!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-period-num b{font-size:14px!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-period-num small{font-size:12px!important;line-height:1.5}
+#workspace.noor-teacher-activated .noor-t4 .nt-subject b{font-size:16px!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-period{padding:16px 0!important;gap:14px!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-period-state{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#workspace.noor-teacher-activated .noor-t4 .nt-btn{font-weight:600;min-height:44px!important;border-radius:10px!important;font-size:14px!important}
+@media(max-width:850px){#workspace.noor-teacher-activated .noor-t4 .nt-class-summary{flex-wrap:wrap;gap:16px}#workspace.noor-teacher-activated .noor-t4 .nt-class-totals{flex:1;justify-content:space-between}#workspace.noor-teacher-activated .noor-t4 .nt-class-summary>.nt-btn{width:100%}}
+@media(max-width:520px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-class-summary{padding:18px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-class-totals{flex-basis:100%;gap:12px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-class-totals div{min-width:0}
+ #workspace.noor-teacher-activated .noor-t4 .nt-class-totals dd{font-size:27px}
+ #workspace.noor-teacher-activated .noor-t4 .nt-person-head h2{font-size:23px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile-grid{grid-column:1/-1!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-refined-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-3d-quick-btn{padding:14px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-period-state{grid-column:1/-1;justify-content:flex-start}
+}
+#workspace.noor-teacher-activated .noor-t4 .nt-profile:before,
+#workspace.noor-teacher-activated .noor-t4 .nt-profile:after{display:none!important}
+@media(max-width:520px){
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile>div:nth-child(2){display:contents}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-photo-column{grid-column:1;grid-row:1}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-person-head{grid-column:2;grid-row:1;align-self:center;display:block!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-profile-grid{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin-top:8px!important}
+ #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote{grid-column:1/-1;min-height:120px!important}
+}

@@ -15,4 +15,30 @@ async function mount(host){
  const photos=await window.NOOR_TEACHER_DATA.rosterPhotos(c.db,report.data?.students||[]);if(n!==version||!same())return;sessions=r.data||[];records=marks;students=photos;msg.textContent='Tap a date to view that day’s saved attendance.';draw();}catch(e){if(n===version&&same())msg.textContent='Could not load attendance: '+e.message;}}
  group.onchange=load;date.onchange=()=>{if(!date.value||date.value>today)return;selected=date.value;month=new Date(selected+'T12:00:00');load();};host.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+Number(b.dataset.month),1);const first=month.getFullYear()+'-'+String(month.getMonth()+1).padStart(2,'0')+'-01';selected=first>today?today:first;date.value=selected;load();});await load();
 }
-window.NOOR_TEACHER_ATTENDANCE_VIEW=Object.freeze({mount,counts,dayMarks});})();
+async function summary(host){
+ if(!host)return;
+ const c=await window.NOOR_TEACHER_DATA.context(),tz=c.school.timezone||'Asia/Kolkata',date=window.NOOR_SHARED_TIMETABLE.schoolDay(tz);
+ const same=()=>host.isConnected&&A().user?.id===c.userId&&A().schoolId===c.school.id;
+ try{
+ const assigned=await window.NOOR_TEACHER_DATA.assignments(c),roster=new Set(),saved=new Map();
+ for(const group of assigned){
+  const report=await c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:group.group_id,p_from:date,p_to:date});
+  if(report.error)throw report.error;
+  for(const student of report.data?.students||[])roster.add(student.membership_id);
+  const sessions=await c.db.from('class_sessions').select('id,starts_at').eq('institution_id',c.school.id).eq('academic_group_id',group.group_id).eq('title','Daily class attendance').neq('session_status','cancelled').gte('starts_at',date+'T00:00:00'+window.NOOR_TEACHER_DATA.offset(tz,date)).lte('starts_at',date+'T23:59:59'+window.NOOR_TEACHER_DATA.offset(tz,date));
+  if(sessions.error)throw sessions.error;
+  for(const session of sessions.data||[]){
+   for(let start=0;;start+=500){
+    const marks=await c.db.from('attendance_records').select('student_membership_id,attendance_status,marked_at').eq('institution_id',c.school.id).eq('session_id',session.id).order('id').range(start,start+499);
+    if(marks.error)throw marks.error;
+    for(const mark of marks.data||[]){const old=saved.get(mark.student_membership_id);if(!old||String(mark.marked_at||'')>=String(old.marked_at||''))saved.set(mark.student_membership_id,mark);}
+    if((marks.data||[]).length<500)break;
+   }
+  }
+ }
+ if(!same())return;
+ const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks);
+ host.innerHTML='<div><span class="nt-kicker">TODAY · MY CLASSES</span><h2>Class Attendance</h2><small>'+E(new Date(date+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}))+'</small></div><dl class="nt-class-totals"><div><dt>Total Students</dt><dd>'+roster.size+'</dd></div><div><dt>Present</dt><dd>'+(totals.present+totals.late)+'</dd><small>Includes '+totals.late+' late</small></div><div><dt>Not Marked</dt><dd>'+Math.max(0,roster.size-marks.length)+'</dd></div></dl><button type="button" class="nt-btn" data-link="attendance">Take Attendance</button>';
+ }catch(e){if(same())host.innerHTML='<div><h2>Class Attendance</h2><p>Today’s attendance is unavailable.</p></div><button type="button" class="nt-btn" data-link="attendance">Open Attendance</button>';}
+}
+window.NOOR_TEACHER_ATTENDANCE_VIEW=Object.freeze({mount,counts,dayMarks,summary});})();

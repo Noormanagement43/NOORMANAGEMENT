@@ -17,17 +17,18 @@ test('teacher has one concise navigation list with eleven relevant destinations'
   assert.doesNotMatch(page,/id="creatorGeminiKey"|id="creatorBrevoKey"|btnSaveCreatorKeys|https:\/\/api\.brevo\.com\/v3\/smtp\/email/);
 });
 
-test('teacher first viewport has exactly four high-value quick actions and attendance after profile',async()=>{
+test('teacher first viewport has five high-value quick actions and attendance after profile',async()=>{
   const code=await read('teacher-reference.js');
   assert.doesNotThrow(()=>new Script(code));
   const actions=code.slice(code.indexOf('const tiles')-200); // source tiles are built as HTML, not a JS constant
   void actions;
   const section=code.slice(code.indexOf('nt-3d-quick-grid nt-refined-actions'),code.indexOf('nt-jinni-card'));
-  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,4);
+  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,5);
   assert.match(section,/Take Attendance/);
   assert.match(section,/Create Assignment/);
   assert.match(section,/Smart Notes/);
   assert.match(section,/Weekly Planner/);
+  assert.match(section,/Today Notes/);
   assert.match(code,/profileNode\?\.insertAdjacentElement\('afterend',priority\)/);
   assert.match(code,/priorityGrid\.append\(attendance\)/);
   assert.doesNotMatch(code,/dash.append\(advance\)|dash.append\(toolkit\)/);

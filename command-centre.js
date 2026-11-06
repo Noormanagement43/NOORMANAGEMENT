@@ -43,7 +43,7 @@ async function ensureNav(){
  const nav=$('mainNav');if(!nav||menuBusy||!hasAuthContext())return;
  menuBusy=true;
  try{
-  if(profile()?.role==='creator')return;
+  if(['creator','owner','principal','manager'].includes(profile()?.role)){nav.querySelectorAll('[data-cc-nav="1"]').forEach(n=>n.remove());return;}
   if(profile()?.role==='creator'){
    if(!S.schoolChoicesLoaded){const q=await db().from('schools').select('id,name').order('name').limit(500);if(q.error)throw q.error;S.schoolChoices=q.data||[];S.schoolChoicesLoaded=true;}
    let picker=$('cc-creator-school-picker');

@@ -15,7 +15,7 @@ function setup(){
   r.innerHTML=`<div id="noor-principal">
     <div class="pd-head">
       <div>
-        <h1>School Command & Principal Dashboard</h1>
+        <h1>Principal Dashboard</h1>
         <p id="pd-greeting">Welcome, Principal</p>
       </div>
       <div class="pd-head-actions">
@@ -676,10 +676,10 @@ async function refresh(){
         <h2>${e(p.full_name||leadershipLabel)}</h2>
         <b>${e(leadershipLabel)} · School Leadership</b>
         <p>▥ ${e(school?.name||'School')}</p>
-        <p>⌖ ${e(p.city_or_area||school?.address||'School Campus')}</p>
+        <p>⌖ ${e(p.city_or_area||a().user?.user_metadata?.noor_contact?.location||school?.address||'Not added')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>
-        <p>☎ ${e(p.mobile_number||'Not added')}</p>
-        <div class="pd-quote">“${getInsight()}”</div>
+        <p>☎ ${e(p.mobile_number||a().user?.user_metadata?.noor_contact?.phone||'Not added')}</p>
+        <p>Date of birth · ${e(p.date_of_birth||a().user?.user_metadata?.noor_contact?.date_of_birth||'Not added')}</p>
       </div>`;
 
 

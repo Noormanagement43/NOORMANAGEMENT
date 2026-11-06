@@ -8,7 +8,7 @@ Destination Supabase project: `ayrryemawwplguaauxij` only.
 - Principal navigation has Dashboard, Staff, Students, Calendar, Notices & Meetings, Parent Communication and Settings, in that order. Classes/sections and school period defaults remain available under Settings → School setup.
 - Staff keeps Refresh and access management, removes date/apply controls, and searches names, roles, subjects, class and section labels.
 - Notices & Meetings has Notice, Meeting and Email entry points. All three deliver to the selected **in-app** school audience. This update does not send external email or replace the existing Brevo backend. Meeting messages also appear in the school calendar; earlier calendar events are preserved.
-- A top-bar notification button shows unread school messages. Message audiences and read receipts are enforced by database RLS.
+- A top-bar notification button shows unread school messages. Message audiences and read receipts are enforced by database RLS. Published class notes/tasks also use the existing student/principal Realtime subscriptions.
 - Teachers explicitly start/finish their own periods. The saved daily status drives the green progression rail and principal/student period states. A passing clock does not mark a lesson complete.
 - Student class results default to the enrolled section. The database rejects a student requesting the parent class or another class. Cohort counts/averages include the permitted class; individual classmates' private results remain hidden.
 - Smart Notes supports private board/note photos plus text. Students in the permitted class can open the published photo using a short-lived signed URL.
@@ -25,6 +25,7 @@ Applied to the destination project without deleting existing school records:
 2. `supabase/new-project/student_class_result_guard.sql`
 3. `supabase/new-project/weekly_photo_owner_guard.sql`
 4. `supabase/new-project/recipient_validation_rls_guard.sql`
+5. `supabase/new-project/learning_items_realtime_delivery.sql`
 
 The recipient trigger validates enrollment as a narrowly scoped definer function; existing learning write RLS still authorizes the teacher and group. Trigger execution is not exposed as a public RPC. Weekly photo paths must belong to the author, preventing a plan from referencing another author's private photo.
 

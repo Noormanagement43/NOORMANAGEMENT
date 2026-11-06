@@ -21,9 +21,9 @@ test('Principal dashboard does not assign or edit a teacher period; timetable re
  assert.doesNotMatch(code,/\.from\('noor_teacher_periods'\)\.delete\(/);
 });
 
-test('Principal sidebar has Staff & Access and classes, but no Assign Teacher page',async()=>{
+test('Principal sidebar has Staff and classes, but no Assign Teacher page',async()=>{
  const html=await read('index.html');
- assert.match(html,/id:'staff-management',icon:'♧',label:'Staff & Access'/);
+ assert.match(html,/id:'staff-management',icon:'♧',label:'Staff'/);
  assert.match(html,/id:'classes',icon:'▦',label:'Classes & Sections'/);
  assert.doesNotMatch(html,/label:'Teacher Assignments'/);
  assert.doesNotMatch(html,/label:'Timetables & Teachers'/);

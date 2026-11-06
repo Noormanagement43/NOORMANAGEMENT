@@ -1,0 +1,30 @@
+/* Light surfaces retain their palette; functional text and controls use readable contrast. */
+html[data-noor-mode="light"]{
+ --ink:#243443;--muted:#526170;--noor-ink:#243443;--noor-muted:#526170;
+ --readable-ink:#243443;--readable-muted:#526170;--readable-border:#8b9aa8;
+ --readable-action:var(--berry2,#423044);--readable-on-action:#fff;
+}
+html[data-noor-mode="light"] :is(#workspace,#authApp,dialog,.modal,.nt4-dialog,.nt-profile-modal){color:var(--readable-ink)}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(h1,h2,h3,h4,label,legend,th,td,.field label,.small-note,.empty,.nt-detail,.nt-detail-value,.nt-subject,.sp-label,.pd-empty,.nc-card){color:var(--readable-ink)!important}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(p,small,.nt-muted,.sp-muted,.nt-detail-label,.pd-tag,.noor-theme-desc,.noor-theme-status,.nc-card small){color:var(--readable-muted)!important;opacity:1!important}
+html[data-noor-mode="light"] :is(#workspace,#authApp,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(input,select,textarea){color:var(--readable-ink)!important;background-color:var(--paper,#fff)!important;border-color:var(--readable-border)!important;opacity:1;-webkit-text-fill-color:var(--readable-ink)}
+html[data-noor-mode="light"] :is(#workspace,#authApp,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(input,textarea)::placeholder{color:var(--readable-muted)!important;opacity:1}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(button,.btn,.nt-btn,.pd-btn,.sp-action,.acad-btn,.ta-primary){color:var(--readable-ink)!important;background:var(--paper,#fff)!important;border-color:var(--readable-border)!important;opacity:1!important}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(button,.btn) :is(span,b,strong,small,svg){color:inherit!important;opacity:1!important}
+/* Filled actions keep an explicit contrasting foreground, including nested labels. */
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(.btn:not(.light):not(.soft):not(.gold):not(.danger),button[type="submit"],.primary,.ta-primary,.np-primary,.sp-action:not(.secondary),.nt-save){background:var(--readable-action)!important;color:var(--readable-on-action)!important;border-color:var(--readable-action)!important}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal) :is(.active,[aria-selected="true"],[aria-pressed="true"]):is(button,.tab){color:var(--readable-ink)!important;background:var(--rose-soft,#edf3f5)!important;border-color:var(--readable-muted)!important}
+html[data-noor-mode="light"] :is(#workspace,#authApp,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(button,input,select,textarea):disabled{opacity:1!important;color:#526170!important;-webkit-text-fill-color:#526170;background:#e8edf1!important;border-color:#9aa6b1!important;cursor:not-allowed}
+html[data-noor-mode="light"] :is(#workspace,#authApp,dialog,.modal) :is(button,a,input,select,textarea):focus-visible{outline:3px solid #285b8f!important;outline-offset:3px}
+/* Simple & Clean uses a white sidebar: pale text from the coloured sidebar must not win. */
+html[data-noor-theme="simple-clean"][data-noor-mode="light"] #workspace .sidebar #mainNav button,
+html[data-noor-theme="simple-clean"][data-noor-mode="light"] #workspace .sidebar #mainNav button:not(.active),
+html[data-noor-theme="simple-clean"][data-noor-mode="light"] #workspace .sidebar :is(.brand,.schoolbadge,.navlabel,.sidebar-bottom,b,small){color:#243b43!important;opacity:1!important}
+html[data-noor-theme="simple-clean"][data-noor-mode="light"] #workspace .sidebar #mainNav button.active{background:#d9efed!important;color:#174f54!important;border-color:#678d90!important}
+/* Quick actions and status chips sit on light tinted cards. */
+html[data-noor-mode="light"] #workspace.noor-teacher-activated #view-overview .nt-refined-actions .nt-3d-quick-btn :is(b,small,span){color:var(--readable-ink)!important;opacity:1!important}
+html[data-noor-mode="light"] #workspace :is(.pill,.nt-pill,.nt-period-badge,.noor-tt-status,.nc-status,.ta-count,.sectionchip){color:var(--readable-ink)!important;background:var(--rose-soft,#edf3f5)!important;border-color:var(--readable-border)!important}
+html[data-noor-mode="light"] #workspace :is(.notice,.sp-status,.nt-followup,.nc-reply){color:var(--readable-ink)!important;background:var(--paper,#fff)!important;border-color:var(--readable-border)!important}
+html[data-noor-mode="light"]:not([data-noor-theme="simple-clean"]) #workspace .sidebar #mainNav button.active{background:var(--berry2,#423044)!important;color:#fff!important;border-color:#c4ced8!important}
+html[data-noor-mode="light"] :is(#workspace .content,#authApp .auth-card,dialog,.modal,.nt4-dialog,.nt-profile-modal) :is(.btn:not(.light):not(.soft):not(.gold):not(.danger),button[type="submit"],.primary,.ta-primary,.np-primary,.sp-action:not(.secondary),.nt-save,button,input,select,textarea):disabled{background:#e8edf1!important;color:#526170!important;-webkit-text-fill-color:#526170!important;border-color:#9aa6b1!important;opacity:1!important;cursor:not-allowed}
+html[data-noor-mode="light"]:not([data-noor-theme="simple-clean"]) #workspace .sidebar :is(.navlabel,.sidebar-bottom,.sidebar-bottom small,.schoolbadge small,.brand small){color:#fff!important;opacity:1!important}

@@ -1,0 +1,30 @@
+/* Teacher register: small portraits and single-choice, one-tap attendance. */
+#view-attendance .ta-register-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+#view-attendance .ta-register-heading h2{margin:0;font-size:19px;color:var(--berry,#54243b)}
+#view-attendance [data-attendance-summary]{display:flex;gap:7px;flex-wrap:wrap}
+#view-attendance .ta-count{padding:6px 9px;border-radius:20px;background:var(--rose-soft,#f8eaf0);font-size:11px;font-weight:700;color:var(--ink,#2c2027)}
+#view-attendance .ta-count.present{color:#166346;background:#e6f6ed}#view-attendance .ta-count.absent{color:#a32946;background:#ffedf1}#view-attendance .ta-count.late{color:#895419;background:#fff3df}
+#view-attendance .ta-register-scroll{max-width:100%;overflow:auto;border:1px solid var(--line,#ead9df);border-radius:14px}
+#view-attendance .ta-register{border-collapse:separate;border-spacing:0;width:100%;min-width:520px;background:var(--paper,#fffdfb);color:var(--ink,#2c2027);font-size:12px}
+#view-attendance .ta-register caption{text-align:left;padding:10px 14px;color:var(--muted,#806f79);font-size:11px;background:var(--paper,#fffdfb)}
+#view-attendance .ta-register thead th{padding:12px 10px;border-top:1px solid var(--line,#ead9df);border-bottom:1px solid var(--line,#ead9df);background:var(--rose-soft,#f8eaf0);text-align:left;font-size:11px;white-space:nowrap}
+#view-attendance .ta-register tbody th,#view-attendance .ta-register tbody td{height:66px;padding:6px 10px;border-bottom:1px solid var(--line,#ead9df)}
+#view-attendance .ta-register tbody tr:last-child>*{border-bottom:0}#view-attendance .ta-register tbody tr:hover{background:var(--rose-soft,#fff5f8)}
+#view-attendance .ta-register .ta-status-heading,#view-attendance .ta-register .ta-status-cell{text-align:center;width:78px}
+#view-attendance .ta-roll-number{font-weight:700;white-space:nowrap}
+#view-attendance .ta-register-student{display:flex;align-items:center;gap:10px;text-align:left;min-width:150px}#view-attendance .ta-register-student b{font-weight:700;max-width:240px;overflow-wrap:anywhere}
+#view-attendance .ta-register-photo{width:36px;height:44px;border-radius:9px;overflow:hidden;background:var(--rose-soft,#f8eaf0);color:var(--berry,#54243b);display:grid;place-items:center;flex:none;border:1px solid var(--line,#ead9df)}
+#view-attendance .ta-register-photo img{width:100%;height:100%;object-fit:cover;display:block}
+#view-attendance .ta-status-option{--ta-accent:#26855f;display:inline-grid;place-items:center;position:relative;width:44px;height:44px;cursor:pointer;border-radius:10px}
+#view-attendance .ta-status-option.absent{--ta-accent:#d34c70}#view-attendance .ta-status-option.late{--ta-accent:#db912f}
+#view-attendance .ta-status-option input[type=radio]{appearance:none;-webkit-appearance:none;box-sizing:border-box;width:21px;height:21px;min-width:21px;padding:0;margin:0;border-radius:50%;border:2px solid #b8afbb;background:var(--paper,#fffdfb);cursor:pointer;position:relative;z-index:1;flex:none}
+#view-attendance .ta-status-option input[type=radio]:checked{border-color:var(--ta-accent);background:var(--ta-accent);box-shadow:inset 0 0 0 3px var(--paper,#fffdfb)}
+#view-attendance .ta-status-option input:checked+.ta-radio-hit{position:absolute;inset:2px;background:var(--ta-accent);opacity:.09;border-radius:10px}
+#view-attendance .ta-status-option input:focus-visible{outline:3px solid var(--gold,#d6b174);outline-offset:4px}#view-attendance .ta-status-option:has(input:disabled){opacity:.55;cursor:wait}
+#view-attendance .ta-panel{background:var(--paper,#fffdfb);color:var(--ink,#2c2027);border-color:var(--line,#ead9df)}
+@media(max-width:600px){#view-attendance .ta-register tbody th:nth-child(2),#view-attendance .ta-register thead th:nth-child(2){position:sticky;left:0;z-index:2;background:var(--paper,#fffdfb);box-shadow:3px 0 7px #54243b0a}#view-attendance .ta-register thead th:nth-child(2){background:var(--rose-soft,#f8eaf0)}#view-attendance .ta-register-student{min-width:132px;max-width:165px;gap:7px}#view-attendance .ta-register tbody th,#view-attendance .ta-register tbody td{padding:6px}#view-attendance .ta-count{font-size:10px}}
+.noor-t4 .nt-period-state{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:95px}
+.noor-t4 .nt-period-badge{font-size:11px;font-weight:800;padding:7px 10px;border-radius:9px;white-space:nowrap;background:var(--rose-soft,#f8eaf0);color:var(--rose,#8b4965)}
+.noor-t4 .nt-period-badge.complete{background:#e6f6ed;color:#166346}.noor-t4 .nt-period-badge.current{background:#ffe6f0;color:#ad3268}.noor-t4 .nt-period-badge.pending{background:#fff3df;color:#895419}
+.noor-t4 .nt-card-head:has(#ntPeriodDay){flex-wrap:wrap}
+@media(max-width:500px){.noor-t4 .nt-period-state{grid-column:2/4;flex-direction:row;align-items:center;justify-content:space-between}}

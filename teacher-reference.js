@@ -43,7 +43,7 @@ function statusHTML(p,run){
  const complete=badge.tone==='complete',active=badge.tone==='current';
  const action=complete?'✓ Completed':active?'✓ Complete':'○ Mark Complete';
  return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
- '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+(window.NOOR_CLASS_VISUALS?.label(p.class_label)||esc(p.class_label))+'</small>'+
+ '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+(window.NOOR_CLASS_VISUALS?.label(p.class_label)||esc(p.class_label))+(p.room_label?' · '+esc(p.room_label):'')+'</small>'+
  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(!p.schedule_status?'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>':'')+
  (!p.schedule_status&&!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
  ''+(p.schedule_status?'<div class="nt-period-state">'+(!complete?'<button type="button" class="nt-btn small np-progress-button" '+(active?'data-complete-period':'data-start-period')+'="'+esc(p.id)+'">'+(active?'Mark Complete':'Start period')+'</button>':'')+'<span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit</button><button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
@@ -118,7 +118,7 @@ async function render(){
  det('Address:',details.address,'⌖')+det('Phone:',app.profile.mobile_number,'☎')+det('Email:',app.profile.email||app.user.email,'✉')+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+'</div>'+
  '</div>'+
  '<aside class="nt-quote" id="ntTeacherQuote"><p id="ntTeacherQuoteText">“Teaching is shaping brighter tomorrows.”</p></aside></section>'+
- '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>My Periods</h2></div><button class="nt-btn" data-link="schedules">Manage periods</button></div>'+
+ '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>My Periods</h2><time class="nt-schedule-day">'+esc(new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:app.school?.timezone||'Asia/Kolkata'}))+'</time></div><button class="nt-btn" data-link="schedules">Manage periods</button></div>'+
  '<div class="nt-timeline">'+periodSlotsHTML(approved,runByPeriod,result.slots||[])+'</div>'+
  '<div class="nt-review-requests">'+
  (rejectedToday.length?'<p class="nt-muted">Review unavailable periods: '+rejectedToday.map(x=>esc(x.subject_name)).join(' · ')+'</p>':'')+

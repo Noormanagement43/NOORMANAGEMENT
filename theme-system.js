@@ -3,13 +3,13 @@
   "use strict";
   const THEMES = [
     {id:"simple-clean",name:"Simple & Clean",desc:"Plain white, soft teal, clear lines and minimal decoration.",primary:"#247b7b",accent:"#d9efed",canvas:"#f4f7f8",card:"#ffffff",ink:"#243b43"},
-    { id:"pastel-aurora",name:"Pastel Aurora",desc:"Peach, lavender, powder blue and rose from your first reference.",primary:"#4B6B8B",accent:"#E7C8D6",canvas:"#fff5f4",card:"#fffefa",ink:"#1B2A44" },
-    { id:"linen-pearl",name:"Linen Pearl",desc:"Elegant pearl, warm beige and muted slate from your second reference.",primary:"#4B6382",accent:"#E3C39D",canvas:"#faf8f4",card:"#fffdfa",ink:"#071739" },
-    { id:"porcelain-blue",name:"Blue & White",desc:"Clean white, soft sky and professional navy.",primary:"#3667A0",accent:"#A7C4D9",canvas:"#f3f9ff",card:"#ffffff",ink:"#183559" },
-    { id:"rose-whisper",name:"Rose Whisper",desc:"Gentle blush, champagne and lavender-grey.",primary:"#9B6F91",accent:"#E7C8D6",canvas:"#fff8fb",card:"#ffffff",ink:"#453554" },
-    { id:"rose-gold",name:"Burgundy & Ivory",desc:"Signature wine, rose gold and luminous ivory.",primary:"#6B0F1A",accent:"#D6B174",canvas:"#fff8f5",card:"#fffdfb",ink:"#301d25" },
-    { id:"ocean-blue",name:"Deep Ocean",desc:"Blue leadership palette on crisp light surfaces.",primary:"#174A72",accent:"#A7C4D9",canvas:"#f2f7fc",card:"#ffffff",ink:"#172a38" },
-    { id:"sage-garden",name:"Forest & Sage",desc:"Deep green accents and restful pale sage.",primary:"#315B45",accent:"#A4B5C4",canvas:"#f5faf6",card:"#fffefb",ink:"#203126" }
+    {id:"rose-gold",name:"Original Burgundy",desc:"Deep burgundy, ivory cards and warm champagne accents.",primary:"#6B0F1A",accent:"#D6B174",canvas:"#FBF3EE",card:"#fffdfb",ink:"#34232a"},
+    {id:"pastel-aurora",name:"Soft Rose",desc:"Clean white with a restrained dusty rose accent.",primary:"#88556a",accent:"#f2e4ea",canvas:"#faf7f8",card:"#ffffff",ink:"#352e37"},
+    {id:"linen-pearl",name:"Warm Ivory",desc:"Warm white, sandstone details and quiet charcoal text.",primary:"#77634c",accent:"#eee6db",canvas:"#f8f7f3",card:"#ffffff",ink:"#35322e"},
+    {id:"porcelain-blue",name:"Porcelain Blue",desc:"White cards, ink blue actions and soft blue highlights.",primary:"#3d638c",accent:"#e3edf7",canvas:"#f5f8fb",card:"#ffffff",ink:"#253647"},
+    {id:"rose-whisper",name:"Muted Lavender",desc:"Near-white surfaces with a subtle lavender accent.",primary:"#6d6085",accent:"#eae6f1",canvas:"#f8f7fa",card:"#ffffff",ink:"#342f40"},
+    {id:"ocean-blue",name:"Slate & White",desc:"Crisp white and slate with clear blue-grey controls.",primary:"#4c6578",accent:"#e4ebf0",canvas:"#f5f7f9",card:"#ffffff",ink:"#263744"},
+    {id:"sage-garden",name:"Soft Sage",desc:"White cards with a calm sage green accent.",primary:"#48715d",accent:"#e4eee7",canvas:"#f6f8f5",card:"#ffffff",ink:"#2c3c32"}
   ];
   const DEFAULT = { theme_key:"pastel-aurora", font_scale:"normal", reduced_motion:false, color_mode:"light" };
   let prefs = { ...DEFAULT }, mounted = null, activeUserId = null, saveTimer = null, loading = false, revision = 0, loadToken = 0, saveQueue = Promise.resolve();
@@ -116,8 +116,8 @@
     if (!container) return;
     mounted = container;
     container.innerHTML = '<section class="noor-theme-panel" aria-labelledby="noorThemeTitle">' +
-      '<div class="noor-theme-head"><div><div class="eyebrow">Personal experience</div><h2 id="noorThemeTitle">Appearance Studio</h2><p>Choose one of four light palettes. Your selection stays active across sign-up, sign-in, settings and every dashboard on this browser, and syncs to your account.</p></div><div class="noor-theme-status" data-theme-status role="status" aria-live="polite">Loading appearance preferences…</div></div>' +
-      '<div class="noor-theme-grid">' + THEMES.slice(0,4).map(theme =>
+      '<div class="noor-theme-head"><div><div class="eyebrow">Personal experience</div><h2 id="noorThemeTitle">Appearance Studio</h2><p>Choose a refined light palette or the original burgundy theme. Your selection stays active across sign-up, sign-in, settings and every dashboard on this browser, and syncs to your account.</p></div><div class="noor-theme-status" data-theme-status role="status" aria-live="polite">Loading appearance preferences…</div></div>' +
+      '<div class="noor-theme-grid">' + THEMES.map(theme =>
         '<button type="button" class="noor-theme-card" data-theme-choice="' + theme.id + '" aria-pressed="false" aria-label="Use ' + e(theme.name) + ' theme">' +
           '<span class="noor-theme-preview" style="--preview-primary:' + theme.primary + ';--preview-accent:' + theme.accent + ';--preview-canvas:' + theme.canvas + ';--preview-card:' + theme.card + ';--preview-ink:' + theme.ink + '">' +
             '<span class="noor-theme-mini-nav"></span><span class="noor-theme-mini-content"><span class="noor-theme-mini-title"></span><span class="noor-theme-mini-cards"><span></span><span></span></span></span>' +
@@ -127,7 +127,7 @@
       '<div class="noor-theme-field"><label for="noorColorMode">Display mode</label><select id="noorColorMode"><option value="light">Light</option><option value="dark">Dark</option></select></div>'+
       '<div class="noor-theme-field"><label>Motion</label><label class="noor-theme-check"><input type="checkbox" id="noorReducedMotion"> Reduce animations</label></div>' +
       '<div class="noor-theme-field"><label>Personal settings</label><div class="noor-theme-caption">Preferences follow your account when account sync is available.</div></div>' +
-      '</div><div class="noor-theme-actions"><button class="noor-theme-reset" type="button" id="noorResetAppearance">Reset to Pastel Aurora</button><span class="noor-theme-caption">Sound controls are below in Sound &amp; Feel. Your sound volume and theme remain separate.</span></div></section>';
+      '</div><div class="noor-theme-actions"><button class="noor-theme-reset" type="button" id="noorResetAppearance">Reset to Soft Rose</button><span class="noor-theme-caption">Sound controls are below in Sound &amp; Feel. Your sound volume and theme remain separate.</span></div></section>';
     container.querySelectorAll("[data-theme-choice]").forEach(button => button.addEventListener("click", () => {
       prefs.theme_key = button.dataset.themeChoice;
       scheduleSave();

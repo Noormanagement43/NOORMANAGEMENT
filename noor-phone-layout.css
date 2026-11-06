@@ -1,0 +1,101 @@
+/* Shared phone layout: compact identities, touch controls and one scroll direction. */
+@media(max-width:760px){
+ #workspace{--phone-photo-w:104px;--phone-photo-h:128px;min-width:0!important;width:100%!important;max-width:100%!important}
+ #workspace .app-shell{display:block!important;min-width:0!important}
+ #workspace .main,#workspace .content,#workspace .view{min-width:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box}
+ #workspace .content{padding:16px 12px calc(96px + env(safe-area-inset-bottom))!important}
+ #workspace .view>:is(.sp-root,.noor-t4,.np-page,.np-studio,.nc-page,.ta-shell),#workspace #noor-principal{width:100%!important;min-width:0!important;max-width:100%!important;margin-inline:0!important}
+ #workspace .sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(300px,86vw)!important;height:100dvh!important;transform:translateX(-105%);z-index:300!important;pointer-events:none;overflow-y:auto}
+ #workspace .sidebar.open{transform:translateX(0);pointer-events:auto}
+ #workspace .topbar{position:sticky!important;top:0;z-index:90;min-width:0;gap:8px;padding:10px 12px!important;min-height:58px}
+ #workspace .topbar :is(.user-mini,.crumb){min-width:0;overflow-wrap:anywhere}
+ #workspace .topbar .user-mini small{display:none}
+ #workspace #noorMobileNav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;position:fixed!important;bottom:0;left:0;right:0;width:100%!important;min-height:72px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:3px;z-index:200;background:var(--paper,#fff)!important;border-top:1px solid var(--line);box-shadow:0 -4px 18px #2434430c}
+ #workspace #noorMobileNav button{min-width:0;min-height:48px;font-size:11px;line-height:1.25;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:5px 2px;border-radius:11px;white-space:normal}
+ #workspace #noorMobileNav button span{font-size:20px}
+ #workspace #noor-principal .pd-mobile{display:none!important}
+ #workspace .content :is(.formgrid,.ta-fields,.nc-note-form,.noor-tt-form,.sp-form.two,.np-two,.np-day-edit,.cc-grid,.sp-grid.two){grid-template-columns:minmax(0,1fr)!important;gap:14px}
+ #workspace .content :is(input:not([type=radio]):not([type=checkbox]),select,textarea),dialog :is(input:not([type=radio]):not([type=checkbox]),select,textarea){font-size:16px!important;min-width:0;max-width:100%;box-sizing:border-box}
+ #workspace .content :is(button,.btn,.sp-action,.nt-btn,.pd-btn),dialog button{min-height:44px!important;max-width:100%;white-space:normal;overflow-wrap:anywhere;touch-action:manipulation}
+ #workspace .content :is(.panel,.nt-card,.sp-card,.nc-card,.np-card,.pd-card){padding:16px!important;border-radius:16px!important;min-width:0;max-width:100%;box-sizing:border-box}
+ #workspace .content :is(.headrow,.toolbar,.noor-lab-row,.nc-att-controls,.ta-register-heading){flex-wrap:wrap;gap:12px}
+ #workspace .content :is(.tablewrap,.table-wrap,.pd-table-wrap,.ncp-table-wrap,.ta-register-scroll){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ #workspace .content :is(p,small,b,strong,h1,h2,h3,label){overflow-wrap:anywhere}
+ #workspace .content h1{font-size:25px!important;line-height:1.22!important}
+ #workspace .content h2{font-size:19px!important;line-height:1.35!important}
+ #workspace #view-overview .noor-t4 .nt-profile,
+ #workspace #view-principal-studio #noor-principal .pd-profile,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero{display:grid!important;grid-template-columns:var(--phone-photo-w) minmax(0,1fr)!important;gap:12px!important;align-items:start!important;padding:16px!important}
+ #workspace #view-overview .noor-t4 .nt-photo-column,
+ #workspace #view-overview .noor-t4 .nt-profile .nt-photo,
+ #workspace #view-principal-studio #noor-principal .pd-profile .pd-photo,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{
+  width:var(--phone-photo-w)!important;height:var(--phone-photo-h)!important;min-width:var(--phone-photo-w)!important;max-width:var(--phone-photo-w)!important;min-height:0!important;max-height:var(--phone-photo-h)!important;
+  border-radius:16px!important;aspect-ratio:auto!important;grid-column:1!important;grid-row:1!important;align-self:start!important;box-sizing:border-box;border-width:1px!important;margin:0!important;padding:0!important;overflow:hidden!important;
+ }
+ #workspace #view-overview .nt-photo img,#workspace #view-principal-studio #noor-principal .pd-photo img,#workspace #view-overview .sp-ref-hero .sp-avatar img{display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important}
+ #workspace #view-overview .noor-t4 .nt-profile>div:nth-child(2),#workspace #view-principal-studio #noor-principal .pd-profile-info,#workspace #view-overview .sp-ref-student-identity{display:contents!important}
+ #workspace #view-overview .noor-t4 .nt-person-head,#workspace #view-overview .sp-ref-identity-head{grid-column:2!important;grid-row:1!important;align-self:center!important;display:block!important;min-width:0;text-align:left!important}
+ #workspace #view-overview .noor-t4 .nt-person-head h2,#workspace #view-overview .sp-ref-identity-head h1{font-family:Inter,'Segoe UI',Arial,sans-serif!important;font-size:21px!important;line-height:1.25!important;margin:5px 0 9px!important;text-align:left!important}
+ #workspace #view-overview .nt-profile .nt-profile-grid,#workspace #view-overview .sp-ref-detail-grid{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px 12px!important;margin:4px 0 0!important;padding:0!important;background:none!important}
+ #workspace #view-overview .nt-detail-value,#workspace #view-overview .sp-ref-detail-grid>span{font-size:14px!important;line-height:1.5}
+ #workspace #view-overview .sp-ref-role{margin-bottom:0!important;gap:7px!important;font-size:12px!important}
+ #workspace #view-overview .sp-kicker{font-size:9px!important;letter-spacing:1px!important}
+ #workspace #view-overview .nt-profile .nt-quote{grid-column:1/-1!important;min-height:0!important;padding:16px!important;margin:4px 0 0!important}
+ #workspace #view-overview .nt-profile .nt-quote p{font-size:16px!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile-info h2{grid-column:2;grid-row:1;align-self:start;font-size:21px!important;margin:14px 0 0!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile-info>b{grid-column:2;grid-row:1;align-self:center;font-size:13px!important;margin-top:22px}
+ #workspace #view-principal-studio #noor-principal .pd-profile-info>p{grid-column:1/-1;margin:0!important;font:14px/1.5 Inter,system-ui!important}
+ #workspace #view-overview .noor-t4 .nt-columns{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important}
+ #workspace #view-overview .noor-t4 .nt-refined-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+ #workspace #view-overview .noor-t4 .nt-refined-actions .nt-3d-quick-btn{flex-direction:column!important;align-items:flex-start!important;text-align:left!important;gap:10px!important;padding:14px!important;min-height:126px!important}
+ #workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-text b{font-size:14px!important}
+ #workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-text small{font-size:12px!important}
+ #workspace #view-overview .noor-t4 .nt-card-head{flex-wrap:wrap;align-items:start!important;gap:10px}
+ #workspace #view-overview .noor-t4 .nt-period{display:grid!important;grid-template-columns:74px minmax(0,1fr)!important;gap:10px!important;padding:14px 12px!important;margin-bottom:10px!important}
+ #workspace #view-overview .noor-t4 .nt-subject-icon{display:none!important}
+ #workspace #view-overview .noor-t4 .nt-subject{grid-column:2;min-width:0}
+ #workspace #view-overview .noor-t4 .nt-period-state{grid-column:1/-1!important;display:flex!important;flex-direction:row!important;justify-content:flex-start;align-items:center!important;gap:8px!important;min-width:0!important}
+ #workspace #view-overview .nt-period-state button{font-size:13px!important;flex:1 1 auto;padding:9px 10px!important}
+ #workspace #view-overview .nt-period-badge{font-size:12px!important;padding:7px 10px}
+ #workspace #view-overview .noor-section-photo{width:28px;height:28px;margin-right:5px}
+ #workspace .sp-ref-grid,#workspace .sp-ref-grid-top,#workspace .sp-ref-grid-middle,#workspace .sp-ref-grid-bottom,#workspace .pd-layout,#workspace .pd-top,#workspace .pd-charts,#workspace .pd-extras{grid-template-columns:minmax(0,1fr)!important}
+ #workspace .nc-today-homework{display:flex;flex-direction:column;align-items:start;gap:14px}
+ #workspace .nc-homework-strip{width:100%;max-width:100%;overflow-x:auto}
+ #workspace .noor-area-card{flex:1;min-width:0;padding:12px!important}
+ .noor-timetable-dialog,.nt4-dialog,.nt-profile-modal,.nc-photo-dialog{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:calc(100dvh - 24px)!important;margin:12px auto!important;padding:16px!important;overflow-y:auto!important;box-sizing:border-box}
+ .noor-timetable-dialog .noor-tt-form{grid-template-columns:minmax(0,1fr)!important}
+ .noor-timetable-dialog .noor-tt-row{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+ .noor-timetable-dialog .noor-tt-row>button{width:100%}
+ /* A phone register is a sequence of student cards with four direct status choices. */
+ #workspace #view-attendance .ta-register-scroll{overflow:visible}
+ #workspace #view-attendance .ta-register{display:block;min-width:0!important;width:100%;font-size:14px}
+ #workspace #view-attendance .ta-register caption{display:block;width:auto;white-space:normal;padding:10px 0 14px}
+ #workspace #view-attendance .ta-register tbody :is(th,td){height:auto;min-height:0;border-bottom:0}
+ #workspace #view-attendance .ta-register thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ #workspace #view-attendance .ta-register tbody{display:grid;gap:14px}
+ #workspace #view-attendance .ta-register tbody tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+ #workspace #view-attendance .ta-register tbody tr>td:first-child{display:none}
+ #workspace #view-attendance .ta-register tbody tr>th{grid-column:1/-1;position:static!important;width:100%;padding:0!important;box-shadow:none!important}
+ #workspace #view-attendance .ta-register .ta-roll-number{grid-column:1/-1;padding:0!important;color:var(--muted)}
+ #workspace #view-attendance .ta-register .ta-roll-number:before{content:'Roll No. ';font-size:12px}
+ #workspace #view-attendance .ta-register .ta-status-cell{padding:0!important;border:0}
+ #workspace #view-attendance .ta-status-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:62px;padding:6px 2px;width:100%;border-radius:10px;background:var(--rose-soft)}
+ #workspace #view-attendance .ta-status-option:after{font-size:11px;font-weight:600}
+ #workspace #view-attendance .ta-status-option.present:after{content:'Present'}
+ #workspace #view-attendance .ta-status-option.absent:after{content:'Absent'}
+ #workspace #view-attendance .ta-status-option.late:after{content:'Late'}
+ #workspace #view-attendance .ta-status-option.leave:after{content:'Leave'}
+ #workspace #view-attendance .ta-register-student{min-width:0;max-width:none;font-size:15px}
+ #workspace #view-attendance .ta-status-option input[type=radio]{width:25px;height:25px;min-width:25px}
+}
+@media(max-width:360px){#workspace{--phone-photo-w:96px;--phone-photo-h:120px}#workspace .content{padding-inline:10px!important}}
+
+@media(max-width:760px){
+ #workspace #view-principal-studio #noor-principal .pd-profile-info h2{font-family:Inter,'Segoe UI',Arial,sans-serif!important}
+ #workspace #view-overview .sp-ref-hero:before,#workspace #view-overview .sp-ref-hero:after{display:none!important}
+ #workspace .noor-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+ #workspace .noor-theme-card{padding:10px!important;min-width:0}
+ #workspace .noor-theme-desc{font-size:12px;line-height:1.45}
+ #workspace .noor-theme-preview{height:64px;grid-template-columns:23px minmax(0,1fr)}
+}

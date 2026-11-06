@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOOR — Readiness snapshot</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;background:#faf6f2;color:#32252c;margin:0;padding:clamp(16px,4vw,48px)}main{max-width:1000px;margin:auto}h1{font:36px Georgia,serif;color:#54243b}a{color:#703650}.notice{border-left:5px solid #9e233e;padding:16px;background:#fff0ef}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:24px 0}.card{background:white;border:1px solid #e4d6dc;padding:20px;border-radius:12px}.card strong{display:block;font-size:30px;color:#54243b}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;background:white}td,th{text-align:left;padding:14px;border-bottom:1px solid #e4d6dc}th{background:#54243b;color:white}.pass{color:#24603e}.fail{color:#98233a}.pending{color:#785419}small{color:#6f6269}</style>
+<main><small>OPERATIONAL REVIEW • 6 NOVEMBER 2026</small><h1>NOOR readiness snapshot</h1>
+<p class="notice"><b>Commercial launch: blocked.</b> This is an offline audit snapshot. It does not monitor live services or establish capacity.</p>
+<div class="metrics"><div class="card"><strong>36 / 36</strong>Public tables with RLS</div><div class="card"><strong>225 / 225</strong>Local Node tests passed</div><div class="card"><strong>0</strong>Executed capacity scenarios</div><div class="card"><strong>Free</strong>Verified subscription</div></div>
+<div class="scroll"><table><thead><tr><th>Release gate</th><th>Status</th><th>Evidence or next requirement</th></tr></thead><tbody>
+<tr><td>RLS catalog and non-member reads</td><td class="pass">PASS</td><td>All public tables protected; forged non-member metadata returned zero rows.</td></tr>
+<tr><td>Two-school isolation</td><td class="pending">NOT TESTED</td><td>Requires isolated staging and synthetic memberships.</td></tr>
+<tr><td>Leaked-password protection</td><td class="fail">FAIL</td><td>Supabase advisor reports disabled.</td></tr>
+<tr><td>Principal-only period times</td><td class="fail">FAIL</td><td>Current backend permits custom teacher times.</td></tr>
+<tr><td>Frontend regression and packaging</td><td class="pass">PASS</td><td>Local Node suite and dist build succeeded.</td></tr>
+<tr><td>Mobile performance / Realtime</td><td class="pending">NOT TESTED</td><td>Browser runtime restricted; live socket tests pending.</td></tr>
+<tr><td>Backup restore and incident monitoring</td><td class="pending">NOT TESTED</td><td>No successful restore or live alert route verified.</td></tr>
+<tr><td>Commercial hosting</td><td class="fail">FAIL</td><td>GitHub Pages does not permit commercial SaaS hosting.</td></tr>
+<tr><td>100,000-student capacity</td><td class="pending">NOT TESTED</td><td>100–10,000 active-user scenarios have not run.</td></tr>
+</tbody></table></div>
+<p><a href="ENTERPRISE_READINESS_20261106.md">Full audit and implementation report</a> · <a href="enterprise-audit-evidence.json">Catalog evidence</a></p>
+<p><small>No production writes, migrations, deployments, provider-generation requests or paid upgrades were performed.</small></p></main></html>

@@ -38,7 +38,8 @@ async function summary(host){
  }
  if(!same())return;
  const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks);
- host.innerHTML='<div><span class="nt-kicker">TODAY · MY CLASSES</span><h2>Class Attendance</h2><small>'+E(new Date(date+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}))+'</small></div><dl class="nt-class-totals"><div><dt>Total Students</dt><dd>'+roster.size+'</dd></div><div><dt>Present</dt><dd>'+(totals.present+totals.late)+'</dd><small>Includes '+totals.late+' late</small></div><div><dt>Not Marked</dt><dd>'+Math.max(0,roster.size-marks.length)+'</dd></div></dl><button type="button" class="nt-btn" data-link="attendance">Take Attendance</button>';
- }catch(e){if(same())host.innerHTML='<div><h2>Class Attendance</h2><p>Today’s attendance is unavailable.</p></div><button type="button" class="nt-btn" data-link="attendance">Open Attendance</button>';}
+ host.innerHTML='<div class="nt-attendance-emblem" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('students')||'')+'</div><div class="nt-attendance-figure"><span>Students Present</span><strong>'+(totals.present+totals.late)+' <small>/ '+roster.size+'</small></strong><p>Total Students · '+roster.size+'</p></div>';
+
+ }catch(e){if(same())host.innerHTML='<p>Attendance unavailable. Open Take Attendance to retry.</p>';}
 }
 window.NOOR_TEACHER_ATTENDANCE_VIEW=Object.freeze({mount,counts,dayMarks,summary});})();

@@ -57,3 +57,23 @@
  #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-profile-grid{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin-top:8px!important}
  #workspace.noor-teacher-activated .noor-t4 .nt-profile .nt-quote{grid-column:1/-1;min-height:120px!important}
 }
+/* Tactile classroom shortcuts, with consistent drawn icons. */
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-3d-quick-btn{flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:16px!important;border:1px solid var(--line,#ead9df)!important;background:var(--paper,#fffdfb)!important;box-shadow:0 3px 12px #54243b08!important;transition:box-shadow .18s,border-color .18s}
+#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions .nt-3d-quick-btn:hover{border-color:var(--rose,#985e76)!important;box-shadow:0 6px 18px #54243b14!important}
+#workspace.noor-teacher-activated .noor-t4 .nt-quick-icon{display:grid!important;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:13px;background:#edf4ee;color:#39795d;box-shadow:inset 0 0 0 1px #39795d15}
+#workspace.noor-teacher-activated .noor-t4 .nt-quick-icon.assignments{color:#795699;background:#f2edf8}
+#workspace.noor-teacher-activated .noor-t4 .nt-quick-icon.notes{color:#a64f6b;background:#fbedf1}
+#workspace.noor-teacher-activated .noor-t4 .nt-quick-icon.calendar{color:#9d7637;background:#fbf3e5}
+#workspace.noor-teacher-activated .noor-t4 .nt-quick-icon svg{width:25px;height:25px;display:block}
+#workspace.noor-teacher-activated .noor-t4 .nt-class-summary{justify-content:flex-start;max-width:420px;gap:18px;padding:20px 24px;background:linear-gradient(120deg,var(--rose-soft,#fbeef3),var(--paper,#fffdfb));border-color:var(--rose-line,#ead0dc)}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-emblem{display:grid;place-items:center;width:58px;height:58px;border-radius:17px;color:var(--berry,#762b4b);background:var(--paper,#fffaf8);box-shadow:0 4px 15px #54243b0a}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-emblem svg{height:32px;width:32px}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-figure>span{font-size:14px;font-weight:550;color:var(--muted,#806f79)}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-figure strong{display:block;font-size:36px;line-height:1.3;font-weight:650;color:var(--berry,#762b4b)}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-figure strong small{font-size:24px;font-weight:450;color:var(--muted,#806f79)}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-figure p{margin:3px 0 0;font-size:13px}
+#workspace.noor-teacher-activated .noor-t4 .nt-greeting{margin:9px 0 4px;font-size:17px;font-weight:550}
+#workspace.noor-teacher-activated .noor-t4 .nt-dashboard-date{display:block;color:var(--muted,#806f79);font-size:14px;margin-bottom:8px}
+.noor-section-photo{width:36px;height:36px;object-fit:contain;border-radius:9px;background:#fff;display:inline-block;vertical-align:middle;margin-right:8px}
+@media(max-width:520px){#workspace.noor-teacher-activated .noor-t4 .nt-refined-actions{grid-template-columns:1fr!important}#workspace.noor-teacher-activated .noor-t4 .nt-class-summary{max-width:none;width:100%}}
+#workspace.noor-teacher-activated #view-overview .noor-t4 .nt-bottom-actions .nt-card-head h2{font-family:Inter,'Segoe UI',Arial,sans-serif!important;font-size:19px!important;font-weight:650!important}

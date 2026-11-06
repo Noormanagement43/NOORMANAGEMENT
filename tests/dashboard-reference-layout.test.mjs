@@ -17,7 +17,7 @@ test('all three dashboards use reference design components without inventing sch
  assert.match(student,/No teacher-marked assessment results available yet/);
  assert.doesNotMatch(student,/demoMarks|activeVals = vals\.length/);
  assert.doesNotMatch(teacher,/Subject-Wise Teaching Progress|Period Timeline|Period Completion/);
- assert.match(teacher,/periodSlotsHTML\(approved,runByPeriod\)/);
+ assert.match(teacher,/periodSlotsHTML\(approved,runByPeriod,result.slots\|\|\[\]\)/);
  assert.match(teacher,/ntClassSummary/);
  assert.doesNotMatch(teacher,/Avg 86\.6%|85% Peak|100 \/ 85 ✓/);
  assert.doesNotMatch(principal,/mock-c|Classes 6 – 10 Benchmark/);

@@ -1,0 +1,4 @@
+/* Section photographs: names stay editable; only recognised fruit names get artwork. */
+(()=>{'use strict';const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function label(value){const text=String(value||'').replace(/[🥭🍎🍏]/gu,'').trim(),key=/\bmango\b/i.test(text)?'mango':/\bapple\b/i.test(text)?'apple':null;if(!key)return E(text);const src=key==='mango'?'./assets/sections/mango.jpg':'./assets/sections/apple.jpg';const credit=key==='mango'?'Mango photo: Rhododendrites, CC BY-SA 4.0, Wikimedia Commons':'Apple photo: Abhijit Tembhekar, CC BY 2.0, Wikimedia Commons';return '<img class="noor-section-photo" src="'+src+'" alt="" title="'+credit+'" loading="lazy" referrerpolicy="no-referrer">'+E(text);}
+window.NOOR_CLASS_VISUALS=Object.freeze({label});})();

@@ -61,3 +61,8 @@ English, Hindi and Telugu cheers use the device/browser Speech Synthesis engine,
 ## Format note
 
 This bundled pack contains OGG originals only; matching MP3 encodings and separately recorded female voice clips are not bundled in this pass. The manager is centralized so MP3 sources or licensed voice clips can be added later in `sounds/sound-map.js` without editing application components.
+
+## Section photographs
+
+- Mango: [Rhododendrites — Mango on white](https://commons.wikimedia.org/wiki/File:Mango_on_white.jpg), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Wikimedia thumbnail, displayed in a bounded frame.
+- Apple: [Abhijit Tembhekar — Red Apple](https://commons.wikimedia.org/wiki/File:Red_Apple.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Wikimedia thumbnail, displayed in a bounded frame.

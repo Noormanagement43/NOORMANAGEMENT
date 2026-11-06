@@ -42,15 +42,15 @@ function periodBadge(p,run){
 }
 function statusHTML(p,run){
  const badge=periodBadge(p,run);
- const complete=run?.status==='done',active=run?.status==='ongoing';
+ const complete=run?.status==='done'||p.completed,active=run?.status==='ongoing'||p.progress_status==='ongoing';
  const action=complete?'✓ Completed':active?'✓ Complete':'○ Mark Complete';
  return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
  '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(!p.schedule_status?'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>':'')+
  (!p.schedule_status&&!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
- ''+(p.schedule_status?'<div class="nt-period-state"><span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit</button><button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
+ ''+(p.schedule_status?'<div class="nt-period-state">'+(!complete?'<button type="button" class="nt-btn small np-progress-button" '+(active?'data-complete-period':'data-start-period')+'="'+esc(p.id)+'">'+(active?'Finish period':'Start period')+'</button>':'')+'<span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit</button><button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
 }
-function periodSlotsHTML(periods,runs){const max=Math.max(8,...periods.map(p=>Number(p.period_number)||0));return Array.from({length:max},(_,i)=>{const p=periods.find(p=>Number(p.period_number)===i+1);return p?statusHTML(p,runs.get(p.id)):'<div class="nt-period"><div class="nt-period-num"><b>Period '+(i+1)+'</b></div><div class="nt-subject"><small>Not set</small></div><button class="nt-btn small" type="button" data-add-period="'+(i+1)+'">+ Set Period</button></div>';}).join('');}
+function periodSlotsHTML(periods,runs){const max=Math.max(8,...periods.map(p=>Number(p.period_number)||0));const list=Array.from({length:max},(_,i)=>{const p=periods.find(p=>Number(p.period_number)===i+1);return p?statusHTML(p,runs.get(p.id)):'<div class="nt-period"><div class="nt-period-num"><b>Period '+(i+1)+'</b></div><div class="nt-subject"><small>Not set</small></div><button class="nt-btn small" type="button" data-add-period="'+(i+1)+'">+ Set Period</button></div>';}).join('');const slots=Array.from({length:max},(_,i)=>periods.find(p=>Number(p.period_number)===i+1)||{period_number:i+1});return '<div class="np-period-flow" style="--np-progress:'+ (window.NOOR_UI_POLISH?.rail(slots,max)||0)+'%">'+list+'</div>';}
 function weeklyTimetableHTML(periods){
  const sorted=[...periods].filter(p=>p.approval_status==='approved').sort((a,b)=>a.weekday-b.weekday||String(a.start_time).localeCompare(String(b.start_time)));
  const content=sorted.map(p=>'<div class="nt-weekly-item"><span class="nt-weekly-day">'+esc(days[p.weekday]?.slice(0,3)||'Day')+'</span><span class="nt-weekly-subject-icon subject-'+subjectVisual(p.subject_name).tone+'">'+subjectIcon(p.subject_name)+'</span><span class="nt-weekly-name"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label||'Class')+' · '+esc(prettyTime(p.start_time))+'–'+esc(prettyTime(p.end_time))+'</small></span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">Edit</button></div>').join('')||'<p class="nt-muted">No periods saved yet. Create a period above.</p>';
@@ -158,6 +158,7 @@ async function render(){
  $('#ntHiddenPhoto').onchange=uploadPhoto;
  if($('#ntPeriodDay'))$('#ntPeriodDay').onchange=e=>{selectedWeekday=Number(e.target.value);render();};
  if(window.NOOR_TEACHER_ATTENDANCE_VIEW&&window.NOOR_ACCOUNT_CONTEXT?.enabled())window.NOOR_TEACHER_ATTENDANCE_VIEW.summary(dash.querySelector('#ntClassSummary')).catch(()=>{});
+ window.NOOR_UI_POLISH?.decorateContent(wrapper);
 
  window.NOOR_TEACHER_DATA?.syncHeader();
  setLive();
@@ -188,6 +189,7 @@ async function updateRun(periodId,status,b){
  if(!p||p.approval_status!=='approved')return notify('Only approved timetable periods can be marked.','error');
  b.disabled=true;
  try{
+ if(window.NOOR_SHARED_TIMETABLE?.current()){await window.NOOR_SHARED_TIMETABLE.setProgress(p,status==='done'?'completed':'ongoing');notify(status==='done'?'Period finished for today.':'Period in progress.');await render();return;}
  const record=current.runs.find(x=>x.period_id===periodId);
  if(record?.status==='done')return;
  const now=new Date().toISOString();

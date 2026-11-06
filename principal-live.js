@@ -692,7 +692,7 @@ async function refresh(){
 
     // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
     q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
-      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':p.schedule_status|| (now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
+      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':run?.status==='ongoing'?'In progress':p.schedule_status|| (now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
       return `<tr>
         <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
         <td>${e(p.subject_name)}</td>

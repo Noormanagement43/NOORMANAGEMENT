@@ -6,7 +6,7 @@ function normalize({members,profiles,groups,enrolments,sessions,records,periods,
  const teachers=roster.filter(x=>x.role==='teacher'),students=roster.filter(x=>x.role==='student'),teacherNames=new Map(teachers.map(t=>[t.id,t.full_name]));const result=data=>({data,error:null});const calendar=events.map(e=>({...e,event_type:e.kind,body:e.description}));return{
  students:result(students),teachers:result(teachers),classes:result(groups.filter(g=>g.group_type==='class'&&g.is_active)),sections:result(groups.filter(g=>g.group_type==='section'&&g.is_active).map(g=>({...g,class_id:g.parent_group_id}))),
  sessions:result(sessions.filter(s=>s.session_status!=='cancelled').map(s=>({id:s.id,attendance_date:day(s.starts_at,tz),status:s.session_status==='completed'?'submitted':s.session_status}))),records:result(records.map(r=>({...r,student_id:r.student_membership_id,status:r.attendance_status}))),
- periods:result(periods.map(p=>({...p,teacher_name:teacherNames.get(p.teacher_id)||'Teacher'}))),runs:result(lessons.filter(l=>l.completed).map(l=>({period_id:l.period_id,status:'done'}))),
+ periods:result(periods.map(p=>({...p,teacher_name:teacherNames.get(p.teacher_id)||'Teacher'}))),runs:result(lessons.filter(l=>l.completed||l.progress_status==='ongoing').map(l=>({period_id:l.period_id,status:l.completed?'done':'ongoing'}))),
  staff:staff?result(staff.map(x=>({teacher_id:x.membership_id,status:x.status==='late'?'present':x.status}))):{data:[],unavailable:true,error:{message:'Staff check-in records are not configured in this database.'}},notices:result(calendar.filter(e=>e.kind==='notice')),events:result(calendar.filter(e=>e.kind!=='notice')),
  tasks:operations?result(operations):result(learning.filter(l=>l.kind==='assignment'&&l.status==='published').map(l=>({...l,status:'Published assignment'}))),lessons:result(lessons.map(l=>({...l,id:l.period_id,teacher_id:periods.find(p=>p.id===l.period_id)?.teacher_id,homework:l.lesson})))
  };}
@@ -19,7 +19,7 @@ async function load({from,day:today,weekday}){const a=app(),uid=a.user?.id,sid=a
  rows(()=>db.from('class_sessions').select('id,starts_at,session_status').eq('institution_id',sid).gte('starts_at',lower.toISOString()).lt('starts_at',upper.toISOString()).order('id')),
  rows(()=>db.from('noor_calendar_events').select('id,title,kind,description,starts_at,ends_at').eq('institution_id',sid).gte('ends_at',new Date().toISOString()).order('id')),
  rows(()=>db.from('noor_learning_items').select('id,title,kind,status,due_at').eq('institution_id',sid).eq('status','published').eq('kind','assignment').order('id')),
- rows(()=>db.from('noor_daily_period_lessons').select('period_id,lesson,topic,completed').eq('institution_id',sid).eq('lesson_date',today).order('period_id')),
+ rows(()=>db.from('noor_daily_period_lessons').select('period_id,lesson,topic,completed,progress_status').eq('institution_id',sid).eq('lesson_date',today).order('period_id')),
  window.NOOR_SHARED_TIMETABLE.load(),
  rows(()=>db.from('noor_staff_checkins').select('membership_id,status').eq('institution_id',sid).eq('checkin_date',today).order('membership_id')),
  rows(()=>db.from('noor_principal_tasks').select('id,title,body,status,due_at').eq('institution_id',sid).order('id'))]);if(tt.error)throw tt.error;

@@ -78,16 +78,17 @@ async function load(){
 
  let holidaysData=[];
 
- const ev=await query;
+ const [ev,messages]=await Promise.all([query,canonical()?a.db.from('noor_school_messages').select('id,title,body,starts_at,created_by').eq('institution_id',a.schoolId).eq('kind','meeting').gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):Promise.resolve({data:[]})]);
  if(id!==st.version||!r.isConnected||a.schoolId!==st.school)return;
  const userRole=a.profile?.role||'student',userId=a.user?.id;
  st.events=(ev.data||[]).map(x=>canonical()?{...x,event_type:x.kind==='event'?'school':x.kind}:x).filter(x=>leader()||(!x.teacher_id||x.teacher_id===userId||x.created_by===userId)&&(!x.target_roles?.length||x.target_roles.includes(userRole)||x.target_roles.includes('all')));
+ st.events.push(...(messages.data||[]).map(x=>({...x,description:x.body,event_type:'meeting',from_inbox:true})));
  const apiHolidays=Array.isArray(holidaysData)?holidaysData.filter(x=>x.date&&x.name).map(x=>({date:x.date,title:x.localName||x.name})):[];
  const regional=getRegionalFestivals(y);
  const holidayMap=new Map();
  [...regional, ...apiHolidays].forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
  st.holidays=[...holidayMap.entries()].map(([date,title])=>({date,title}));
- st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+
+ st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+(messages.error?'Meeting inbox could not be loaded. ':'')+
   (st.holidays.length?'Fixed national dates are shown here. Live religious holiday dates appear in Google Calendar below.':'National holiday reference active.');
  draw();
 }
@@ -128,7 +129,7 @@ function draw(){
  };
 
  $('#nscDayEvents',r).innerHTML=ev.map(x=>{
-   const canDelete=leader()||x.created_by===A().user?.id;
+   const canDelete=!x.from_inbox&&(leader()||x.created_by===A().user?.id);
    const tag = TAG_CONFIG[x.event_type] || TAG_CONFIG.school;
    return '<div class="nsc-entry" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid '+tag.border+';border-left:4px solid '+tag.color+';border-radius:12px;background:'+tag.bg+';margin-bottom:8px">'+
    '<div style="display:flex;gap:12px;align-items:center"><div><div style="display:flex;align-items:center;gap:6px"><b style="color:#2d111d;font-size:13px">'+E(x.title)+'</b><span style="font-size:10px;font-weight:700;color:'+tag.color+';padding:2px 6px;border-radius:6px;background:#fff;border:1px solid '+tag.border+'">'+tag.label+'</span></div><small style="display:block;color:#786671;margin-top:3px">'+E(new Date(x.starts_at).toLocaleTimeString('en-IN',{timeZone:zone,hour:'numeric',minute:'2-digit'}))+(x.description?' · '+E(x.description):'')+'</small></div></div>'+
@@ -215,5 +216,6 @@ function showEventModal(presetDate=''){
  };
 }
 
+window.addEventListener('noor:school-message-saved',()=>{if(root()?.classList.contains('active'))load();});
 window.NOOR_SCHOOL_CALENDAR={open,showEventModal};
 })();

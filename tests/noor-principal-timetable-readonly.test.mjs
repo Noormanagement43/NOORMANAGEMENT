@@ -23,13 +23,13 @@ test('Principal dashboard does not assign or edit a teacher period; timetable re
 
 test('Principal sidebar has Staff and classes, but no Assign Teacher page',async()=>{
  const html=await read('index.html');
- assert.match(html,/id:'staff-management',icon:'♧',label:'Staff'/);
- assert.match(html,/id:'classes',icon:'▦',label:'Classes & Sections'/);
+ assert.match(html,/id:'staff-management',icon:'staff',label:'Staff'/);
+ assert.match(html,/School setup/);assert.match(html,/openView\('classes'\)/);
  assert.doesNotMatch(html,/label:'Teacher Assignments'/);
  assert.doesNotMatch(html,/label:'Timetables & Teachers'/);
  assert.doesNotMatch(html,/principal-teacher-approvals\.js\?v=/);
  assert.match(html,/id==='teacher-assignments'&&\['owner','principal','manager'\]\.includes/);
- assert.match(html,/principal-live\.js\?v=20261106-connect-1/);
+ assert.match(html,/principal-live\.js\?v=20261106-product-1/);
  assert.match(html,/id="loginTab"/);
  assert.match(html,/noor-official-logo\.svg/);
 });

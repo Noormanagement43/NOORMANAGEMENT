@@ -2,6 +2,7 @@
 (() => {
   "use strict";
   const THEMES = [
+    {id:"simple-clean",name:"Simple & Clean",desc:"Plain white, soft teal, clear lines and minimal decoration.",primary:"#247b7b",accent:"#d9efed",canvas:"#f4f7f8",card:"#ffffff",ink:"#243b43"},
     { id:"pastel-aurora",name:"Pastel Aurora",desc:"Peach, lavender, powder blue and rose from your first reference.",primary:"#4B6B8B",accent:"#E7C8D6",canvas:"#fff5f4",card:"#fffefa",ink:"#1B2A44" },
     { id:"linen-pearl",name:"Linen Pearl",desc:"Elegant pearl, warm beige and muted slate from your second reference.",primary:"#4B6382",accent:"#E3C39D",canvas:"#faf8f4",card:"#fffdfa",ink:"#071739" },
     { id:"porcelain-blue",name:"Blue & White",desc:"Clean white, soft sky and professional navy.",primary:"#3667A0",accent:"#A7C4D9",canvas:"#f3f9ff",card:"#ffffff",ink:"#183559" },

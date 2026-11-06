@@ -11,7 +11,7 @@ test('teacher has one concise navigation list with eleven relevant destinations'
   const ids=[...menu.matchAll(/\{id:'([^']+)'/g)].map(m=>m[1]);
   assert.equal(ids.length,11);
   assert.equal(new Set(ids).size,11);
-  assert.deepEqual(ids.slice(0,5),['overview','attendance','schedules','teacher-classroom','paper-generator']);
+  assert.deepEqual(ids.slice(0,5),['overview','attendance','today-note','schedules','teacher-classroom']);
   assert.ok(!ids.includes('rubric-assistant')&&!ids.includes('teaching-diary')&&!ids.includes('student-gaps'),'Specialist tools should stay inside the advanced studio, not duplicate sidebar entries');
   assert.ok(page.includes('noor-role-focus.css'));
   assert.doesNotMatch(page,/id="creatorGeminiKey"|id="creatorBrevoKey"|btnSaveCreatorKeys|https:\/\/api\.brevo\.com\/v3\/smtp\/email/);

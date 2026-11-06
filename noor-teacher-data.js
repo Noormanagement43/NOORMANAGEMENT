@@ -41,7 +41,7 @@ function syncHeader(){const a=A(),photo=a.profile?.avatar_url;for(const id of ['
 async function checkIn(){const c=await context(),r=await c.db.rpc('noor_teacher_check_in',{p_institution:c.school.id});if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:staff-checkin-saved'));return r.data;}
 const shell=(title,body)=>'<div class="ta-page"><header class="ta-header"><h1>'+E(title)+'</h1><button class="ta-soft" type="button" data-back>← Dashboard</button></header>'+body+'</div>';
 let registerVersion=0;
-const attendanceStatuses=['present','absent','late'];
+const attendanceStatuses=['present','absent','late','leave'];
 function attendanceTable(students,marks=[]){
  if(!students.length)return '<p>No students enrolled in this class yet.</p>';
  const saved=new Map(marks.map(m=>[m.student_membership_id,m.attendance_status]));
@@ -89,7 +89,7 @@ async function classQuestions(host){
  const panel=document.createElement('section');panel.className='ta-panel';panel.innerHTML='<h2>Student Questions</h2>'+((r.data||[]).map(x=>'<form data-question="'+E(x.id)+'" class="sp-form"><p>'+E(x.question)+'</p><small>'+E(new Date(x.created_at).toLocaleString())+'</small><label>My reply<textarea name="reply" maxlength="10000" required>'+E(x.reply||'')+'</textarea></label><button class="ta-primary" type="submit">Save reply</button><p role="status"></p></form>').join('')||'<p>No class questions yet.</p>');host.append(panel);
  panel.querySelectorAll('form').forEach(form=>form.onsubmit=async e=>{e.preventDefault();const b=form.querySelector('button'),msg=form.querySelector('[role=status]');b.disabled=true;try{if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed.');const saved=await c.db.from('noor_class_questions').update({reply:form.elements.reply.value.trim(),replied_at:new Date().toISOString()}).eq('id',form.dataset.question).eq('institution_id',c.school.id).select('id').single();if(saved.error)throw saved.error;msg.textContent='Reply saved to the student’s account.';}catch(ex){msg.textContent=ex.message;}finally{b.disabled=false;}});
 }
-function supports(id){return current()&&['teaching','paper-generator','weekly-plan','teacher-classroom'].includes(id);}
-async function open(id){if(id==='teacher-classroom'){const host=document.getElementById('view-'+id);await window.NOOR_CLASS_PERFORMANCE.mount(host);try{await classQuestions(host);}catch(e){const note=document.createElement('p');note.textContent='Student questions could not load: '+e.message;host.append(note);}return;}return learning(id);}
+function supports(id){return current()&&['teaching','paper-generator','weekly-plan','teacher-classroom','today-note'].includes(id);}
+async function open(id){if(id==='today-note')return window.NOOR_CLASSROOM_CONNECT.todayNote(document.getElementById('view-'+id));if(id==='teacher-classroom'){const host=document.getElementById('view-'+id);await window.NOOR_CLASS_PERFORMANCE.mount(host);const register=document.createElement('section');host.append(register);try{await window.NOOR_TEACHER_ATTENDANCE_VIEW.mount(register);await classQuestions(host);}catch(e){const note=document.createElement('p');note.textContent='Student questions could not load: '+e.message;host.append(note);}return;}return learning(id);}
 window.NOOR_TEACHER_DATA=Object.freeze({current,context,assignments,load,saveProfile,checkIn,syncHeader,attendance,attendanceTable,attendanceRecords,rosterPhotos,supports,open,offset});
 })();

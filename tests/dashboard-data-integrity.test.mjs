@@ -29,7 +29,7 @@ test('principal analytics use recorded submissions and no benchmark fallback',as
 test('teacher dashboard metrics are drawn from real period records',async()=>{
   const code=await source('teacher-reference.js');
   assert.doesNotMatch(code,/Avg 86\.6%|85% Peak|100 \/ 85 ✓|Chat with NOOR AI Jinni/);
-  assert.match(code,/Selected day’s periods/);
+  assert.match(code,/Saved periods/);
   assert.match(code,/dataset\.action==='take-attendance'/);
   assert.match(code,/dataset\.action==='upload-resource'/);
 });
@@ -39,7 +39,7 @@ test('existing large profile portraits and photo editing remain untouched',async
     source('index.html'),source('teacher-reference.js'),source('principal-live.js'),source('student-portal.js')
   ]);
   assert.match(html,/\.nt-photo,\.sp-avatar,\.pd-photo/);
-  assert.match(teacher,/id="ntChangePhoto"/);
+  assert.doesNotMatch(teacher,/id="ntChangePhoto"/);
   assert.match(principal,/class="pd-photo"/);
   assert.match(student,/class="sp-avatar"/);
 });

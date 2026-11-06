@@ -671,18 +671,17 @@ async function refresh(){
     const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
     q('#pd-greeting').textContent=`Hello, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
     
-    q('#pd-profile').innerHTML=`<button class="pd-photo" data-route="profile" aria-label="Change profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</button>
+    q('#pd-profile').innerHTML=`<div class="pd-photo" aria-label="Profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</div>
       <div class="pd-profile-info">
         <h2>${e(p.full_name||leadershipLabel)}</h2>
         <b>${e(leadershipLabel)} · School Leadership</b>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||school?.address||'School Campus')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>
-        <p><button class="pd-link" id="pd-edit-phone" type="button">☎ ${e(p.mobile_number||'Add phone number')}</button></p>
-        <button class="pd-link" id="pd-edit-profile">Edit profile ✎</button>
+        <p>☎ ${e(p.mobile_number||'Not added')}</p>
         <div class="pd-quote">“${getInsight()}”</div>
       </div>`;
-    q('#pd-edit-profile').onclick=editProfile;q('#pd-edit-phone').onclick=editProfile;
+
 
     // Primary Classes
     q('#pd-classes').innerHTML=res.classes.error||res.sections.error||attError?empty('Class attendance could not be loaded.'):`<div class="pd-class-grid">${classes.filter(c=>classNumber(c)>=1&&classNumber(c)<=5).map((c,i)=>`<article class="pd-class c${i%5}"><h3>${e(c.name)} <span>♙</span></h3>${sections.filter(s=>s.class_id===c.id).map(s=>{const group=students.filter(p=>p.class_id===c.id&&p.section_id===s.id),m=aggregate(group,sessions,records,d.day);return `<button data-route="attendance"><span>${e(/^section/i.test(s.name)?s.name:'Section '+s.name)}</span><strong>${m.marked?m.present:'—'} / ${m.total}</strong></button><small>${m.marked?m.marked+' marked':'Not marked'}</small>`}).join('')||empty('Add sections')}</article>`).join('')}</div>`;

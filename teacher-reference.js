@@ -48,8 +48,9 @@ function statusHTML(p,run){
  '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label)+'</small>'+
  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(!p.schedule_status?'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>':'')+
  (!p.schedule_status&&!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
- ''+(p.schedule_status?'<div class="nt-period-state"><span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit ▾</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
+ ''+(p.schedule_status?'<div class="nt-period-state"><span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit</button><button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
 }
+function periodSlotsHTML(periods,runs){const max=Math.max(8,...periods.map(p=>Number(p.period_number)||0));return Array.from({length:max},(_,i)=>{const p=periods.find(p=>Number(p.period_number)===i+1);return p?statusHTML(p,runs.get(p.id)):'<div class="nt-period"><div class="nt-period-num"><b>Period '+(i+1)+'</b></div><div class="nt-subject"><small>Not set</small></div><button class="nt-btn small" type="button" data-add-period="'+(i+1)+'">+ Set Period</button></div>';}).join('');}
 function weeklyTimetableHTML(periods){
  const sorted=[...periods].filter(p=>p.approval_status==='approved').sort((a,b)=>a.weekday-b.weekday||String(a.start_time).localeCompare(String(b.start_time)));
  const content=sorted.map(p=>'<div class="nt-weekly-item"><span class="nt-weekly-day">'+esc(days[p.weekday]?.slice(0,3)||'Day')+'</span><span class="nt-weekly-subject-icon subject-'+subjectVisual(p.subject_name).tone+'">'+subjectIcon(p.subject_name)+'</span><span class="nt-weekly-name"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label||'Class')+' · '+esc(prettyTime(p.start_time))+'–'+esc(prettyTime(p.end_time))+'</small></span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">Edit</button></div>').join('')||'<p class="nt-muted">No periods saved yet. Create a period above.</p>';
@@ -124,7 +125,7 @@ async function render(){
  if(version!==renderId)return;
  let avatar=app.profile.avatar_url||'';
  if(!avatar&&app.profile.avatar_path){const r=await db.storage.from('student-photos').createSignedUrl(app.profile.avatar_path,900);avatar=r.data?.signedUrl||''}
- const ownPeriods=periods.data||[];if(selectedWeekday===null)selectedWeekday=ownPeriods.some(p=>p.weekday===weekday)?weekday:(ownPeriods[0]?.weekday??weekday);
+ const ownPeriods=periods.data||[];if(window.NOOR_SHARED_TIMETABLE?.current())selectedWeekday=weekday;if(selectedWeekday===null)selectedWeekday=ownPeriods.some(p=>p.weekday===weekday)?weekday:(ownPeriods[0]?.weekday??weekday);
  const details={...(extra.data||{}),employee_code:extra.data?.employee_code||membership.data?.employee_id||'',joined_on:extra.data?.joined_on||membership.data?.joined_at?.slice(0,10)||''},allPeriods=periods.data||[],allRuns=runs.data||[],approved=allPeriods.filter(x=>x.weekday===selectedWeekday&&x.approval_status==='approved'),runByPeriod=new Map(allRuns.map(x=>[x.period_id,x])),complete=approved.filter(x=>runByPeriod.get(x.id)?.status==='done').length;
  const validNotices=(notices.data||[]).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  const events=(calendar.data||[]).filter(x=>!x.teacher_id||x.teacher_id===uid).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
@@ -140,20 +141,20 @@ async function render(){
  const assignedTasks=tasks.filter(x=>taskStatus.get(x.id)!=='completed'&&taskStatus.get(x.id)!=='done');
  wrapper.innerHTML='<div class="noor-t4">'+
  '<div class="nt-head"><div><span class="nt-kicker">NOOR · SCHOOL WORKSPACE</span><h1>Teacher Dashboard</h1><div class="nt-muted">Today’s classes, attendance and learning — organised in one place.</div></div><span class="nt-head-status">◈ SCHOOL RECORDS · LIVE VIEW</span></div>'+
- '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div><button class="nt-camera" id="ntChangePhoto" type="button" aria-label="Change profile photograph">◉</button></div>'+
- '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span><button class="nt-btn" id="ntEditProfile" type="button">✎ Edit Profile</button></div></div>'+
+ '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div></div>'+
+ '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span></div></div>'+
  '<div class="nt-profile-grid">'+det('Joining date:',formatDate(details.joined_on),'▣')+det('Date of birth:',formatDate(details.date_of_birth),'♧')+det('Qualification:',details.qualification,'◈')+
  det('Address:',details.address,'⌖')+det('Phone:',app.profile.mobile_number,'☎')+det('Email:',app.profile.email||app.user.email,'✉')+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+'</div>'+
-    '<div class="nt-hero-stats"><div class="nt-hero-stat-pill purple"><small>Assigned class</small><b>'+esc((assignment.data||[]).map(x=>x.class_label).filter(Boolean).join(', ')||(approved[0]?.class_label||'No class selected'))+'</b></div><div class="nt-hero-stat-pill pink"><small>Selected day’s periods</small><b>'+approved.length+'</b></div><div class="nt-hero-stat-pill green"><small>Completed</small><b>'+complete+' / '+approved.length+'</b></div></div></div>'+
+    '<div class="nt-hero-stats"><div class="nt-hero-stat-pill purple"><small>Assigned class</small><b>'+esc((assignment.data||[]).map(x=>x.class_label).filter(Boolean).join(', ')||(approved[0]?.class_label||'No class selected'))+'</b></div><div class="nt-hero-stat-pill pink"><small>Saved periods</small><b>'+approved.length+'</b></div><div class="nt-hero-stat-pill green"><small>Completed</small><b>'+complete+' / '+approved.length+'</b></div></div></div>'+
  '<aside class="nt-quote" id="ntTeacherQuote"><p id="ntTeacherQuoteText">“Teaching is shaping brighter tomorrows.”</p><div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" class="nt-btn small" id="ntRefreshTeacherQuote" style="font-size:9px;padding:3px 8px">↻ Refresh quote</button></div></aside></section>'+
- '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Teaching Periods</h2></div><label>Day <select id="ntPeriodDay">'+days.map((d,i)=>'<option value="'+i+'" '+(i===selectedWeekday?'selected':'')+'>'+d+(i===weekday?' (Today)':'')+'</option>').join('')+'</select></label><button class="nt-btn" id="ntEditTimetable">✎ Edit Timetable</button></div>'+
- '<div class="nt-timeline">'+(approved.length?approved.map(x=>statusHTML(x,runByPeriod.get(x.id))).join(''):'<p class="nt-empty">No periods saved for this day. Choose another day or add a period.</p>')+'</div>'+
+ '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>My Periods</h2></div><button class="nt-btn" id="ntEditTimetable">✎ Edit Timetable</button></div>'+
+ '<div class="nt-timeline">'+periodSlotsHTML(approved,runByPeriod)+'</div>'+
  '<div class="nt-review-requests">'+
  (rejectedToday.length?'<p class="nt-muted">Review unavailable periods: '+rejectedToday.map(x=>esc(x.subject_name)).join(' · ')+'</p>':'')+
  '</div>'+
  '<div class="nt-progress" title="Today\'s completed classes"><span style="width:'+(approved.length?Math.round(complete/approved.length*100):0)+'%"></span></div>'+
- '<p class="nt-muted" style="margin:8px 0 0">'+complete+' of '+approved.length+' periods completed for '+esc(days[selectedWeekday])+'</p>'+
- '<div class="nt-timeline-footer">◉ Completed periods sync with the Principal Dashboard.</div>'+weeklyTimetableHTML(allPeriods)+'</section></div>'+
+ '<p class="nt-muted" style="margin:8px 0 0">'+complete+' of '+approved.length+' periods completed today'+'</p>'+
+ '<div class="nt-timeline-footer">◉ Completed periods sync with the Principal Dashboard.</div>'+'</section></div>'+
  '<div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Today\'s Status</h2></div><span class="nt-pill done"><span class="nt-pulse"></span> School data</span></div>'+
  '<div class="nt-status-list"><div class="nt-status-box '+(staff?'good':'')+'"><span class="nt-round">'+(staff?'✓':'○')+'</span><div><b>'+ (staff?'Present · Checked in':'Not checked in')+'</b><small>'+ (staff?esc(dateTime(checkin.data.checked_in_at)):'Mark your attendance for today')+'</small></div>'+
  (staff?'':'<button class="nt-btn small" id="ntCheckIn">Check in</button>')+'</div>'+
@@ -184,7 +185,8 @@ async function render(){
  current.assignedTasks=assignedTasks;
  wrapper.onclick=onClick; // Replace handler on each render; avoid duplicate clicks/period submissions.
  $('#ntHiddenPhoto').onchange=uploadPhoto;
- $('#ntPeriodDay').onchange=e=>{selectedWeekday=Number(e.target.value);render();};
+ if($('#ntPeriodDay'))$('#ntPeriodDay').onchange=e=>{selectedWeekday=Number(e.target.value);render();};
+ if(window.NOOR_TEACHER_ATTENDANCE_VIEW&&window.NOOR_ACCOUNT_CONTEXT?.enabled())window.NOOR_TEACHER_ATTENDANCE_VIEW.mount(document.getElementById('ntAttendanceEmbed')).catch(e=>{const host=document.getElementById('ntAttendanceEmbed');if(host)host.textContent=e.message;});
 
  window.NOOR_TEACHER_DATA?.syncHeader();
  setLive();
@@ -194,6 +196,8 @@ async function render(){
 }
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
+ if(b.dataset.addPeriod){window.NOOR_SHARED_TIMETABLE.openEditor(null,{period_number:Number(b.dataset.addPeriod)});return;}
+ if(b.dataset.dailyPeriod){window.NOOR_SHARED_TIMETABLE.openDaily(current.periods.find(p=>p.id===b.dataset.dailyPeriod));return;}
  if(b.dataset.action==='create-assignment'){openPaper();setTimeout(()=>{const form=document.getElementById('ppForm');if(!form)return;const t=document.getElementById('ppType');if(t)t.value='assignment';document.getElementById('ppQuestions')?.focus();},0);return;} if(b.dataset.action==='take-attendance'){openView('attendance');return;} if(b.dataset.action==='upload-resource'){openView('teaching');return;} if(b.dataset.link){if(b.dataset.link==='paper-generator')openPaper();else if(b.dataset.link==='edit-timetable')showPeriodEditor(null);else if(b.dataset.link==='calendar'||b.dataset.link==='school-calendar')openCalendar();else openView(b.dataset.link);return;}
  if(b.dataset.action==='open-teaching-diary'){const advanced=$('.nt-advanced-details');if(advanced)advanced.open=true;const first=$('#ntiPeriods [data-nti-log]');if(first)first.click();else openView('daily-report');return;}
  if(b.dataset.action==='open-learning-gaps'){const advanced=$('.nt-advanced-details');if(advanced){advanced.open=true;requestAnimationFrame(()=>{($('#ntiGaps')||advanced).scrollIntoView({behavior:'smooth',block:'start'})});}return;}
@@ -254,7 +258,7 @@ function showProfileEditor(){
  field('Date of birth','date_of_birth',d.date_of_birth,'date')+
  field('Qualification','qualification',d.qualification,'text','maxlength="240"')+
  '<label class="nt4-span">Address<textarea name="address" maxlength="500">'+esc(d.address||'')+'</textarea></label>'+
- '<p class="nt4-span">Tap the camera icon on your profile picture to upload or change your photo at any time.</p>';
+ '<p class="nt4-span">Change your photo in the Profile photo section of Settings.</p>';
  modal('Edit Teacher Profile',inputs,async f=>{
  const a=get(),val=name=>String(f.elements[name]?.value||'').trim();
  if(!val('full_name'))throw Error('Full name cannot be empty.');
@@ -459,7 +463,7 @@ function initTeacherQuotes(){
 }
 
 window.addEventListener('noor:timetable-saved',()=>{if(isTeacher()&&root()?.classList.contains('active'))render();});
-window.NOOR_TEACHER_REFERENCE={render,renderCalendar,openPaper,openCalendar,showPeriodEditor,periodBadge,editTimetable:()=>showPeriodEditor(null),getCurrent:()=>current};
+window.NOOR_TEACHER_REFERENCE={editProfile:showProfileEditor,render,renderCalendar,openPaper,openCalendar,showPeriodEditor,periodBadge,editTimetable:()=>showPeriodEditor(null),getCurrent:()=>current};
 const watcher=new MutationObserver(()=>{
  const w=document.getElementById('workspace');
  if(!w||w.classList.contains('hidden')||!isTeacher()){w?.classList.remove('noor-teacher-activated','noor-teacher-handset');if(channel&&get().db){get().db.removeChannel(channel);channel=null;}return;}

@@ -24,7 +24,7 @@ test('edit-profile portrait uses a bounded frame while retaining photo editing a
 test('teacher and principal photo frames share dimensions and mobile compatible',async()=>{
  const [css,teacher,principal]=await Promise.all([read('noor-profile-portraits.css'),read('teacher-reference.js'),read('principal-live.js')]);
  assert.match(teacher,/nt-photo-column/);
- assert.match(teacher,/ntChangePhoto/);
+ assert.doesNotMatch(teacher,/id="ntChangePhoto"/);
  assert.match(principal,/pd-photo/);
  assert.match(css,/#workspace \.noor-t4 \.nt-photo-column/);
  assert.match(css,/#noor-principal \.pd-profile \.pd-photo/);

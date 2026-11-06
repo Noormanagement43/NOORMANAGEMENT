@@ -29,7 +29,7 @@ test('Principal sidebar has Staff and classes, but no Assign Teacher page',async
  assert.doesNotMatch(html,/label:'Timetables & Teachers'/);
  assert.doesNotMatch(html,/principal-teacher-approvals\.js\?v=/);
  assert.match(html,/id==='teacher-assignments'&&\['owner','principal','manager'\]\.includes/);
- assert.match(html,/principal-live\.js\?v=20261106-canonical-teacher-1/);
+ assert.match(html,/principal-live\.js\?v=20261106-connect-1/);
  assert.match(html,/id="loginTab"/);
  assert.match(html,/noor-official-logo\.svg/);
 });

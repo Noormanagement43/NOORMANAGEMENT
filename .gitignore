@@ -12,6 +12,9 @@ node_modules/
 *.key
 
 # Build & Editor artifacts
+dist/
+load-fixtures*.json
+load-results*.json
 .vercel/
 .idea/
 .vscode/

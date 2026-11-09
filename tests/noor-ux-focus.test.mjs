@@ -4,13 +4,13 @@ import {readFile} from 'node:fs/promises';
 import {Script} from 'node:vm';
 const read=name=>readFile(new URL('../'+name,import.meta.url),'utf8');
 
-test('teacher has one concise navigation list with eleven relevant destinations',async()=>{
+test('teacher has one concise navigation list with combined learning resources',async()=>{
   const page=await read('index.html');
   const menu=page.split("if(role==='teacher')return ")[1]?.split("if(role==='parent')return ")[0];
   assert.ok(menu,'Teacher navigation must exist');
   const ids=[...menu.matchAll(/\{id:'([^']+)'/g)].map(m=>m[1]);
-  assert.equal(ids.length,11);
-  assert.equal(new Set(ids).size,11);
+  assert.equal(ids.length,10);
+  assert.equal(new Set(ids).size,10);
   assert.deepEqual(ids.slice(0,5),['overview','attendance','today-note','schedules','teacher-classroom']);
   assert.ok(!ids.includes('rubric-assistant')&&!ids.includes('teaching-diary')&&!ids.includes('student-gaps'),'Specialist tools should stay inside the advanced studio, not duplicate sidebar entries');
   assert.ok(page.includes('noor-role-focus.css'));
@@ -23,9 +23,9 @@ test('teacher first viewport has five high-value quick actions and attendance af
   const actions=code.slice(code.indexOf('const tiles')-200); // source tiles are built as HTML, not a JS constant
   void actions;
   const section=code.slice(code.indexOf('nt-3d-quick-grid nt-refined-actions'),code.indexOf('nt-jinni-card'));
-  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,5);
+  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,4);
   assert.match(section,/Take Attendance/);
-  assert.match(section,/Create Assignment/);
+  assert.match(section,/Assignments &amp; Smart Notes/);
   assert.match(section,/Smart Notes/);
   assert.match(section,/Weekly Planner/);
   assert.match(section,/Today Notes/);

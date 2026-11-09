@@ -141,9 +141,11 @@ async function markEntry(d){
 async function editSettings(c){
  if(!c.principal)throw Error('Principal permission required.');
  const row=await c.db.from('noor_report_settings').select('*').eq('institution_id',c.school).maybeSingle();if(row.error)throw row.error;
+ const academic=await c.db.from('academic_years').select('id,label,start_date,end_date,is_current').eq('institution_id',c.school).order('is_current',{ascending:false}).order('start_date',{ascending:false}).limit(1);if(academic.error)throw academic.error;
+ const prior=academic.data?.[0]||null,now=window.NOOR_SHARED_TIMETABLE?.schoolDay(c.schoolInfo.timezone)||date(new Date(),c.schoolInfo.timezone),y=Number(now.slice(0,4))-(Number(now.slice(5,7))<4?1:0),year=prior||{label:y+'-'+String((y+1)%100).padStart(2,'0'),start_date:y+'-04-01',end_date:(y+1)+'-03-31'};
  const cfg={...defaults,...(row.data||{}),exam_labels:{...defaults.exam_labels,...(row.data?.exam_labels||{})},exam_aliases:{...defaults.exam_aliases,...(row.data?.exam_aliases||{})}};
  const old=document.getElementById('nar-config-dialog');if(old)old.remove();const dlg=document.createElement('dialog');dlg.id='nar-config-dialog';dlg.className='nar-config-dialog';
- dlg.innerHTML='<form><h2>Principal · Report Settings</h2><label>Subjects (one per line)<textarea name="subjects" rows="7">'+E((cfg.subject_names||[]).join('\n'))+'</textarea></label>'+
+ dlg.innerHTML='<form><h2>Principal · Report Settings</h2><fieldset><legend>Academic Year</legend><label>Year label<input name="year_label" required maxlength="50" value="'+E(year.label)+'"></label><label>Start date<input name="year_start" type="date" required value="'+E(year.start_date)+'"></label><label>End date<input name="year_end" type="date" required value="'+E(year.end_date)+'"></label></fieldset><label>Subjects (one per line)<textarea name="subjects" rows="7">'+E((cfg.subject_names||[]).join('\n'))+'</textarea></label>'+
  ['weekly','monthly','term1','term2','term3'].map(k=>'<label>'+E(k)+' display name<input name="label_'+k+'" value="'+E(cfg.exam_labels[k])+'" maxlength="90"></label><label>'+E(k)+' title keywords (comma separated)<input name="alias_'+k+'" value="'+E((cfg.exam_aliases?.[k]||[]).join(', '))+'"></label>').join('')+
  '<fieldset><legend>Non-working days</legend><label><input type="checkbox" name="sunday" '+((cfg.non_working_weekdays||[]).includes(0)?'checked':'')+'> Sunday</label><label><input type="checkbox" name="saturday" '+((cfg.non_working_weekdays||[]).includes(6)?'checked':'')+'> Saturday</label></fieldset><label>School logo (up to 3 MB)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label><button type="submit">Save Settings</button><button type="button" data-close>Cancel</button><p role="status"></p></form>';
  document.body.append(dlg);dlg.querySelector('[data-close]').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();
@@ -153,6 +155,12 @@ async function editSettings(c){
   const labels={},aliases={};for(const k of ['weekly','monthly','term1','term2','term3']){labels[k]=f.elements['label_'+k].value.trim().slice(0,90)||defaults.exam_labels[k];aliases[k]=f.elements['alias_'+k].value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,30);}
   const days=[...(f.elements.sunday.checked?[0]:[]),...(f.elements.saturday.checked?[6]:[])];
   const r=await c.db.from('noor_report_settings').upsert({institution_id:c.school,subject_names:names,exam_labels:labels,exam_aliases:aliases,non_working_weekdays:days,updated_at:new Date().toISOString()},{onConflict:'institution_id'}).select('institution_id').single();if(r.error)throw r.error;
+  const start=f.elements.year_start.value,end=f.elements.year_end.value,yearLabel=f.elements.year_label.value.trim();
+  if(!start||!end||start>=end||!yearLabel||yearLabel.length>50)throw Error('Enter a valid academic year and label.');
+  const savedYear=prior?
+   await c.db.from('academic_years').update({label:yearLabel,start_date:start,end_date:end,is_current:true}).eq('id',prior.id).eq('institution_id',c.school).select('id').single():
+   await c.db.from('academic_years').insert({institution_id:c.school,label:yearLabel,start_date:start,end_date:end,is_current:true}).select('id').single();
+  if(savedYear.error)throw savedYear.error;
   if(f.elements.logo.files.length){if(!window.NOOR_SCHOOL_BRANDING?.upload)throw Error('Logo upload is unavailable.');await window.NOOR_SCHOOL_BRANDING.upload(f.elements.logo.files[0]);}
   status.textContent='Settings saved. Reopen report to reload updated labels.';b.disabled=false;
  }catch(error){status.textContent='Not saved: '+error.message;b.disabled=false;}};

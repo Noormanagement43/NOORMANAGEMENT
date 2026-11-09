@@ -673,14 +673,14 @@ async function refresh(){
     
     q('#pd-profile').innerHTML=`<div class="pd-photo" aria-label="Profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</div>
       <div class="pd-profile-info">
-        <h2>${e(p.full_name||leadershipLabel)}</h2>
-        <b>${e(leadershipLabel)} · School Leadership</b>
+        <div class="pd-profile-heading"><h2>${e(p.full_name||leadershipLabel)}</h2>
+        <b>${e(leadershipLabel)} · School Leadership</b></div>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||a().user?.user_metadata?.noor_contact?.location||school?.address||'Not added')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>
         <p>☎ ${e(p.mobile_number||a().user?.user_metadata?.noor_contact?.phone||'Not added')}</p>
         <p>Date of birth · ${e(p.date_of_birth||a().user?.user_metadata?.noor_contact?.date_of_birth||'Not added')}</p>
-      </div>`;
+      </div>${window.NOOR_DAILY_QUOTES?.header(p.role)||''}`;
 
 
     // Primary Classes

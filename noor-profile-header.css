@@ -1,0 +1,81 @@
+#workspace #noor-principal .pd-top{grid-template-columns:minmax(0,1fr)!important}
+/* Dashboard identity: the same portrait frame, with role-specific details and inspiration. */
+#workspace #noor-principal .pd-profile,
+#workspace #view-overview .noor-t4 .nt-profile,
+#workspace #view-overview .sp-reference-dashboard .sp-ref-hero{
+ display:grid!important;grid-template-columns:176px minmax(0,1fr) minmax(210px,.68fr)!important;
+ gap:22px!important;align-items:start!important;padding:18px!important;
+}
+#workspace #noor-principal .pd-profile .pd-photo,
+#workspace #view-overview .noor-t4 .nt-photo-column,
+#workspace #view-overview .noor-t4 .nt-profile .nt-photo,
+#workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{
+ width:176px!important;min-width:176px!important;max-width:176px!important;
+ height:248px!important;max-height:248px!important;min-height:0!important;
+ grid-column:1!important;grid-row:1!important;align-self:start!important;
+ border-radius:14px!important;margin:0!important;padding:0!important;box-sizing:border-box;
+}
+#workspace #noor-principal .pd-profile-info,
+#workspace #view-overview .noor-t4 .nt-profile>div:nth-child(2),
+#workspace #view-overview .sp-ref-student-identity{min-width:0;display:block!important}
+#workspace #noor-principal .pd-profile-info h2{margin:4px 0 8px!important;font-size:clamp(22px,2vw,28px)!important;line-height:1.2!important}
+#workspace #noor-principal .pd-profile-info p{font:13px/1.6 Inter,system-ui,sans-serif!important;margin:7px 0!important}
+#workspace #view-overview .nt-profile .nt-profile-grid,
+#workspace #view-overview .sp-ref-detail-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 16px!important}
+#workspace :is(.pd-profile-info,.nt-profile-grid,.sp-ref-detail-grid){overflow-wrap:anywhere}
+#workspace .noor-header-quote{
+ min-width:0;align-self:stretch!important;display:flex!important;flex-direction:column;justify-content:center;
+ margin:0!important;padding:22px!important;border-radius:14px;border:1px solid var(--line,#eedde3);
+ background:linear-gradient(145deg,color-mix(in srgb,var(--paper,#fff) 86%,#e9cbd6),var(--paper,#fff));
+ color:var(--ink,#593344);box-sizing:border-box;
+}
+#workspace .noor-header-quote .noor-quote-label{font:700 10px/1.5 Inter,system-ui,sans-serif;letter-spacing:1.5px;color:var(--muted,#826771)}
+#workspace .noor-header-quote blockquote{font:italic 19px/1.55 Georgia,serif!important;margin:15px 0!important;color:inherit!important}
+#workspace .noor-header-quote cite{font:500 12px/1.5 Inter,system-ui,sans-serif;color:var(--muted,#826771)}
+@media(max-width:1100px){
+ #workspace #noor-principal .pd-profile,
+ #workspace #view-overview .noor-t4 .nt-profile,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:176px minmax(0,1fr)!important}
+ #workspace .noor-header-quote{grid-column:1/-1!important;padding:16px 20px!important}
+ #workspace .noor-header-quote blockquote{font-size:17px!important;margin:9px 0!important}
+}
+/* The principal card can be narrower than the viewport because of the side rail. */
+#workspace #noor-principal .pd-top{container-type:inline-size;container-name:principal-profile}
+@container principal-profile (max-width:760px){
+ #workspace #noor-principal .pd-profile{grid-template-columns:176px minmax(0,1fr)!important}
+ #workspace #noor-principal .pd-profile .noor-header-quote{grid-column:2!important}
+}
+@media(max-width:760px){
+ #workspace #view-principal-studio #noor-principal .pd-profile,
+ #workspace #view-overview .noor-t4 .nt-profile,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:128px minmax(0,1fr)!important;gap:16px!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile .pd-photo,
+ #workspace #view-overview .noor-t4 .nt-photo-column,
+ #workspace #view-overview .noor-t4 .nt-profile .nt-photo,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{width:128px!important;min-width:128px!important;max-width:128px!important;height:180px!important;max-height:180px!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile-info,
+ #workspace #view-overview .noor-t4 .nt-profile>div:nth-child(2),
+ #workspace #view-overview .sp-ref-student-identity{display:contents!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile-heading{grid-column:2;grid-row:1;align-self:center;min-width:0}
+ #workspace #view-principal-studio #noor-principal .pd-profile-heading h2{font-size:21px!important;margin:0 0 10px!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile-heading b{font-size:14px!important;line-height:1.5}
+ #workspace #view-principal-studio #noor-principal .pd-profile-info>p{grid-column:1/-1;font-size:14px!important;margin:0!important}
+ #workspace #view-overview .nt-profile .nt-profile-grid,
+ #workspace #view-overview .sp-ref-detail-grid{grid-column:1/-1!important;gap:14px!important}
+ #workspace #view-overview .nt-profile .nt-person-head,
+ #workspace #view-overview .sp-ref-identity-head{grid-column:2!important;grid-row:1!important;align-self:center!important;min-width:0}
+ #workspace #view-overview .sp-ref-hero .sp-ref-identity-head h1{font-size:21px!important;line-height:1.3!important}
+ #workspace .noor-header-quote,
+ #workspace #view-principal-studio #noor-principal .pd-profile .noor-header-quote{grid-column:1/-1!important;width:100%}
+}
+@media(max-width:380px){
+ #workspace #view-principal-studio #noor-principal .pd-profile,
+ #workspace #view-overview .noor-t4 .nt-profile,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:112px minmax(0,1fr)!important;gap:12px!important}
+ #workspace #view-principal-studio #noor-principal .pd-profile .pd-photo,
+ #workspace #view-overview .noor-t4 .nt-photo-column,
+ #workspace #view-overview .noor-t4 .nt-profile .nt-photo,
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{width:112px!important;min-width:112px!important;max-width:112px!important;height:158px!important;max-height:158px!important}
+ #workspace #view-overview .nt-profile .nt-profile-grid,
+ #workspace #view-overview .sp-ref-detail-grid{grid-template-columns:1fr!important}
+}

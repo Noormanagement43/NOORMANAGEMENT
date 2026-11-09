@@ -114,10 +114,13 @@ async function render(){
  '<section class="nt-class-summary" id="ntClassSummary" aria-label="Today’s class attendance" aria-live="polite"><p>Loading attendance…</p></section>'+
  '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div></div>'+
  '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span></div></div>'+
- '<div class="nt-profile-grid">'+det('Joining date:',formatDate(details.joined_on),'▣')+det('Date of birth:',formatDate(details.date_of_birth),'♧')+det('Qualification:',details.qualification,'◈')+
- det('Address:',details.address,'⌖')+det('Phone:',app.profile.mobile_number,'☎')+det('Email:',app.profile.email||app.user.email,'✉')+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+'</div>'+
- '</div>'+
- '<aside class="nt-quote" id="ntTeacherQuote"><p id="ntTeacherQuoteText">“Teaching is shaping brighter tomorrows.”</p></aside></section>'+
+ '<div class="nt-profile-grid">'+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+
+ det('Location:',app.profile.city_or_area||app.user?.user_metadata?.noor_contact?.location||details.address,'⌖')+
+ det('Email:',app.profile.email||app.user.email,'✉')+det('Phone:',app.profile.mobile_number,'☎')+
+ det('Date of birth:',formatDate(details.date_of_birth||app.profile.date_of_birth),'♧')+
+ det('Class teacher:',app.profile.requested_class_name||app.profile.class_label||'Not assigned','▤')+
+ det('Section:',app.profile.requested_section_name||'Not assigned','▦')+'</div>'+
+ '</div>'+(window.NOOR_DAILY_QUOTES?.header('teacher')||'')+'</section>'+
  '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>My Period Schedule</h2><time class="nt-schedule-day">'+esc(new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:app.school?.timezone||'Asia/Kolkata'}))+'</time></div><button class="nt-btn" data-link="schedules">Manage periods</button></div>'+
  '<div class="nt-timeline">'+periodSlotsHTML(approved,runByPeriod,result.slots||[])+'</div>'+
  '<div class="nt-review-requests">'+
@@ -230,6 +233,8 @@ function field(label,name,value,type='text',extra=''){
 function showProfileEditor(){
  const p=get().profile,d=current?.details||{};
  const inputs=field('Full Name','full_name',p.full_name,'text','required maxlength="130"')+
+ field('Email','email',p.email||get().user.email,'email','required')+
+ field('Location','city_or_area',p.city_or_area||get().user?.user_metadata?.noor_contact?.location,'text','maxlength="200"')+
  field('Mobile Number','mobile_number',p.mobile_number,'tel','maxlength="25"')+
  field('Joining date','joined_on',d.joined_on,'date')+
  field('Date of birth','date_of_birth',d.date_of_birth,'date')+
@@ -239,7 +244,7 @@ function showProfileEditor(){
  modal('Edit Teacher Profile',inputs,async f=>{
  const a=get(),val=name=>String(f.elements[name]?.value||'').trim();
  if(!val('full_name'))throw Error('Full name cannot be empty.');
- if(window.NOOR_TEACHER_DATA?.current()){await window.NOOR_TEACHER_DATA.saveProfile(Object.fromEntries(new FormData(f)));notify('Teacher profile saved.');return;}
+ if(window.NOOR_TEACHER_DATA?.current()){const message=await window.NOOR_TEACHER_DATA.saveProfile(Object.fromEntries(new FormData(f)));notify(message||'Teacher profile saved.');return;}
  const first=await a.db.from('profiles').update({full_name:val('full_name'),mobile_number:val('mobile_number')||null}).eq('id',a.user.id).eq('school_id',a.schoolId).select('id,full_name,mobile_number').single();
  if(first.error)throw first.error;
  a.profile.full_name=first.data.full_name;a.profile.mobile_number=first.data.mobile_number;

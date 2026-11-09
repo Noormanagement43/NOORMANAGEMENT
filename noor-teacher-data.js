@@ -21,7 +21,7 @@ async function load(){
  for(const r of [tt,checkin,calendar])if(r.error)throw r.error;
  const periods=(tt.data||[]).filter(p=>p.teacher_membership_id===c.membership.id);
  const ok=data=>({data,error:null}),empty=()=>ok([]);
- Object.assign(A().profile,{mobile_number:contact.phone||'',date_of_birth:contact.date_of_birth||''});
+ Object.assign(A().profile,{mobile_number:contact.phone||'',city_or_area:contact.location||'',date_of_birth:contact.date_of_birth||''});
  return {slots:tt.slots||[],extra:ok({joined_on:contact.joined_on||c.membership.joined_at?.slice(0,10)||'',date_of_birth:contact.date_of_birth||'',qualification:contact.qualification||'',address:contact.address||contact.location||''}),periods:ok(periods),runs:ok(periods.filter(p=>p.completed||p.progress_status==='ongoing').map(p=>({period_id:p.id,status:p.completed?'done':'ongoing'}))),checkin:ok(checkin.data?{...checkin.data,checked_in_at:checkin.data.marked_at}:null),assignees:empty(),personal:empty(),notices:ok((calendar.data||[]).filter(x=>x.kind==='notice').map(x=>({...x,body:x.description}))),calendar:ok((calendar.data||[]).filter(x=>x.kind!=='notice')),assignment:ok(assigned),membership:ok({joined_at:c.membership.joined_at})};
 }
 async function saveProfile(values){
@@ -30,12 +30,15 @@ async function saveProfile(values){
  for(const k of ['joined_on','date_of_birth'])if(v(k)&&(!/^\d{4}-\d{2}-\d{2}$/.test(v(k))||!Number.isFinite(Date.parse(v(k)))||new Date(v(k)).toISOString().slice(0,10)!==v(k)||v(k)>day()||v(k)<'1900-01-01'))throw Error('Enter a valid '+(k==='joined_on'?'joining date':'date of birth')+'.');
  if(v('mobile_number')&&!/^\+?[0-9 ()-]{7,30}$/.test(v('mobile_number')))throw Error('Enter a valid phone number.');
  if(v('qualification').length>240||v('address').length>500)throw Error('Qualification or address is too long.');
+ window.NOOR_PROFILE_EDITOR.validate({...values,email:v('email')||auth.data.user.email});
  const r=await c.db.from('profiles').update({full_name:name}).eq('id',c.userId).select('full_name').single();if(r.error)throw r.error;
- const contact={...auth.data.user.user_metadata?.noor_contact,phone:v('mobile_number'),joined_on:v('joined_on'),date_of_birth:v('date_of_birth'),qualification:v('qualification'),address:v('address')};
+ const contact={...auth.data.user.user_metadata?.noor_contact,phone:v('mobile_number'),location:v('city_or_area'),joined_on:v('joined_on'),date_of_birth:v('date_of_birth'),qualification:v('qualification'),address:v('address')};
  const u=await c.db.auth.updateUser({data:{noor_contact:contact}});if(u.error)throw Error('Name saved; personal details not saved: '+u.error.message);
  if(A().user?.id!==c.userId)throw Error('Account changed. Refresh your profile.');
- Object.assign(A().profile,{full_name:name,mobile_number:contact.phone,date_of_birth:contact.date_of_birth});
+ Object.assign(A().profile,{full_name:name,mobile_number:contact.phone,city_or_area:contact.location,date_of_birth:contact.date_of_birth});
  syncHeader();
+ if(v('email')&&v('email').toLowerCase()!==auth.data.user.email.toLowerCase()){const changed=await c.db.auth.updateUser({email:v('email')});if(changed.error)throw Error('Profile saved; email change failed: '+changed.error.message);return 'Profile saved. Confirm the email change using the links in your inboxes.';}
+ return 'Teacher profile saved.';
 }
 function syncHeader(){const a=A(),photo=a.profile?.avatar_url;for(const id of ['topName','sideUserName']){const el=document.getElementById(id);if(el)el.textContent=a.profile?.full_name||'Teacher';}const av=document.getElementById('topAvatar');if(av){av.innerHTML=photo&&/^https:\/\//.test(photo)?'<img src="'+E(photo)+'" alt="My profile photo">':'<span aria-label="Profile photo not uploaded">◉</span>';}}
 async function checkIn(){const c=await context(),r=await c.db.rpc('noor_teacher_check_in',{p_institution:c.school.id});if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:staff-checkin-saved'));return r.data;}

@@ -20,11 +20,14 @@ async function summary(host){
  const c=await window.NOOR_TEACHER_DATA.context(),tz=c.school.timezone||'Asia/Kolkata',date=window.NOOR_SHARED_TIMETABLE.schoolDay(tz);
  const same=()=>host.isConnected&&A().user?.id===c.userId&&A().schoolId===c.school.id;
  try{
- const assigned=await window.NOOR_TEACHER_DATA.assignments(c),roster=new Set(),saved=new Map();
- for(const group of assigned){
+ const assigned=await window.NOOR_TEACHER_DATA.assignments(c),roster=new Map(),saved=new Map();
+ const groups=assigned.filter(g=>g.section_id||!assigned.some(s=>s.class_id===g.class_id&&s.section_id));
+ for(const group of groups){
   const report=await c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:group.group_id,p_from:date,p_to:date});
   if(report.error)throw report.error;
-  for(const student of report.data?.students||[])roster.add(student.membership_id);
+  for(const student of report.data?.students||[]){
+   if(student.membership_id&&!roster.has(student.membership_id))roster.set(student.membership_id,{...student,class_label:group.class_label});
+  }
   const sessions=await c.db.from('class_sessions').select('id,starts_at').eq('institution_id',c.school.id).eq('academic_group_id',group.group_id).eq('title','Daily class attendance').neq('session_status','cancelled').gte('starts_at',date+'T00:00:00'+window.NOOR_TEACHER_DATA.offset(tz,date)).lte('starts_at',date+'T23:59:59'+window.NOOR_TEACHER_DATA.offset(tz,date));
   if(sessions.error)throw sessions.error;
   for(const session of sessions.data||[]){
@@ -37,9 +40,19 @@ async function summary(host){
   }
  }
  if(!same())return;
- const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks);
- host.innerHTML='<div class="nt-attendance-emblem" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('students')||'')+'</div><div class="nt-attendance-figure"><span>Students Present</span><strong>'+(totals.present+totals.late)+' <small>/ '+roster.size+'</small></strong><p>Total Students · '+roster.size+'</p></div>';
-
- }catch(e){if(same())host.innerHTML='<p>Attendance unavailable. Open Take Attendance to retry.</p>';}
+ const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks),total=roster.size;
+ const bar=(label,n,tone)=>'<div class="nt-att-bar-item '+tone+'"><div class="nt-att-bar-label"><span>'+label+'</span><b>'+n+'</b></div><div class="nt-att-bar-track" role="meter" aria-label="'+label+'" aria-valuemin="0" aria-valuemax="'+Math.max(1,total)+'" aria-valuenow="'+n+'"><span style="width:"+(total?Math.min(100,100*n/total):0).toFixed(1)+"%"></span></div></div>';
+ host.innerHTML='<div class="nt-att-overview"><div class="nt-att-overview-title"><b>Today’s Attendance</b><small>'+E(date)+' · '+total+' students</small></div><div class="nt-att-bars">'+bar('Present',totals.present,'present')+bar('Absent',totals.absent,'absent')+bar('Late',totals.late,'late')+'</div><div class="nt-att-overview-footer">'+Math.max(0,total-marks.length)+' not marked'+(totals.leave?' · '+totals.leave+' on leave':'')+'</div></div>';
+ const preview=document.getElementById('ntAttendanceEmbed');
+ if(preview&&preview.closest('.noor-t4')){
+  const students=[...roster.values()].sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'en',{numeric:true})).slice(0,12);
+  const indicator=(selected,name)=>'<span class="nt-att-indicator '+name+(selected===name?' selected':'')+'" aria-label="'+(selected===name?name:'Not '+name)+'">'+(selected===name?'●':'○')+'</span>';
+  preview.className='nt-attendance-register-preview';
+  preview.innerHTML='<div class="nt-att-preview-scroll"><table class="nt-att-preview-table"><thead><tr><th>Student</th><th>Roll No.</th><th>Class / Section</th><th>Present</th><th>Absent</th><th>Late</th></tr></thead><tbody>'+
+   students.map(student=>{const status=saved.get(student.membership_id)?.attendance_status||'',initial=String(student.name||'S').slice(0,1).toUpperCase();return '<tr><td><span class="nt-att-student"><span class="nt-att-avatar">'+E(initial)+'</span><b>'+E(student.name||'Student')+'</b></span>'+(status==='leave'?'<small class="nt-att-leave">Leave</small>':'')+'</td><td>'+E(student.roll_number||'—')+'</td><td>'+E(student.class_label||'—')+'</td><td>'+indicator(status,'present')+'</td><td>'+indicator(status,'absent')+'</td><td>'+indicator(status,'late')+'</td></tr>';}).join('')+
+   '</tbody></table></div>'+(students.length?'':'<p class="nt-muted">No students enrolled in your assigned classes yet.</p>')+
+   '<div class="nt-att-preview-footer"><small>Showing '+students.length+' of '+total+' students · '+E(date)+'</small><button type="button" class="nt-btn primary" data-action="take-attendance">Take Attendance →</button></div>';
+ }
+ }catch(e){if(same()){host.innerHTML='<p>Attendance unavailable. Open Take Attendance to retry.</p>';const preview=document.getElementById('ntAttendanceEmbed');if(preview)preview.innerHTML='<p>Attendance records could not be loaded. Open Take Attendance to retry.</p>';}}
 }
 window.NOOR_TEACHER_ATTENDANCE_VIEW=Object.freeze({mount,counts,dayMarks,summary});})();

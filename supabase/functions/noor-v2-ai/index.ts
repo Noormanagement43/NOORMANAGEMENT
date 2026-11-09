@@ -41,12 +41,14 @@ export async function handle(req:Request):Promise<Response>{
  if(!mr.data)return send(403,{error:'Active institution membership required'});
  const ir=await db.from('institutions').select('name,status').eq('id',institution).eq('status','active').maybeSingle();
  if(ir.error||!ir.data)return send(403,{error:'Institution is inactive or inaccessible'});
- if((action==='probe'||action==='manager_plan')&&!leadership.has(mr.data.role))return send(403,{error:'Institution leadership required'});
+ if(action==='manager_plan'&&!leadership.has(mr.data.role))return send(403,{error:'Institution leadership required'});
  if(!['chat_assist','probe'].includes(action)&&!staff.has(mr.data.role))return send(403,{error:'Authorised teaching staff required'});
- const units=action==='manager_plan'?2:1;
- const budget=await db.rpc('noor_take_ai_budget',{p_institution:institution,p_units:units});
- if(budget.error)return send(503,{error:'AI budget could not be checked'});
- if(budget.data!==true)return send(429,{error:'AI request budget reached. Retry later or ask the platform owner to review your plan limits.'});
+ if(action!=='probe'){
+  const units=action==='manager_plan'?2:1;
+  const budget=await db.rpc('noor_take_ai_budget',{p_institution:institution,p_units:units});
+  if(budget.error)return send(503,{error:'AI budget could not be checked'});
+  if(budget.data!==true)return send(429,{error:'AI request budget reached. Retry later or ask the platform owner to review your plan limits.'});
+ }
  if(action==='probe'){const providers=await probeAll();return send(200,{brain:providers[provider],manager:providers.groq,providers,external_apps_connected:false,email_delivery_tested:false})}
  const images=Array.isArray(input.images)?input.images:[];
  if(images.some(x=>typeof x!=='string'))return send(400,{error:'Invalid syllabus image'});

@@ -41,7 +41,7 @@ async function summary(host){
  }
  if(!same())return;
  const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks),total=roster.size;
- const bar=(label,n,tone)=>'<div class="nt-att-bar-item '+tone+'"><div class="nt-att-bar-label"><span>'+label+'</span><b>'+n+'</b></div><div class="nt-att-bar-track" role="meter" aria-label="'+label+'" aria-valuemin="0" aria-valuemax="'+Math.max(1,total)+'" aria-valuenow="'+n+'"><span style="width:"+(total?Math.min(100,100*n/total):0).toFixed(1)+"%"></span></div></div>';
+ const bar=(label,n,tone)=>'<div class="nt-att-bar-item '+tone+'"><div class="nt-att-bar-label"><span>'+label+'</span><b>'+n+'</b></div><div class="nt-att-bar-track" role="meter" aria-label="'+label+'" aria-valuemin="0" aria-valuemax="'+Math.max(1,total)+'" aria-valuenow="'+n+'"><span style="width:'+(total?Math.min(100,100*n/total):0).toFixed(1)+'%"></span></div></div>';
  host.innerHTML='<div class="nt-att-overview"><div class="nt-att-overview-title"><b>Today’s Attendance</b><small>'+E(date)+' · '+total+' students</small></div><div class="nt-att-bars">'+bar('Present',totals.present,'present')+bar('Absent',totals.absent,'absent')+bar('Late',totals.late,'late')+'</div><div class="nt-att-overview-footer">'+Math.max(0,total-marks.length)+' not marked'+(totals.leave?' · '+totals.leave+' on leave':'')+'</div></div>';
  const preview=document.getElementById('ntAttendanceEmbed');
  if(preview&&preview.closest('.noor-t4')){

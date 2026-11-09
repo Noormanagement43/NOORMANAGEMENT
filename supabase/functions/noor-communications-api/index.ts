@@ -13,7 +13,7 @@ function list(x:unknown,allowed:string[]):string[]{
   throw Error('Invalid selection');
  return x as string[];
 }
-async function senderVerified(email:string,key:string,fetcher:typeof fetch=fetch):Promise<boolean>{
+export async function senderVerified(email:string,key:string,fetcher:typeof fetch=fetch):Promise<boolean>{
  if(!MAIL.test(email))return false;
  const r=await fetcher('https://api.brevo.com/v3/senders',{method:'GET',headers:{'api-key':key,accept:'application/json'},signal:AbortSignal.timeout(12000)});
  if(!r.ok){await r.body?.cancel().catch(()=>{});return false;}

@@ -58,14 +58,28 @@ async function rosterPhotos(db,students){return Promise.all(students.map(async s
 async function attendance(){
  const host=document.getElementById('view-attendance');if(!host)return;const version=++registerVersion;host.innerHTML=shell('Take Attendance','<p>Loading your class…</p>');
  try{const c=await context(),assigned=await assignments(c);if(version!==registerVersion)return;
- host.innerHTML=shell('Take Attendance','<div class="ta-panel"><div class="ta-fields"><label>My class / section<select data-group>'+assigned.map(x=>'<option value="'+E(x.group_id)+'">'+E(x.class_label)+'</option>').join('')+'</select></label><label>Date<input data-date type="date" value="'+day()+'" max="'+day()+'"></label></div></div><form class="ta-panel" data-register><div class="ta-register-heading"><h2>Student Attendance</h2><div data-attendance-summary aria-live="polite"></div></div><div data-roster></div><p role="status" data-status></p><button class="ta-primary" type="submit" disabled>Save attendance</button></form>');
+ host.innerHTML=shell('Take Attendance','<div class="ta-panel"><div class="ta-fields"><label>My class / section<select data-group>'+assigned.map(x=>'<option value="'+E(x.group_id)+'">'+E(x.class_label)+'</option>').join('')+'</select></label><label>Date<input data-date type="date" value="'+day()+'" max="'+day()+'"></label></div></div><form class="ta-panel" data-register><div class="ta-register-heading"><h2>Student Attendance</h2><div data-attendance-summary aria-live="polite"></div></div><div class="ta-mobile-quickbar"><label><span class="sr-only">Find student</span><input type="search" data-find-student placeholder="Search student or roll number" aria-label="Search student"></label><button type="button" data-mark-everyone-present>Mark all Present</button></div><div data-roster></div><p role="status" data-status></p><button class="ta-primary" type="submit" disabled>Save attendance</button></form>');
  host.querySelector('[data-back]').onclick=()=>A().openView('overview');const form=host.querySelector('form'),group=host.querySelector('[data-group]'),date=host.querySelector('[data-date]'),roster=host.querySelector('[data-roster]'),msg=host.querySelector('[data-status]'),button=form.querySelector('[type=submit]');let students=[],request=0;
+ const search=host.querySelector('[data-find-student]'),quick=host.querySelector('[data-mark-everyone-present]');
+ function filterStudents(){
+  const q=search.value.trim().toLowerCase();
+  roster.querySelectorAll('tbody tr').forEach(row=>{row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);});
+ }
+ search.addEventListener('input',filterStudents);
+ quick.addEventListener('click',()=>{
+  if(!students.length)return;
+  if(quick.dataset.confirm!=='yes'){quick.dataset.confirm='yes';quick.textContent='Confirm: All Present';msg.textContent='Review absences before saving. Tap again to mark everyone Present.';return;}
+  quick.dataset.confirm='';quick.textContent='Mark all Present';
+  roster.querySelectorAll('input[data-student][value="present"]').forEach(input=>{input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));});
+  msg.textContent='All selected Present locally. Adjust Absent/Late/Leave before Save attendance.';
+ });
+ 
  async function refresh(){const n=++request;button.disabled=true;students=[];if(!group.value){roster.textContent='No saved class selection. Ask your principal to review your class assignment.';return;}roster.textContent='Loading enrolled students…';msg.textContent='';try{
  const report=await c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:group.value,p_from:date.value,p_to:date.value});if(report.error)throw report.error;
  const saved=await c.db.from('class_sessions').select('id').eq('institution_id',c.school.id).eq('academic_group_id',group.value).eq('title','Daily class attendance').gte('starts_at',date.value+'T00:00:00'+offset(c.school.timezone,date.value)).lte('starts_at',date.value+'T23:59:59'+offset(c.school.timezone,date.value)).limit(1);if(saved.error)throw saved.error;
  let marks=[];if(saved.data?.length){const old=await rows(()=>c.db.from('attendance_records').select('id,student_membership_id,attendance_status').eq('institution_id',c.school.id).eq('session_id',saved.data[0].id).order('id'));marks=old;}
  if(n!==request||version!==registerVersion||A().user?.id!==c.userId)return;students=report.data.students||[];
- const withPhotos=await rosterPhotos(c.db,students);if(n!==request||version!==registerVersion||A().user?.id!==c.userId||A().schoolId!==c.school.id)return;students=withPhotos;roster.innerHTML=attendanceTable(students,marks);updateSummary();button.disabled=!students.length;
+ const withPhotos=await rosterPhotos(c.db,students);if(n!==request||version!==registerVersion||A().user?.id!==c.userId||A().schoolId!==c.school.id)return;students=withPhotos;roster.innerHTML=attendanceTable(students,marks);filterStudents();quick.dataset.confirm='';quick.textContent='Mark all Present';updateSummary();button.disabled=!students.length;
  }catch(e){if(n===request){roster.textContent='Could not load attendance: '+e.message;}}}
  group.onchange=refresh;date.onchange=refresh;
  function updateSummary(){const selected=[...form.querySelectorAll('input[data-student]:checked')];host.querySelector('[data-attendance-summary]').innerHTML=attendanceStatuses.map(status=>'<span class="ta-count '+status+'">'+selected.filter(x=>x.value===status).length+' '+status[0].toUpperCase()+status.slice(1)+'</span>').join('')+'<span class="ta-count">'+Math.max(0,students.length-selected.length)+' Unmarked</span>';}

@@ -67,3 +67,33 @@
 .ncp .ncp-student.ncp-student-clickable:focus-visible{outline:3px solid #b35283;outline-offset:2px}
 .ncp .ncp-annual-button{margin-left:7px;background:#eff6e6;color:#447449;border-color:#cde3ca}
 .ncp .ncp-annual-button:hover{background:#ddefd3}
+
+/* Report palette is inherited from the currently signed-in SCHOOL, never static yellow. */
+#noor-annual-report-dialog.nar-dialog{background:var(--canvas,#faf7f8);color:var(--ink,#352e37);border:1px solid var(--line,#e4dff0)}
+#noor-annual-report-dialog .nar-modal-top{background:var(--paper,#fff);border-color:var(--line,#e4dff0);color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-paper,.nar-print .nar-paper{background:var(--paper,#fff);color:var(--ink,#352e37);border-color:var(--rose-line,#d3cadf);box-shadow:var(--shadow,0 12px 28px #44223412)}
+#noor-annual-report-dialog .nar-head,.nar-print .nar-head{border-bottom-color:var(--rose-line,#d3cadf)}
+#noor-annual-report-dialog .nar-brand,.nar-print .nar-brand{color:var(--berry,#6d6085)}
+#noor-annual-report-dialog .nar-brand>b,.nar-print .nar-brand>b{background:var(--rose-soft,#eae6f1);color:var(--berry,#6d6085)}
+#noor-annual-report-dialog .nar-head h1,.nar-print .nar-head h1{color:var(--berry,#6d6085);text-shadow:none}
+#noor-annual-report-dialog .nar-head p,.nar-print .nar-head p{color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-student>img,#noor-annual-report-dialog .nar-student>span,.nar-print .nar-student>img,.nar-print .nar-student>span{border-color:var(--rose-line,#d3cadf);box-shadow:0 0 0 2px var(--rose-soft,#eae6f1)}
+#noor-annual-report-dialog .nar-student>span,.nar-print .nar-student>span{background:var(--rose-soft,#eae6f1);color:var(--berry,#6d6085)}
+#noor-annual-report-dialog .nar-student h2,#noor-annual-report-dialog .nar-student strong,.nar-print .nar-student h2,.nar-print .nar-student strong{color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-student small,#noor-annual-report-dialog .nar-paper footer,.nar-print .nar-student small,.nar-print .nar-paper footer{color:var(--muted,#817994)}
+#noor-annual-report-dialog .nar-section-title,.nar-print .nar-section-title{color:var(--berry,#6d6085)}
+#noor-annual-report-dialog .nar-table th,.nar-print .nar-table th{background:var(--rose-soft,#eae6f1)!important;color:var(--ink,#352e37)!important;border-color:var(--paper,#fff)}
+#noor-annual-report-dialog .nar-table th:nth-child(even),.nar-print .nar-table th:nth-child(even){background:var(--rose-line,#d3cadf)!important}
+#noor-annual-report-dialog .nar-table td,.nar-print .nar-table td{background:var(--paper,#fff)!important;color:var(--ink,#352e37)!important;border-color:var(--line,#e4dff0)}
+#noor-annual-report-dialog .nar-table td:nth-child(even),.nar-print .nar-table td:nth-child(even){background:var(--rose-soft,#eae6f1)!important}
+#noor-annual-report-dialog .nar-table td:last-child,.nar-print .nar-table td:last-child{color:var(--berry,#6d6085)!important}
+#noor-annual-report-dialog .nar-layout aside,.nar-print .nar-layout aside{background:var(--rose-soft,#eae6f1);border-color:var(--rose-line,#d3cadf)}
+#noor-annual-report-dialog .nar-layout aside :is(h3,p,small),.nar-print .nar-layout aside :is(h3,p,small){color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-summary,.nar-print .nar-summary{background:linear-gradient(100deg,var(--rose-soft,#eae6f1),var(--paper,#fff));border-color:var(--rose-line,#d3cadf);color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-summary>b,.nar-print .nar-summary>b{background:var(--berry,#6d6085);color:var(--paper,#fff)}
+#noor-annual-report-dialog .nar-actions button[data-export]{background:var(--rose-soft,#eae6f1);border-color:var(--rose-line,#d3cadf);color:var(--ink,#352e37)}
+#noor-annual-report-dialog .nar-actions button[data-settings]{background:var(--paper,#fff);border-color:var(--berry,#6d6085);color:var(--berry,#6d6085)}
+.nar-config-dialog{background:var(--paper,#fff);color:var(--ink,#352e37)}
+.nar-config-dialog fieldset{border-color:var(--rose-line,#d3cadf)}
+.nar-config-dialog :is(input,textarea,select){background:var(--paper,#fff);color:var(--ink,#352e37);border-color:var(--line,#e4dff0)}
+.nar-config-dialog [type=submit]{background:var(--berry,#6d6085);color:var(--paper,#fff)}

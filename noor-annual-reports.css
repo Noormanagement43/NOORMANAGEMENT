@@ -60,3 +60,10 @@
 .nar-config-dialog [role=status]{font-size:12px;color:#306b4d}
 @media(max-width:800px){.nar-head{grid-template-columns:1fr}.nar-layout{grid-template-columns:1fr}.nar-layout aside{min-height:0}.nar-report-content{padding:14px}.nar-student>img,.nar-student>span{width:70px;height:85px}.nar-paper{width:98%}.nar-table{min-width:490px}.nar-brand>b{white-space:normal}}
 @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body.nar-print{background:white!important;margin:0!important;padding:0!important}.nar-print .nar-paper{width:100%!important;border:0!important;margin:0!important;border-radius:0!important;box-shadow:none!important}.nar-print .nar-report-content{padding:9mm!important}.nar-print .nar-head{grid-template-columns:34% 66%!important;gap:3mm!important}.nar-print .nar-layout{grid-template-columns:minmax(0,1fr) 49mm!important;gap:4mm!important}.nar-print .nar-table{min-width:0!important;font-size:9pt!important}.nar-print .nar-table th,.nar-print .nar-table td{padding:4pt!important}.nar-print .nar-student>img,.nar-print .nar-student>span{height:24mm!important;width:19mm!important}.nar-print .nar-head h1{font-size:25pt!important}.nar-print .nar-section-title{font-size:16pt!important}.nar-print .nar-layout aside{padding:8pt!important}.nar-print .nar-summary p{font-size:14pt!important}@page{size:A4 landscape;margin:7mm}}
+
+/* Make only authorized student profiles actionable in Class Performance. */
+.ncp .ncp-student.ncp-student-clickable{cursor:pointer;border-radius:11px;padding:3px 5px;margin:-3px -5px;transition:background .18s,box-shadow .18s}
+.ncp .ncp-student.ncp-student-clickable:hover{background:var(--rose-soft,#fff0f6);box-shadow:0 0 0 1px #e6b9cb}
+.ncp .ncp-student.ncp-student-clickable:focus-visible{outline:3px solid #b35283;outline-offset:2px}
+.ncp .ncp-annual-button{margin-left:7px;background:#eff6e6;color:#447449;border-color:#cde3ca}
+.ncp .ncp-annual-button:hover{background:#ddefd3}

@@ -2,9 +2,9 @@ name: NOOR backend checks
 on:
   push:
     branches: [main, feat/noor-backend-gateway-20261104, feat/noor-ai-provider-wiring-20261104]
-    paths: ['supabase/functions/noor-backend-api/**', 'supabase/functions/noor-v2-ai/**', '.github/workflows/backend.yml']
+    paths: ['supabase/functions/noor-backend-api/**', 'supabase/functions/noor-v2-ai/**', 'supabase/functions/noor-communications-api/**', 'supabase/functions/noor-email-worker/**', '.github/workflows/backend.yml']
   pull_request:
-    paths: ['supabase/functions/noor-backend-api/**', 'supabase/functions/noor-v2-ai/**', '.github/workflows/backend.yml']
+    paths: ['supabase/functions/noor-backend-api/**', 'supabase/functions/noor-v2-ai/**', 'supabase/functions/noor-communications-api/**', 'supabase/functions/noor-email-worker/**', '.github/workflows/backend.yml']
 permissions:
   contents: read
 jobs:
@@ -25,3 +25,12 @@ jobs:
       - run: npm ci --ignore-scripts --prefix supabase/functions/noor-v2-ai
       - run: deno check --node-modules-dir=manual supabase/functions/noor-v2-ai/index.ts
       - run: deno test --allow-env --node-modules-dir=manual supabase/functions/noor-v2-ai/providers_test.ts
+
+      - name: Check school communications API
+        run: deno check --node-modules-dir=auto supabase/functions/noor-communications-api/index.ts
+      - name: Test school email dispatch authorization
+        run: deno test --allow-env --node-modules-dir=auto supabase/functions/noor-communications-api/index_test.ts
+      - name: Check scheduled email worker
+        run: deno check --node-modules-dir=auto supabase/functions/noor-email-worker/index.ts
+      - name: Test email worker token
+        run: deno test --allow-env --node-modules-dir=auto supabase/functions/noor-email-worker/index_test.ts

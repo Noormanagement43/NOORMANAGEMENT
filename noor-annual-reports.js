@@ -98,9 +98,12 @@ function excel(d,type){const attendance=type==='attendance',cols=attendance?['Mo
 }
 function exportReport(d,type,format){
  if(!active(d.c))throw Error('Account changed. Sign in again.');
+ const style=typeof getComputedStyle==='function'?getComputedStyle(document.documentElement):null;
+ const getColor=(key,fallback)=>{const c=(style?.getPropertyValue(key)||'').trim();return /^#[0-9a-f]{3,8}$/i.test(c)?c:fallback;};
+ const themeColor=getColor('--berry','#6d6085'),themeSoft=getColor('--rose-soft','#eae6f1'),themeLine=getColor('--rose-line','#d3cadf');
  const basename='NOOR-'+type+'-'+String(d.s.name||'student').replace(/[^a-z0-9]+/gi,'-')+'-'+d.year.label;
- if(format==='excel')return download(excel(d,type),basename+'.xls','application/vnd.ms-excel;charset=utf-8');
- if(format==='word')return download('<html><head><meta charset="utf-8"><style>body{font:13pt Calibri;color:#342824}.nar-paper{padding:15pt}.nar-head{margin:20pt 0}h1{font-size:23pt;color:#58734b}.nar-table{border-collapse:collapse;width:100%}.nar-table th,.nar-table td{padding:7pt;border:1pt solid #dfd1bd}.nar-table th{background:#ffe6b4}.nar-summary{background:#ffd16d;padding:12pt}.nar-brand img,.nar-student img{height:70pt}.nar-layout aside{background:#f7edd9;padding:12pt}</style></head><body>'+reportHTML(d,type)+'</body></html>',basename+'.doc','application/msword;charset=utf-8');
+ if(format==='excel')return download(excel(d,type).replaceAll('#FFE0A0',themeSoft),basename+'.xls','application/vnd.ms-excel;charset=utf-8');
+ if(format==='word')return download(('<html><head><meta charset="utf-8"><style>body{font:13pt Calibri;color:#342824}.nar-paper{padding:15pt}.nar-head{margin:20pt 0}h1{font-size:23pt;color:#58734b}.nar-table{border-collapse:collapse;width:100%}.nar-table th,.nar-table td{padding:7pt;border:1pt solid #dfd1bd}.nar-table th{background:#ffe6b4}.nar-summary{background:#ffd16d;padding:12pt}.nar-brand img,.nar-student img{height:70pt}.nar-layout aside{background:#f7edd9;padding:12pt}</style></head><body>'+reportHTML(d,type)+'</body></html>').replaceAll('#58734b',themeColor).replaceAll('#ffe6b4',themeSoft).replaceAll('#ffd16d',themeSoft).replaceAll('#f7edd9',themeSoft).replaceAll('#dfd1bd',themeLine),basename+'.doc','application/msword;charset=utf-8');
  if(format==='pdf'){const w=window.open('','_blank');if(!w)throw Error('Enable popups to print the PDF.');const css=new URL('./noor-annual-reports.css?v=20261109-1',document.baseURI).href;w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+E(basename)+'</title><link rel="stylesheet" href="'+E(css)+'"></head><body class="nar-print">'+reportHTML(d,type)+'</body></html>');w.document.close();w.addEventListener('load',()=>w.print(),{once:true});return;}
 }
 async function open(s,group){

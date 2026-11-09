@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs';
+const source=fs.readFileSync(new URL('../noor-annual-reports.js',import.meta.url),'utf8');
+test('marks with optional feedback send an empty string accepted by the NOT NULL database column',async()=>{
+ let payload;
+ const status={},button={},form={elements:{subject:{value:'Mathematics'},kind:{value:'weekly'},marks:{value:'7'},max:{value:'10'},date:{value:'2026-11-09'},feedback:{value:'  '}},querySelector:q=>q==='[type=submit]'?button:status};
+ const dialog={querySelector:q=>q==='form'?form:q==='[data-close]'?{}:{},addEventListener(){},showModal(){},close(){},remove(){}};
+ const window={NOOR_AI_APP:{user:{id:'teacher'},schoolId:'school'}};
+ const document={getElementById:()=>null,createElement:()=>dialog,body:{append(){}}};
+ const instrumented=source.replace('Object.freeze({open,load,monthRows,reportHTML,','Object.freeze({markEntry,open,load,monthRows,reportHTML,');
+ vm.runInNewContext(instrumented,{window,document,Intl,Date,Number,Set,Map,Object,Error,Array});
+ const db={from:()=>({insert:p=>{payload=p;return {select:()=>({single:async()=>({error:{message:'Stop after payload inspection'}})})};}})};
+ const d={c:{user:'teacher',school:'school',teacher:true,db,group:{id:'group',name:'Class'},schoolInfo:{}},s:{membership_id:'student',name:'Student'},cfg:{exam_labels:{weekly:'Weekly'},subject_names:[]},subjects:[],year:{label:'2026-27',start_date:'2026-04-01',end_date:'2027-03-31'}};
+ window.NOOR_SHARED_TIMETABLE={schoolDay:()=> '2026-11-09'};
+ await window.NOOR_ANNUAL_REPORTS.markEntry(d);
+ await form.onsubmit({preventDefault(){}});
+ assert.equal(payload.feedback,'');
+ assert.equal(payload.institution_id,'school');
+ assert.equal(payload.student_membership_id,'student');
+ assert.equal(payload.graded_by,'teacher');
+});

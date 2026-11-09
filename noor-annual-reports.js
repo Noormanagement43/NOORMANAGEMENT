@@ -133,7 +133,7 @@ async function markEntry(d){
   if(!active(c))throw Error('Account changed.');
   const subject=form.elements.subject.value.trim(),kind=form.elements.kind.value,marks=Number(form.elements.marks.value),max=Number(form.elements.max.value),assessed_on=form.elements.date.value;
   if(!subject||!['weekly','monthly','term1','term2','term3'].includes(kind)||!(max>0)||marks<0||marks>max||!Number.isFinite(marks)||!Number.isFinite(max)||assessed_on<d.year.start_date||assessed_on>d.year.end_date||assessed_on>today)throw Error('Enter valid subject, date and marks (0 to maximum).');
-  const payload={institution_id:c.school,academic_group_id:c.group.id,student_membership_id:d.s.membership_id,assessment_title:d.cfg.exam_labels[kind]||kind,subject_name:subject,assessed_on,marks,max_marks:max,feedback:form.elements.feedback.value.trim()||null,graded_by:c.user};
+  const payload={institution_id:c.school,academic_group_id:c.group.id,student_membership_id:d.s.membership_id,assessment_title:d.cfg.exam_labels[kind]||kind,subject_name:subject,assessed_on,marks,max_marks:max,feedback:form.elements.feedback.value.trim()||'',graded_by:c.user};
   const saved=await c.db.from('noor_assessment_results').insert(payload).select('id').single();if(saved.error)throw saved.error;
   msg.textContent='Saved to the school database.';dlg.close();await open(d.s,c.group.id);
  }catch(err){msg.textContent='Not saved: '+err.message;}finally{submit.disabled=false;}};

@@ -1,0 +1,166 @@
+{
+  "project_ref": "ayrryemawwplguaauxij",
+  "source": "Applied destination database migration history, read 2026-11-09",
+  "migrations": [
+    {
+      "file": "20261022115103_noor_project_foundation.sql",
+      "sha256": "06dbe1dafa4c7c064776628236003c8d649b7b1bf8690113b0a22315f5442c50"
+    },
+    {
+      "file": "20261022121128_teacher_timetable_and_attendance.sql",
+      "sha256": "3c98564bd24abc7ab2af7fb7ac5a21f4c7b4ae7e1c3e8f61664f7b738f05c879"
+    },
+    {
+      "file": "20261022121802_editable_class_management.sql",
+      "sha256": "a3040d1256fcab3e8bd645a7f87b4c6a71ed41a67d0eac75a756b6d2c043e365"
+    },
+    {
+      "file": "20261022134552_index_foreign_keys_for_scale.sql",
+      "sha256": "8007c489ca79247b5c3f7074042afb95ac9a682276cb2848c41ecb455abc172a"
+    },
+    {
+      "file": "20261028114439_noor_v2_teacher_self_timetable_and_private_avatars.sql",
+      "sha256": "ae5b1e5ee043a484f81e48cae9428b3857d23be41003cdabffce716af92fcb93"
+    },
+    {
+      "file": "20261028114814_noor_v2_school_class_section_parenting.sql",
+      "sha256": "388064bd28f3c90f4eb6954b0941117b7fc54a143c6f809d5f1c8bfcb8a6e34a"
+    },
+    {
+      "file": "20261028124212_noor_timetable_student_scoped_live_sharing.sql",
+      "sha256": "32280a6c17c5da853dd3c6c8829bf1ee0d201faa948073e48322451089b3efdc"
+    },
+    {
+      "file": "20261104074435_noor_backend_workflows.sql",
+      "sha256": "f700076172d760fa13c68723aa2abc4f13f5aedb3523869fc37d179e4aa5fd84"
+    },
+    {
+      "file": "20261104074703_noor_data_api_grants.sql",
+      "sha256": "7428ea26e79b3470a73271086058d99a54298c4151ee2a2953c1090fe683e776"
+    },
+    {
+      "file": "20261104074947_noor_backend_indexes_and_onboarding.sql",
+      "sha256": "1572ce123e1f643120c9474dc66ea820e20b980afdef13735ebfe2f0163d333a"
+    },
+    {
+      "file": "20261104081233_noor_ai_shared_budget.sql",
+      "sha256": "b8b906e66d354a90492d9e411734e8a630a803192c16d708513b29fb90464601"
+    },
+    {
+      "file": "20261105085358_tenant_branding_and_student_section_selection.sql",
+      "sha256": "5f170282b484898183e01c018b504119bdf5322e8ee07d4429163fa694f53b59"
+    },
+    {
+      "file": "20261105085815_principal_period_slots_and_teacher_daily_lessons.sql",
+      "sha256": "51cbb4aad3adfb517ed953bf933be102d0a1b54315635d7bc643020c261360cf"
+    },
+    {
+      "file": "20261105090333_period_slot_propagation_index.sql",
+      "sha256": "3d1a14922a36c25efe95e8d6fa1121d282c8b228502741cbb847a09db593ee6d"
+    },
+    {
+      "file": "20261105092343_institution_workspaces_and_editable_join_codes.sql",
+      "sha256": "8fd678eb37ac351cda7b44754617326ee67ca06fe2e6ce69c8e17aa729c8deb1"
+    },
+    {
+      "file": "20261105092414_restrict_generic_code_rotation_roles.sql",
+      "sha256": "c580775a1c3905cd48a227083e47428d0f241d4c7f465ce21729f1d382425377"
+    },
+    {
+      "file": "20261105092548_isolate_public_school_name_discovery.sql",
+      "sha256": "3f5688fe0c1cc829190639846642b727aeb9f693044d2514523c9ebea6db3ab4"
+    },
+    {
+      "file": "20261105151116_reference_dashboard_preferences_and_class_performance.sql",
+      "sha256": "0b5c5e23f27b07b86a85385c0e8b97a0b5cc561474019b4548a39a5502c6d98a"
+    },
+    {
+      "file": "20261105151646_principal_tasks_and_staff_checkins.sql",
+      "sha256": "7b88030758475fc36196bea59bc49b5ab8a82f0204ad98063cdd3048eaf2ec46"
+    },
+    {
+      "file": "20261105152213_verified_guardian_class_comparison.sql",
+      "sha256": "4a9d73f2586b5fcc445029e70c6350e5765cdf9da54a87c365710230bb6b3b32"
+    },
+    {
+      "file": "20261105152433_leadership_teacher_class_access.sql",
+      "sha256": "61b9a5b2cf549556f755f89898dc9556ee7911fdfc655965209f16ba7c520de3"
+    },
+    {
+      "file": "20261105152849_revoke_verified_guardian_links.sql",
+      "sha256": "bdc377ab671ca1e934a353ac1efea0fc96b2118446dd8b11cf106f1c72e94c23"
+    },
+    {
+      "file": "20261105152919_reactivate_verified_guardian_relink.sql",
+      "sha256": "aa231a5c06dc552d26c391bc9a6da4913dc04d912342211055ba1873e69aa9f7"
+    },
+    {
+      "file": "20261105153020_scoped_student_profile_photo_reads.sql",
+      "sha256": "cf6129da7f0a1a18eb2413f4423cba93ed074eead3b343bc32552100de52f109"
+    },
+    {
+      "file": "20261105153540_class_subject_marks_and_roll_numbers.sql",
+      "sha256": "1b8ae87337b24febd799b8800e61d00cdbbf18be15399f37b1a2709d4b637ae6"
+    },
+    {
+      "file": "20261105154026_section_parent_class_assessment_scope.sql",
+      "sha256": "0c1f5d74aa02e3a33347065a928c75c93aec30bac915d260bce2b61f68c7dbac"
+    },
+    {
+      "file": "20261105163134_active_class_name_uniqueness_and_unused_duplicate_archive.sql",
+      "sha256": "26e12f5f2bc8ab9977913fc478ed1f6a884f43478b56e65a28795b62889a0ff7"
+    },
+    {
+      "file": "20261105193713_stable_join_codes_teacher_selection_and_owned_times.sql",
+      "sha256": "5ada50fbf579466553a9b895ce512d1ee5a95c0aa4da5a7a423ee73427c87933"
+    },
+    {
+      "file": "20261105203329_student_private_planner_achievements.sql",
+      "sha256": "994b533ea0708995ebf14955aabb995d0b6e16ae5a09d4d24476864abc2babe5"
+    },
+    {
+      "file": "20261106080450_daily_period_templates_and_student_profile_questions.sql",
+      "sha256": "8f0a21279d08d320878846a46c7a7c2fb8a24a0d5ae3e3d9acc4085a09b171a9"
+    },
+    {
+      "file": "20261106080704_class_scoped_period_teacher_names.sql",
+      "sha256": "2e49d4a510c118d86cba348b6ee177d4d5619e3ecaf6ec386f86fe54ae7a49df"
+    },
+    {
+      "file": "20261106080913_unique_daily_teacher_period_template.sql",
+      "sha256": "1a09177a9e7e2ca70e0cabe0321d823b47595f0686366f369b77ad8b34a6893c"
+    },
+    {
+      "file": "20261106091022_targeted_class_teacher_messages_and_daily_homework.sql",
+      "sha256": "e13fc19125f3dfc381e250035e9c505014a444d6222628676ea759d2f15d5ef2"
+    },
+    {
+      "file": "20261106100921_scoped_school_communications_learning_photos_progress.sql",
+      "sha256": "ad634ea923d66be7e682d40cf825dc16bc1921750d24e2f5d24712a14e59676d"
+    },
+    {
+      "file": "20261106101031_student_own_class_result_guard.sql",
+      "sha256": "310a6f3c9a0bc9692dca15c207b9285ecb202eb900a70e3fe2e3123384fc8de8"
+    },
+    {
+      "file": "20261106112016_weekly_plan_photo_author_guard.sql",
+      "sha256": "b0c60773496deef22d5b66c45bf0f7d1f5eb6cc834c8d914536947ca8da6502b"
+    },
+    {
+      "file": "20261106112148_targeted_learning_recipient_validation_rls.sql",
+      "sha256": "ffdc09c50093c57e39a1e7450644f8ecd66eff48083b25eb233f6eb2ac14c618"
+    },
+    {
+      "file": "20261106112910_learning_items_realtime_delivery.sql",
+      "sha256": "8149cfd6c06b53383125cae3f86f78ac39a3b5258cfad270bb21198e3fd1fedc"
+    },
+    {
+      "file": "20261109124133_create_secure_noor_annual_report_settings_20261109.sql",
+      "sha256": "01a5f18fc7283c76e87c5b20ca7842e987f38a83e04b16f82270414641dab26d"
+    },
+    {
+      "file": "20261109131746_add_per_date_teacher_planned_subject_20261109.sql",
+      "sha256": "fa698da01f820961f6d0c9112036f016026b03bd09bcca1fdf1e19f94a2cf4d6"
+    }
+  ]
+}

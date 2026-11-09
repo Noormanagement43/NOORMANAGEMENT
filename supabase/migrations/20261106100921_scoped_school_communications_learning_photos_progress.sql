@@ -1,0 +1,31 @@
+-- Scoped announcements, private targeted learning and daily progress. Existing content is preserved.
+CREATE FUNCTION private.noor_message_visible(p_inst uuid,p_audience text[]) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT EXISTS(SELECT 1 FROM public.institution_memberships m JOIN public.institutions i ON i.id=m.institution_id WHERE m.institution_id=p_inst AND m.user_id=auth.uid() AND m.status='active' AND i.status='active' AND(private.can_manage_academics(p_inst) OR 'all'=ANY(p_audience) OR CASE WHEN m.role IN('student','university_student') THEN 'student' WHEN m.role IN('teacher','faculty','staff') THEN 'teacher' WHEN m.role='parent' THEN 'parent' ELSE m.role END=ANY(p_audience)));
+$$;
+REVOKE ALL ON FUNCTION private.noor_message_visible(uuid,text[]) FROM PUBLIC,anon;GRANT EXECUTE ON FUNCTION private.noor_message_visible(uuid,text[]) TO authenticated;
+CREATE TABLE public.noor_school_messages(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),institution_id uuid NOT NULL REFERENCES public.institutions(id),kind text NOT NULL CHECK(kind IN('notice','meeting','email')),title text NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 180),body text NOT NULL CHECK(length(body)<=20000),audience text[] NOT NULL CHECK(cardinality(audience)>0 AND audience<@ARRAY['all','student','teacher','parent']),starts_at timestamptz,created_by uuid NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id),created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(id,institution_id));
+CREATE INDEX noor_messages_school_date ON public.noor_school_messages(institution_id,created_at DESC);
+ALTER TABLE public.noor_school_messages ENABLE ROW LEVEL SECURITY;
+GRANT SELECT,INSERT ON public.noor_school_messages TO authenticated;REVOKE ALL ON public.noor_school_messages FROM anon;
+CREATE POLICY school_message_read ON public.noor_school_messages FOR SELECT TO authenticated USING(private.noor_message_visible(institution_id,audience));
+CREATE POLICY school_message_create ON public.noor_school_messages FOR INSERT TO authenticated WITH CHECK(created_by=auth.uid() AND private.can_manage_academics(institution_id));
+CREATE TABLE public.noor_message_reads(message_id uuid NOT NULL,institution_id uuid NOT NULL,membership_id uuid NOT NULL,read_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(message_id,membership_id),FOREIGN KEY(message_id,institution_id) REFERENCES public.noor_school_messages(id,institution_id),FOREIGN KEY(membership_id,institution_id) REFERENCES public.institution_memberships(id,institution_id));
+ALTER TABLE public.noor_message_reads ENABLE ROW LEVEL SECURITY;GRANT SELECT,INSERT ON public.noor_message_reads TO authenticated;REVOKE ALL ON public.noor_message_reads FROM anon;
+CREATE POLICY message_reads_own ON public.noor_message_reads FOR SELECT TO authenticated USING(private.is_my_membership(membership_id) AND private.is_active_member(institution_id));
+CREATE POLICY message_reads_create ON public.noor_message_reads FOR INSERT TO authenticated WITH CHECK(private.is_my_membership(membership_id) AND private.is_active_member(institution_id) AND EXISTS(SELECT 1 FROM public.noor_school_messages m WHERE m.id=message_id AND m.institution_id=noor_message_reads.institution_id));
+ALTER PUBLICATION supabase_realtime ADD TABLE public.noor_school_messages,public.noor_message_reads;
+ALTER TABLE public.noor_learning_items ADD COLUMN recipient_membership_id uuid,ADD CONSTRAINT learning_recipient_tenant FOREIGN KEY(recipient_membership_id,institution_id) REFERENCES public.institution_memberships(id,institution_id);
+CREATE FUNCTION private.noor_validate_learning_recipient() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$ BEGIN
+ IF NEW.recipient_membership_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.institution_memberships m JOIN public.academic_group_memberships gm ON gm.membership_id=m.id AND gm.institution_id=m.institution_id JOIN public.academic_groups g ON g.id=gm.group_id AND g.institution_id=gm.institution_id WHERE m.id=NEW.recipient_membership_id AND m.institution_id=NEW.institution_id AND m.status='active' AND m.role IN('student','university_student') AND gm.status='active' AND gm.group_role='student' AND g.is_active AND(g.id=NEW.academic_group_id OR g.parent_group_id=NEW.academic_group_id)) THEN RAISE EXCEPTION 'Choose an active student from this class' USING ERRCODE='22023';END IF;RETURN NEW; END $$;
+CREATE TRIGGER noor_learning_recipient_check BEFORE INSERT OR UPDATE ON public.noor_learning_items FOR EACH ROW EXECUTE FUNCTION private.noor_validate_learning_recipient();
+ALTER POLICY noor_learning_read ON public.noor_learning_items USING(private.noor_group_access(institution_id,academic_group_id,true) OR(status='published' AND private.noor_group_access(institution_id,academic_group_id,false) AND(recipient_membership_id IS NULL OR private.is_my_membership(recipient_membership_id))));
+ALTER TABLE public.noor_teacher_weekly_plans ADD COLUMN attachment_path text,ADD COLUMN plan_days jsonb NOT NULL DEFAULT '[]'::jsonb CHECK(jsonb_typeof(plan_days)='array' AND jsonb_array_length(plan_days)<=7);
+CREATE POLICY teacher_plan_photo_read ON storage.objects FOR SELECT TO authenticated USING(bucket_id='noor-learning-files' AND EXISTS(SELECT 1 FROM public.noor_teacher_weekly_plans p WHERE p.attachment_path=objects.name));
+ALTER TABLE public.noor_daily_period_lessons ADD COLUMN progress_status text NOT NULL DEFAULT 'planned' CHECK(progress_status IN('planned','ongoing','completed'));
+UPDATE public.noor_daily_period_lessons SET progress_status='completed' WHERE completed;
+CREATE FUNCTION private.noor_sync_daily_progress() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$ BEGIN
+ IF TG_OP='UPDATE' AND NEW.progress_status IS NOT DISTINCT FROM OLD.progress_status AND NEW.completed IS DISTINCT FROM OLD.completed THEN NEW.progress_status:=CASE WHEN NEW.completed THEN 'completed' ELSE 'planned' END; END IF;
+ IF NEW.completed AND NEW.progress_status='planned' THEN NEW.progress_status:='completed';END IF;
+ NEW.completed:=NEW.progress_status='completed';RETURN NEW;END $$;
+CREATE TRIGGER noor_daily_progress_sync BEFORE INSERT OR UPDATE ON public.noor_daily_period_lessons FOR EACH ROW EXECUTE FUNCTION private.noor_sync_daily_progress();
+NOTIFY pgrst,'reload schema';

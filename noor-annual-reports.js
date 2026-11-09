@@ -108,11 +108,35 @@ async function open(s,group){
  try{const d=await load(c,s);if(!active(c)||!dlg.isConnected)return;let type='attendance';const render=()=>{
  const target=dlg.querySelector('[data-report]');
  target.innerHTML='<nav class="nar-tabs"><button data-type="attendance" aria-pressed="'+(type==='attendance')+'">Annual Attendance Report</button><button data-type="marks" aria-pressed="'+(type==='marks')+'">Annual Marks Report</button></nav>'+reportHTML(d,type)+
- '<div class="nar-actions"><strong>Open report:</strong><button data-export="pdf">PDF</button><button data-export="word">Word</button><button data-export="excel">Excel</button>'+(c.principal?'<button data-settings>Principal Settings</button>':'')+'</div><p class="nar-note">PDF opens browser print / Save as PDF. Word and Excel download editable files. Only recorded school data appears; holidays marked by school leadership are excluded.</p><p role="status" data-status></p>';
+ '<div class="nar-actions"><strong>Open report:</strong><button data-export="pdf">PDF</button><button data-export="word">Word</button><button data-export="excel">Excel</button>'+(type==='marks'?'<button data-add-marks>Add / Upload Marks</button>':'')+(c.principal?'<button data-settings>Principal Settings</button>':'')+'</div><p class="nar-note">PDF opens browser print / Save as PDF. Word and Excel download editable files. Only recorded school data appears; holidays marked by school leadership are excluded.</p><p role="status" data-status></p>';
  target.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{type=b.dataset.type;render();});
  target.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{try{exportReport(d,type,b.dataset.export);target.querySelector('[data-status]').textContent=b.dataset.export==='pdf'?'Choose Save as PDF in print preview.':'File created.';}catch(e){target.querySelector('[data-status]').textContent=e.message;}});
- target.querySelector('[data-settings]')?.addEventListener('click',()=>editSettings(c));};render();
+ target.querySelector('[data-settings]')?.addEventListener('click',()=>editSettings(c));target.querySelector('[data-add-marks]')?.addEventListener('click',()=>markEntry(d));};render();
  }catch(err){if(dlg.isConnected)dlg.querySelector('[data-report]').textContent='Report unavailable: '+err.message;}
+}
+async function markEntry(d){
+ const c=d.c;if(!active(c)||(!c.principal&&!c.teacher))throw Error('Class teacher or principal access required.');
+ document.getElementById('nar-marks-editor')?.remove();
+ const dlg=document.createElement('dialog');dlg.id='nar-marks-editor';dlg.className='nar-config-dialog';
+ const subjects=[...new Set([...(d.cfg.subject_names||[]),...d.subjects.map(x=>x.name)].filter(Boolean))];
+ const today=window.NOOR_SHARED_TIMETABLE?.schoolDay(c.schoolInfo.timezone)||date(new Date(),c.schoolInfo.timezone);
+ dlg.innerHTML='<form><h2>Upload Student Marks</h2><p>Student: '+E(d.s.name)+' · '+E(d.s.class_label||c.group.name)+' · '+E(d.year.label)+'</p>'+
+ '<label>Subject<input name="subject" required maxlength="140" list="nar-subject-options"><datalist id="nar-subject-options">'+subjects.map(x=>'<option value="'+E(x)+'"></option>').join('')+'</datalist></label>'+
+ '<label>Assessment category<select name="kind">'+['weekly','monthly','term1','term2','term3'].map(k=>'<option value="'+k+'">'+E(d.cfg.exam_labels[k]||k)+'</option>').join('')+'</select></label>'+
+ '<label>Assessment date<input name="date" type="date" required min="'+E(d.year.start_date)+'" max="'+E(today<d.year.end_date?today:d.year.end_date)+'" value="'+E(today)+'"></label>'+
+ '<label>Marks obtained<input name="marks" type="number" step="0.01" min="0" required></label><label>Maximum marks<input name="max" type="number" step="0.01" min="0.01" required></label>'+
+ '<label>Teacher feedback (optional)<textarea name="feedback" rows="3" maxlength="1000"></textarea></label>'+
+ '<button type="submit">Save Marks</button><button type="button" data-close>Cancel</button><p role="status"></p></form>';
+ document.body.append(dlg);dlg.querySelector('[data-close]').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();
+ const form=dlg.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const submit=form.querySelector('[type=submit]'),msg=form.querySelector('[role=status]');submit.disabled=true;
+ try{
+  if(!active(c))throw Error('Account changed.');
+  const subject=form.elements.subject.value.trim(),kind=form.elements.kind.value,marks=Number(form.elements.marks.value),max=Number(form.elements.max.value),assessed_on=form.elements.date.value;
+  if(!subject||!['weekly','monthly','term1','term2','term3'].includes(kind)||!(max>0)||marks<0||marks>max||!Number.isFinite(marks)||!Number.isFinite(max)||assessed_on<d.year.start_date||assessed_on>d.year.end_date||assessed_on>today)throw Error('Enter valid subject, date and marks (0 to maximum).');
+  const payload={institution_id:c.school,academic_group_id:c.group.id,student_membership_id:d.s.membership_id,assessment_title:d.cfg.exam_labels[kind]||kind,subject_name:subject,assessed_on,marks,max_marks:max,feedback:form.elements.feedback.value.trim()||null,graded_by:c.user};
+  const saved=await c.db.from('noor_assessment_results').insert(payload).select('id').single();if(saved.error)throw saved.error;
+  msg.textContent='Saved to the school database.';dlg.close();await open(d.s,c.group.id);
+ }catch(err){msg.textContent='Not saved: '+err.message;}finally{submit.disabled=false;}};
 }
 async function editSettings(c){
  if(!c.principal)throw Error('Principal permission required.');

@@ -7,7 +7,7 @@ const date=(value,tz)=>{const a=new Intl.DateTimeFormat('en-GB',{timeZone:tz||'A
 const plus=(d,n)=>{let x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
 const per=(x,y)=>y>0?Math.round(x/y*1000)/10:null;
 const grade=v=>v==null?'—':v>=90?'A+':v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':'Needs support';
-const defaults={subject_names:[],exam_labels:{weekly:'Weekly Tests',monthly:'Monthly Tests',term1:'Term 1 Exam',term2:'Term 2 Exam',term3:'Term 3 (Final)'},exam_aliases:{weekly:['weekly','quiz'],monthly:['monthly'],term1:['term 1','first term'],term2:['term 2','second term'],term3:['term 3','third term','final exam']},non_working_weekdays:[0]};
+const defaults={subject_names:[],exam_labels:{weekly:'Weekly Tests',monthly:'Monthly Tests',term1:'Term 1 Exam',term2:'Term 2 Exam',term3:'Term 3 (Final)'},exam_aliases:{weekly:['weekly','quiz'],monthly:['monthly'],term1:['term 1','first term'],term2:['term 2','second term'],term3:['term 3','third term','final exam']},non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true};
 const active=c=>A().user?.id===c.user&&A().schoolId===c.school;
 async function access(group){
  const a=A(),user=a.user?.id,school=a.schoolId;if(!user||!school||!id(group))throw Error('Select a class or section.');
@@ -28,7 +28,7 @@ async function load(c,s){
  const tz=c.schoolInfo.timezone||'Asia/Kolkata',today=window.NOOR_SHARED_TIMETABLE?.schoolDay(tz)||date(new Date(),tz);
  const [yearRes,settingsRes,memberRes,groupsRes]=await Promise.all([
   c.db.from('academic_years').select('label,start_date,end_date,is_current').eq('institution_id',c.school).order('is_current',{ascending:false}).order('start_date',{ascending:false}).limit(1),
-  c.db.from('noor_report_settings').select('subject_names,exam_labels,exam_aliases,non_working_weekdays').eq('institution_id',c.school).maybeSingle(),
+  c.db.from('noor_report_settings').select('subject_names,exam_labels,exam_aliases,non_working_weekdays,region_code,include_official_holidays').eq('institution_id',c.school).maybeSingle(),
   c.db.from('academic_group_memberships').select('group_id').eq('institution_id',c.school).eq('membership_id',s.membership_id).eq('group_role','student').eq('status','active'),
   c.db.from('academic_groups').select('id,parent_group_id,group_type').eq('institution_id',c.school).eq('is_active',true)]);
  for(const x of [yearRes,settingsRes,memberRes,groupsRes])if(x.error)throw x.error;
@@ -43,14 +43,17 @@ async function load(c,s){
  if(c.group.group_type==='section'&&!enrolled.has(c.group.id))throw Error('This student is not enrolled in the selected section.');
  const ids=[...new Set([classId,...(c.group.group_type==='section'?[c.group.id]:sections)])];
  const [holidays,sessions,marks]=await Promise.all([
-  paged(()=>c.db.from('noor_calendar_events').select('academic_group_id,starts_at,ends_at').eq('institution_id',c.school).eq('kind','holiday').gte('ends_at',year.start_date+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
+  paged(()=>c.db.from('noor_calendar_events').select('academic_group_id,starts_at,ends_at').eq('institution_id',c.school).eq('kind','holiday').gte('starts_at',plus(year.start_date,-31)+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
   paged(()=>c.db.from('class_sessions').select('id,starts_at,academic_group_id').eq('institution_id',c.school).in('academic_group_id',ids).eq('title','Daily class attendance').neq('session_status','cancelled').gte('starts_at',year.start_date+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
   paged(()=>c.db.from('noor_assessment_results').select('assessment_title,subject_name,assessed_on,marks,max_marks,feedback').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('academic_group_id',ids).gte('assessed_on',year.start_date).lte('assessed_on',to).order('assessed_on'))]);
  if(!active(c))throw Error('Account changed.');
- const off=new Set();
- for(const h of holidays){if(h.academic_group_id&&!ids.includes(h.academic_group_id))continue;const first=date(h.starts_at,tz),last=date(h.ends_at||h.starts_at,tz);for(let d=first;d<=last&&off.size<600;d=plus(d,1))off.add(d);}
- const days=new Map();
- for(const x of sessions){const d=date(x.starts_at,tz);if(d<year.start_date||d>to||off.has(d)||(cfg.non_working_weekdays||[0]).includes(new Date(d+'T12:00:00Z').getUTCDay()))continue;if(!days.has(d))days.set(d,[]);days.get(d).push(x.id);}
+ const official=window.NOOR_HOLIDAY_ENGINE?.holidays(cfg.region_code,2026,cfg.include_official_holidays)||[];
+ const off=new Set(official.map(x=>x.date).filter(x=>x>=year.start_date&&x<=to));
+ for(const h of holidays){if(h.academic_group_id&&!ids.includes(h.academic_group_id))continue;const first=date(h.starts_at,tz),last=date(h.ends_at||h.starts_at,tz);for(let d=first;d<=last&&off.size<600;d=plus(d,1)){if(d>=year.start_date&&d<=to)off.add(d);}}
+ const schoolDays=window.NOOR_HOLIDAY_ENGINE?.workingDates(year.start_date,to,cfg.non_working_weekdays||[0],[...off]);
+ if(!schoolDays)throw Error('School holiday calendar is unavailable. Refresh NOOR.');
+ const days=new Map(schoolDays.map(d=>[d,[]]));
+ for(const x of sessions){const d=date(x.starts_at,tz);if(days.has(d))days.get(d).push(x.id);}
  const allIDs=[...new Set([...days.values()].flat())],records=[];
  for(let i=0;i<allIDs.length;i+=70){const batch=await paged(()=>c.db.from('attendance_records').select('session_id,attendance_status,marked_at').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('session_id',allIDs.slice(i,i+70)).order('marked_at',{ascending:false}));records.push(...batch);}
  if(!active(c))throw Error('Account changed.');
@@ -70,7 +73,7 @@ async function load(c,s){
  if(ranking.error)throw ranking.error;
  const annualRank=(ranking.data?.students||[]).find(x=>x.membership_id===s.membership_id)?.rank??null;
  if(!active(c))throw Error('Account changed.');
- return {c,s,year,cfg,monthly,holidays:off.size,summary:{working,present,absent,late,unmarked,pct:per(present,working-unmarked)},subjects,final:{got,max,pct:per(got,max)},annualRank,remarks:marks.filter(x=>x.feedback).at(-1)?.feedback||'',marksCount:marks.length};
+ return {c,s,year,cfg,monthly,holidays:off.size,officialHolidayCoverage:cfg.region_code==='TS'?'Telangana official 2026':'Principal calendar only',summary:{working,present,absent,late,unmarked,pct:per(present,working-unmarked)},subjects,final:{got,max,pct:per(got,max)},annualRank,remarks:marks.filter(x=>x.feedback).at(-1)?.feedback||'',marksCount:marks.length};
 }
 function monthRows(d){const out=[],start=Number(d.year.start_date.slice(0,4)),m=Number(d.year.start_date.slice(5,7))-1;for(let i=0;i<12;i++){const x=new Date(Date.UTC(start,m+i,1)),key=x.toISOString().slice(0,7);if(key>d.year.end_date.slice(0,7))break;out.push({name:x.toLocaleString('en-IN',{month:'long',timeZone:'UTC'}),...(d.monthly.find(q=>q.key===key)||{working:0,present:0,absent:0,late:0,leave:0,unmarked:0})});}return out;}
 const value=x=>x==null?'—':E(x);
@@ -82,7 +85,7 @@ function reportHTML(d,type){
  const columns=attendance?['Month','Working Days','Days Present','Attendance']:['Subjects',...['weekly','monthly','term1','term2','term3'].map(k=>d.cfg.exam_labels[k]||k),'Grade'];
  const rows=attendance?monthRows(d).map(x=>[x.name,x.working||'—',x.working?x.present:'—',x.working!==x.unmarked?per(x.present,x.working-x.unmarked)+'%'+(x.unmarked?' *':''):'—']):d.subjects.map(x=>[x.name,...['weekly','monthly','term1','term2','term3'].map(k=>x[k]?(k==='weekly'||k==='monthly'?x[k].pct+'%':x[k].got+'/'+x[k].max):'—'),grade(x.term3?.pct??null)]);
  const table='<table class="nar-table"><thead><tr>'+columns.map(x=>'<th>'+E(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+x.map(y=>'<td>'+E(y)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
- const aside=attendance?'<h3>TERM BRIEF</h3><p>Present: '+d.summary.present+'</p><p>Absent: '+d.summary.absent+'</p><p>Late: '+d.summary.late+'</p><p>Unmarked: '+d.summary.unmarked+'</p><p>School holidays excluded: '+d.holidays+'</p><small>Rates count marked days only; missing registers are not absences.</small>':'<h3>ACADEMIC BRIEF</h3><p>Assessments: '+d.marksCount+'</p><p>Term 3 subjects graded: '+d.subjects.filter(x=>x.term3).length+'</p><h3>Teacher’s Remark</h3><p>'+E(d.remarks||'No remarks recorded.')+'</p><small>Grades are indicative until school policy is configured.</small>';
+ const aside=attendance?'<h3>TERM BRIEF</h3><p>Present: '+d.summary.present+'</p><p>Absent: '+d.summary.absent+'</p><p>Late: '+d.summary.late+'</p><p>Unmarked: '+d.summary.unmarked+'</p><p>School holidays excluded: '+d.holidays+'</p><small>Working days = weekdays minus region holidays and principal or class closures. Present days come only from saved teacher attendance. Missing registers are not absences.</small>':'<h3>ACADEMIC BRIEF</h3><p>Assessments: '+d.marksCount+'</p><p>Term 3 subjects graded: '+d.subjects.filter(x=>x.term3).length+'</p><h3>Teacher’s Remark</h3><p>'+E(d.remarks||'No remarks recorded.')+'</p><small>Grades are indicative until school policy is configured.</small>';
  const summary=attendance?'Total Working Days: '+d.summary.working+' | Days Present: '+d.summary.present+' | Recorded Attendance: '+(d.summary.pct==null?'—':d.summary.pct+'%'):'Final Term Marks: '+(d.final.max?d.final.got+'/'+d.final.max:'Not recorded')+' | Final Term Percentage: '+(d.final.pct==null?'—':d.final.pct+'%')+' | Class Rank: '+(d.annualRank==null?'—':d.annualRank);
  return '<article class="nar-paper"><div class="nar-report-content">'+header+'<h3 class="nar-section-title">'+(attendance?'YEARLY ATTENDANCE SUMMARY':'TERM-WISE & PERIODIC ACADEMIC PERFORMANCE')+'</h3><div class="nar-layout"><main>'+table+(!rows.length?'<p>No marks have been recorded yet.</p>':'')+'</main><aside>'+aside+'</aside></div><div class="nar-summary"><b>'+(attendance?'ATTENDANCE SUMMARY':'PROGRESS SUMMARY')+'</b><p>'+E(summary)+'</p></div><footer>Generated from recorded school data · '+E(d.year.start_date)+' to '+E(d.year.end_date)+'<span>Class Teacher Signature: ______________</span></footer></div></article>';
 }

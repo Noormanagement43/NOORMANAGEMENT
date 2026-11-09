@@ -165,5 +165,5 @@ async function editSettings(c){
   status.textContent='Settings saved. Reopen report to reload updated labels.';b.disabled=false;
  }catch(error){status.textContent='Not saved: '+error.message;b.disabled=false;}};
 }
-window.NOOR_ANNUAL_REPORTS=Object.freeze({open,load,monthRows,reportHTML});
+window.NOOR_ANNUAL_REPORTS=Object.freeze({open,load,monthRows,reportHTML,principalSettings:async group=>{const c=await access(group);if(!c.principal)throw Error('Principal access required.');return editSettings(c);}});
 })();

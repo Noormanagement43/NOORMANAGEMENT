@@ -28,7 +28,7 @@ function ensure(){
 }
 function open(){
  if(!ready()){A().toast?.('Sign in to your active school first to use AI.','info');return;}
- const dlg=ensure();const actor=A().user?.id;if(dlg.dataset.accountId!==actor){dlg.querySelector('#noorAIMessages').textContent='';dlg.dataset.accountId=actor||'';}dlg.querySelector('#noorAIConnectionTools').style.display=['principal','owner','manager'].includes(A().profile?.role)?'flex':'none';dlg.hidden=false;document.body.classList.add('noor-ai-open');dlg.querySelector('#noorAIPrompt').focus();
+ const dlg=ensure();const actor=A().user?.id;if(dlg.dataset.accountId!==actor){dlg.querySelector('#noorAIMessages').textContent='';dlg.dataset.accountId=actor||'';}const role=A().profile?.role,leader=['principal','owner','manager'].includes(role),canProbe=leader||role==='teacher';dlg.querySelector('#noorAIConnectionTools').style.display=canProbe?'flex':'none';dlg.querySelector('#noorAIManagerPlan').style.display=leader?'':'none';dlg.hidden=false;document.body.classList.add('noor-ai-open');dlg.querySelector('#noorAIPrompt').focus();
 }
 function close(){const d=document.getElementById('noorAIModal');if(d)d.hidden=true;document.body.classList.remove('noor-ai-open')}
 async function send(e){
@@ -59,8 +59,8 @@ async function testConnection(){
  try{const app=A(),r=await app.db.functions.invoke('noor-v2-ai',{body:{action:'probe',institution_id:app.schoolId}});
   if(r.error){let info;try{info=await r.error.context?.json()}catch{}throw Error(info?.error||r.error.message)}
   if(r.data?.error)throw Error(r.data.error);
-  const label=x=>!x?.key_saved?'key missing':x.verified?'model access verified; generation not tested':x.code||'not verified';
-  status.textContent='Brain: '+label(r.data?.brain)+' · Manager: '+label(r.data?.manager);
+  const label=x=>!x?.key_saved?'not configured':x.verified?'API verified':x.code||'not verified';
+  const p=r.data?.providers||{};status.textContent='Gemini: '+label(p.gemini)+' · Groq: '+label(p.groq)+' · OpenAI: '+label(p.openai)+' · Brevo API: '+label(p.brevo)+'. Generation and email delivery were not tested.';
  }catch(e){status.textContent='Connection check: '+(e?.message||'Unavailable')}finally{button.disabled=false}
 }
 function mountSettings(container){

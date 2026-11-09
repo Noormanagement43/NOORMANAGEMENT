@@ -1,6 +1,39 @@
 /* Photo notes, private weekly plans and student-targeted class tasks. */
 (()=>{'use strict';const A=()=>window.NOOR_AI_APP||{},E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),same=c=>{if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed.');};
 function weekDays(start){if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||(!Number.isFinite(Date.parse(start))||new Date(start+'T12:00:00Z').toISOString().slice(0,10)!==start))throw Error('Choose a week start.');return Array.from({length:7},(_,i)=>{const d=new Date(start+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+i);return{date:d.toISOString().slice(0,10),day:new Intl.DateTimeFormat('en',{weekday:'long',timeZone:'UTC'}).format(d)};});}
+function monday(value){const d=new Date(value+'T12:00:00Z'),w=d.getUTCDay();d.setUTCDate(d.getUTCDate()-((w+6)%7));return d.toISOString().slice(0,10);}
+async function syncPlanPeriods(c,group,days,title,today,slots){
+ const groupAllowed=(await window.NOOR_TEACHER_DATA.assignments(c)).some(g=>g.group_id===group);
+ if(!groupAllowed)throw Error('Selected class is not assigned to this teacher.');
+ const rows=await c.db.from('teacher_timetable_periods').select('id,weekday,period_number,repeats_daily,academic_group_id,teacher_membership_id').eq('institution_id',c.school.id).eq('teacher_membership_id',c.membership.id);
+ if(rows.error)throw rows.error;
+ const periods=rows.data||[];let linked=0,notLinked=0,completed=0;
+ for(const d of days){
+  if(!d.subject||!Number.isInteger(Number(d.period_number))||Number(d.period_number)<1||d.date<today)continue;
+  same(c);
+  const weekday=new Date(d.date+'T12:00:00Z').getUTCDay(),number=Number(d.period_number);
+  const covered=x=>Number(x.period_number)===number&&(x.repeats_daily||Number(x.weekday)===weekday);
+  let period=periods.find(x=>x.academic_group_id===group&&covered(x));
+  if(!period){
+   if(periods.some(covered)){notLinked++;continue;}
+   const slot=(slots||[]).find(x=>Number(x.period_number)===number);
+   if(!slot){notLinked++;continue;}
+   const created=await c.db.from('teacher_timetable_periods').insert({institution_id:c.school.id,teacher_membership_id:c.membership.id,academic_group_id:group,created_by:c.userId,weekday,period_number:number,start_time:slot.start_time,end_time:slot.end_time,subject_name:String(d.subject).slice(0,140),repeats_daily:false}).select('id').single();
+   if(created.error)throw created.error;
+   period={id:created.data.id,weekday,period_number:number,repeats_daily:false,academic_group_id:group,teacher_membership_id:c.membership.id};periods.push(period);
+  }
+  const previous=await c.db.from('noor_daily_period_lessons').select('completed').eq('institution_id',c.school.id).eq('period_id',period.id).eq('lesson_date',d.date).maybeSingle();
+  if(previous.error)throw previous.error;
+  if(previous.data?.completed){completed++;continue;}
+  const patch={lesson:String(title||'Weekly plan').slice(0,180),topic:String(d.body||'').slice(0,4000),planned_subject_name:String(d.subject).slice(0,140)};
+  const result=previous.data?
+   await c.db.from('noor_daily_period_lessons').update(patch).eq('institution_id',c.school.id).eq('period_id',period.id).eq('lesson_date',d.date).select('period_id').single():
+   await c.db.from('noor_daily_period_lessons').insert({...patch,period_id:period.id,institution_id:c.school.id,lesson_date:d.date}).select('period_id').single();
+  if(result.error)throw result.error;linked++;
+ }
+ if(linked)window.dispatchEvent(new CustomEvent('noor:timetable-saved'));
+ return{linked,notLinked,completed};
+}
 async function upload(c,file){if(!file?.size)return null;window.NOOR_CLASSROOM_CONNECT.validateImage(file);same(c);const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type],path=c.userId+'/class-resource-'+crypto.randomUUID()+'.'+ext,r=await c.db.storage.from('noor-learning-files').upload(path,file,{upsert:false,contentType:file.type});if(r.error)throw r.error;same(c);return path;}
 function planCards(rows){return '<div class="np-week-grid">'+rows.map(x=>'<article><small>'+E(new Intl.DateTimeFormat('en',{weekday:'long',timeZone:'UTC'}).format(new Date(x.date+'T12:00:00Z')))+' · '+E(x.date)+'</small><h3>'+E(x.subject||'Study plan')+'</h3><p>'+E(x.body||'No plan entered')+'</p></article>').join('')+'</div>';}
 async function photo(path,button){button.disabled=true;try{const a=A(),uid=a.user?.id,sid=a.schoolId,r=await a.db.storage.from('noor-learning-files').createSignedUrl(path,900);if(r.error)throw r.error;if(A().user?.id!==uid||A().schoolId!==sid)throw Error('Account changed.');const d=document.createElement('dialog');d.className='np-photo-dialog';d.innerHTML='<button class="btn light" data-close type="button">Close photo</button><img alt="Teacher-published class notes" src="'+E(r.data.signedUrl)+'">';document.body.append(d);d.querySelector('[data-close]').onclick=()=>d.close();d.onclose=()=>d.remove();d.showModal();}catch(e){A().toast?.(e.message,'error');}finally{button.disabled=false;}}

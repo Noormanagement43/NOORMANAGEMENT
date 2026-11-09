@@ -4,13 +4,40 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const read=f=>fs.readFileSync(new URL('../'+f,import.meta.url),'utf8');
 function module(file,name,app={},extra={}){const window={NOOR_AI_APP:app,addEventListener(){},dispatchEvent(){},...extra};vm.runInNewContext(read(file),{window,document:{addEventListener(){}},Date,Intl,CustomEvent:class{},...extra.globals});return window[name];}
-test('principal menu preserves the latest ordered destinations and school setup remains accessible',()=>{const html=read('index.html'),start=html.indexOf("{id:'overview',icon:'home',label:'Dashboard'}"),block=html.slice(start,html.indexOf('];',start));assert.deepEqual([...block.matchAll(/label:'([^']+)'/g)].map(x=>x[1]),['Dashboard','Email','Classes & Sections','Staff','Students','Notices & Meetings','Parent Communication','Settings']);assert.match(html,/School setup/);assert.match(html,/openView\('classes'\)/);});
+test('principal menu preserves the latest ordered destinations and school setup remains accessible',()=>{const html=read('index.html'),start=html.indexOf("{id:'overview',icon:'home',label:'Dashboard'}"),block=html.slice(start,html.indexOf('];',start));assert.deepEqual([...block.matchAll(/label:'([^']+)'/g)].map(x=>x[1]),['Dashboard','Classes & Sections','Staff','Students','Email / Notices / Meetings','Parent Communication','Settings']);assert.match(html,/School setup/);assert.match(html,/openView\('classes'\)/);});
 test('daily encouragement is stable for the school date and changes the following day',()=>{const api=module('noor-ui-polish.js','NOOR_UI_POLISH');assert.equal(api.quote('2026-11-06'),api.quote('2026-11-06'));assert.notEqual(api.quote('2026-11-06'),api.quote('2026-11-07'));});
 test('green period rail fills from saved consecutive completion and stops at the first unfinished period',()=>{const api=module('noor-ui-polish.js','NOOR_UI_POLISH');assert.equal(api.rail([{period_number:2,progress_status:'ongoing'},{period_number:1,completed:true},{period_number:3,completed:true}],3),50);assert.equal(api.rail([{period_number:1},{period_number:2,completed:true}],2),0);assert.equal(api.rail([],0),0);});
 test('weekly dates cross month/year and leap-day boundaries and escape teacher text',()=>{const api=module('noor-learning-studio.js','NOOR_LEARNING_STUDIO');assert.equal(api.weekDays('2026-12-29')[6].date,'2027-01-04');assert.equal(api.weekDays('2028-02-27')[2].date,'2028-02-29');assert.throws(()=>api.weekDays('2026-02-30'),/week start/);const html=api.planCards([{date:'2026-11-09',subject:'<script>',body:'<img onerror=x>'}]);assert.match(html,/Monday/);assert.doesNotMatch(html,/<script>|<img/);});
 test('staff search covers names, subjects, classes and sections without date apply controls',()=>{const code=read('noor-staff-panel.js');assert.match(code,/addEventListener\('input',filter\)/);assert.match(code,/addEventListener\('search',filter\)/);assert.match(code,/p.class_name\+' '\+p.section_name/);assert.doesNotMatch(code,/>Apply<|name="from"|name="to"/);assert.match(code,/data-refresh/);});
-test('message writer rejects student/invalid audience and account switches before database writes',async()=>{let writes=0;const app={user:{id:'u'},schoolId:'s'},c={uid:'u',sid:'s',manage:false,db:{from(){writes++;throw Error('unexpected write');}}},api=module('noor-communications.js','NOOR_COMMUNICATIONS',app),values={kind:'notice',title:'Hello',body:'School message',audience:'all'};await assert.rejects(()=>api.send(c,values),/leadership/);c.manage=true;await assert.rejects(()=>api.send(c,{...values,audience:'other-school'}),/audience/);await assert.rejects(()=>api.send(c,{...values,kind:'meeting'}),/meeting date/);app.schoolId='other';await assert.rejects(()=>api.send(c,values),/leadership/);assert.equal(writes,0);});
-test('message writer inserts only into the verified school inbox, with selected audience',async()=>{let saved;const app={user:{id:'u'},schoolId:'s'},c={uid:'u',sid:'s',manage:true,db:{from(table){assert.equal(table,'noor_school_messages');return{insert(row){saved=row;return{select:()=>({single:async()=>({data:{id:'message'}})})};}}}}},api=module('noor-communications.js','NOOR_COMMUNICATIONS',app);await api.send(c,{kind:'email',title:'  Update  ',body:'  Tomorrow  ',audience:'teacher'});assert.equal(saved.institution_id,'s');assert.equal(saved.created_by,'u');assert.equal(saved.title,'Update');assert.deepEqual(Array.from(saved.audience),['teacher']);assert.equal(saved.starts_at,null);});
+test('message writer rejects non-leaders, invalid audiences, missing meeting dates and school switches',async()=>{
+ let writes=0;
+ const app={user:{id:'u'},schoolId:'s'};
+ const c={uid:'u',sid:'s',manage:false,db:{functions:{invoke(){writes++;throw Error('unexpected call')}}}};
+ const api=module('noor-communications.js','NOOR_COMMUNICATIONS',app);
+ const values={kind:'notice',title:'Hello',body:'School message',audience:['staff'],channels:['in_app'],request_key:'request-1'};
+ await assert.rejects(()=>api.send(c,values),/leadership/);
+ c.manage=true;
+ await assert.rejects(()=>api.send(c,{...values,audience:['other-school']}),/audience/);
+ await assert.rejects(()=>api.send(c,{...values,kind:'meeting'}),/meeting date/);
+ app.schoolId='other';await assert.rejects(()=>api.send(c,values),/leadership/);
+ assert.equal(writes,0);
+});
+test('school communication sends selected groups only through authenticated server function',async()=>{
+ let called,writeToDatabase=false;
+ const app={user:{id:'u'},schoolId:'s'};
+ const c={uid:'u',sid:'s',manage:true,db:{
+  functions:{invoke:async(slug,args)=>{called={slug,args};return{data:{campaign_id:'campaign-1',in_app_created:true,email_queued:0}};}},
+  from(){writeToDatabase=true;throw Error('Client must not access email addresses or write directly')}
+ }};
+ const api=module('noor-communications.js','NOOR_COMMUNICATIONS',app,{globals:{crypto:{randomUUID:()=> 'bc26f414-dd69-449f-8746-1a8f4f57be16'}}});
+ await api.send(c,{kind:'notice',title:'  Update  ',body:'  Tomorrow  ',audience:['staff','student'],channels:['in_app'],request_key:'bc26f414-dd69-449f-8746-1a8f4f57be16'});
+ assert.equal(called.slug,'noor-communications-api');
+ assert.equal(called.args.body.institution_id,'s');
+ assert.equal(called.args.body.title,'Update');
+ assert.equal(called.args.body.body,'Tomorrow');
+ assert.deepEqual(Array.from(called.args.body.audience),['staff','student']);
+ assert.equal(writeToDatabase,false);
+});
 test('message reads are scoped to authenticated membership and reject a switch during response',async()=>{const filters=[],app={user:{id:'u'},schoolId:'s'},c={uid:'u',sid:'s',m:{id:'m'},db:{from(table){const q={select:()=>q,eq(k,v){filters.push([table,k,v]);return q;},order:()=>q,limit:async()=>({data:[{id:'x'}]}),then(resolve){resolve({data:[{message_id:'x'}]});}};return q;}}},api=module('noor-communications.js','NOOR_COMMUNICATIONS',app);assert.equal((await api.read(c))[0].read,true);assert(filters.some(([t,k,v])=>t==='noor_message_reads'&&k==='membership_id'&&v==='m'));app.schoolId='changed';await assert.rejects(()=>api.read(c),/Account changed/);});
 test('persisted ongoing progress reaches principal without pretending an elapsed period completed',()=>{const api=module('noor-principal-data.js','NOOR_PRINCIPAL_DATA'),input={members:[],profiles:[],groups:[],enrolments:[],sessions:[],records:[],periods:[],events:[],learning:[],lessons:[{period_id:'a',completed:false,progress_status:'ongoing'},{period_id:'b',completed:false,progress_status:'planned'},{period_id:'c',completed:true,progress_status:'completed'}]},r=api.normalize(input,'2026-11-06','UTC');assert.equal(r.runs.data.length,2);assert.equal(r.runs.data[0].status,'ongoing');assert.equal(r.runs.data[1].status,'done');assert.match(read('principal-live.js'),/run\?\.status==='ongoing'\?'In progress'/);});
 test('period progress rejects a school switch after reading the existing daily details',async()=>{const app={user:{id:'u'},schoolId:'s',profile:{institution_id:'s'}};let writes=0;app.db={auth:{getUser:async()=>({data:{user:{id:'u'}}})},from(table){const q={select:()=>q,eq:()=>q,then(resolve){resolve({data:[{id:'m',institution_id:'s',role:'teacher'}]});},single:async()=>({data:{id:'s',status:'active',timezone:'UTC'}}),maybeSingle:async()=>{app.schoolId='changed';return{data:{lesson:'Keep',topic:'Preserve'}};},upsert(){writes++;return q;}};return q;}};const api=module('noor-shared-timetable.js','NOOR_SHARED_TIMETABLE',app);await assert.rejects(()=>api.setProgress({id:'p',institution_id:'s',teacher_membership_id:'m'},'completed'),/Account changed/);assert.equal(writes,0);});

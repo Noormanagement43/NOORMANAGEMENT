@@ -16,9 +16,9 @@ async function access(group){
  if(r.error||!r.data)throw Error('An active school membership is required.');
  const principal=['principal','school_admin','university_admin','academic_admin'].includes(r.data.role),teacher=['teacher','faculty'].includes(r.data.role);
  if(!principal&&!teacher)throw Error('Only the principal or assigned class teacher may access this report.');
- const g=await a.db.from('academic_groups').select('id,name,group_type,parent_group_id').eq('institution_id',school).eq('is_active',true).eq('id',group).single();
+ const g=await a.db.from('academic_groups').select('id,name,group_type,parent_group_id,homeroom_teacher_membership_id').eq('institution_id',school).eq('is_active',true).eq('id',group).single();
  if(g.error)throw Error('Class or section not found in your school.');
- if(teacher){const x=await a.db.from('academic_group_memberships').select('id').eq('institution_id',school).eq('membership_id',r.data.id).eq('group_id',group).eq('status','active').in('group_role',['teacher','faculty']).limit(1);if(x.error||!x.data?.length)throw Error('Choose your assigned class/section to open the annual report.');}
+ if(teacher){const x=await a.db.from('academic_group_memberships').select('id').eq('institution_id',school).eq('membership_id',r.data.id).eq('group_id',group).eq('status','active').in('group_role',['teacher','faculty']).limit(1);if(x.error||!x.data?.length)throw Error('Choose your assigned class/section to open the annual report.');if(g.data.homeroom_teacher_membership_id&&g.data.homeroom_teacher_membership_id!==r.data.id)throw Error('Only the designated class teacher may open this report.');}
  const c={db:a.db,user,school,principal,teacher,group:g.data,schoolInfo:a.school||{}};
  if(!active(c))throw Error('Account changed.');return c;
 }
@@ -66,7 +66,11 @@ async function load(c,s){
  const score=arr=>{const got=arr.reduce((n,x)=>n+Number(x.marks||0),0),max=arr.reduce((n,x)=>n+Number(x.max_marks||0),0);return max?{got,max,pct:per(got,max)}:null;};
  const subjects=[...subjectMap.values()].map(row=>({name:row.name,...Object.fromEntries(['weekly','monthly','term1','term2','term3','other'].map(k=>[k,score(row[k])]))}));
  const got=subjects.reduce((n,x)=>n+(x.term3?.got||0),0),max=subjects.reduce((n,x)=>n+(x.term3?.max||0),0);
- return {c,s,year,cfg,monthly,holidays:off.size,summary:{working,present,absent,late,unmarked,pct:per(present,working-unmarked)},subjects,final:{got,max,pct:per(got,max)},remarks:marks.filter(x=>x.feedback).at(-1)?.feedback||'',marksCount:marks.length};
+ const ranking=await c.db.rpc('noor_class_performance',{p_institution:c.school,p_group:c.group.id,p_from:year.start_date,p_to:to});
+ if(ranking.error)throw ranking.error;
+ const annualRank=(ranking.data?.students||[]).find(x=>x.membership_id===s.membership_id)?.rank??null;
+ if(!active(c))throw Error('Account changed.');
+ return {c,s,year,cfg,monthly,holidays:off.size,summary:{working,present,absent,late,unmarked,pct:per(present,working-unmarked)},subjects,final:{got,max,pct:per(got,max)},annualRank,remarks:marks.filter(x=>x.feedback).at(-1)?.feedback||'',marksCount:marks.length};
 }
 function monthRows(d){const out=[],start=Number(d.year.start_date.slice(0,4)),m=Number(d.year.start_date.slice(5,7))-1;for(let i=0;i<12;i++){const x=new Date(Date.UTC(start,m+i,1)),key=x.toISOString().slice(0,7);if(key>d.year.end_date.slice(0,7))break;out.push({name:x.toLocaleString('en-IN',{month:'long',timeZone:'UTC'}),...(d.monthly.find(q=>q.key===key)||{working:0,present:0,absent:0,late:0,leave:0,unmarked:0})});}return out;}
 const value=x=>x==null?'—':E(x);
@@ -79,7 +83,7 @@ function reportHTML(d,type){
  const rows=attendance?monthRows(d).map(x=>[x.name,x.working||'—',x.working?x.present:'—',x.working!==x.unmarked?per(x.present,x.working-x.unmarked)+'%'+(x.unmarked?' *':''):'—']):d.subjects.map(x=>[x.name,...['weekly','monthly','term1','term2','term3'].map(k=>x[k]?(k==='weekly'||k==='monthly'?x[k].pct+'%':x[k].got+'/'+x[k].max):'—'),grade(x.term3?.pct??null)]);
  const table='<table class="nar-table"><thead><tr>'+columns.map(x=>'<th>'+E(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+x.map(y=>'<td>'+E(y)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
  const aside=attendance?'<h3>TERM BRIEF</h3><p>Present: '+d.summary.present+'</p><p>Absent: '+d.summary.absent+'</p><p>Late: '+d.summary.late+'</p><p>Unmarked: '+d.summary.unmarked+'</p><p>School holidays excluded: '+d.holidays+'</p><small>Rates count marked days only; missing registers are not absences.</small>':'<h3>ACADEMIC BRIEF</h3><p>Assessments: '+d.marksCount+'</p><p>Term 3 subjects graded: '+d.subjects.filter(x=>x.term3).length+'</p><h3>Teacher’s Remark</h3><p>'+E(d.remarks||'No remarks recorded.')+'</p><small>Grades are indicative until school policy is configured.</small>';
- const summary=attendance?'Total Working Days: '+d.summary.working+' | Days Present: '+d.summary.present+' | Recorded Attendance: '+(d.summary.pct==null?'—':d.summary.pct+'%'):'Final Term Marks: '+(d.final.max?d.final.got+'/'+d.final.max:'Not recorded')+' | Final Term Percentage: '+(d.final.pct==null?'—':d.final.pct+'%');
+ const summary=attendance?'Total Working Days: '+d.summary.working+' | Days Present: '+d.summary.present+' | Recorded Attendance: '+(d.summary.pct==null?'—':d.summary.pct+'%'):'Final Term Marks: '+(d.final.max?d.final.got+'/'+d.final.max:'Not recorded')+' | Final Term Percentage: '+(d.final.pct==null?'—':d.final.pct+'%')+' | Class Rank: '+(d.annualRank==null?'—':d.annualRank);
  return '<article class="nar-paper"><div class="nar-report-content">'+header+'<h3 class="nar-section-title">'+(attendance?'YEARLY ATTENDANCE SUMMARY':'TERM-WISE & PERIODIC ACADEMIC PERFORMANCE')+'</h3><div class="nar-layout"><main>'+table+(!rows.length?'<p>No marks have been recorded yet.</p>':'')+'</main><aside>'+aside+'</aside></div><div class="nar-summary"><b>'+(attendance?'ATTENDANCE SUMMARY':'PROGRESS SUMMARY')+'</b><p>'+E(summary)+'</p></div><footer>Generated from recorded school data · '+E(d.year.start_date)+' to '+E(d.year.end_date)+'<span>Class Teacher Signature: ______________</span></footer></div></article>';
 }
 function download(text,name,mime){const url=URL.createObjectURL(new Blob([text],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}

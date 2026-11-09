@@ -42,6 +42,7 @@ export async function handle(req:Request):Promise<Response>{
  const ir=await db.from('institutions').select('name,status').eq('id',institution).eq('status','active').maybeSingle();
  if(ir.error||!ir.data)return send(403,{error:'Institution is inactive or inaccessible'});
  if(action==='manager_plan'&&!leadership.has(mr.data.role))return send(403,{error:'Institution leadership required'});
+ if(action==='probe'&&!staff.has(mr.data.role))return send(403,{error:'Teaching staff or leadership required'});
  if(!['chat_assist','probe'].includes(action)&&!staff.has(mr.data.role))return send(403,{error:'Authorised teaching staff required'});
  if(action!=='probe'){
   const units=action==='manager_plan'?2:1;

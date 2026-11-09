@@ -296,3 +296,33 @@
 #workspace.noor-teacher-activated .noor-t4 .np-period-flow .nt-period.ongoing:before{background:#e84989;box-shadow:0 0 0 2px #e84989}
 #workspace.noor-teacher-activated .noor-t4 .nt-period-badge.complete{background:#e0f6e9;color:#167744}
 #workspace.noor-teacher-activated .noor-t4 .nt-period-badge.current{background:#ffe1ef;color:#a12e69}
+
+/* Teacher reference attendance: actual class records; no fabricated counts. */
+#workspace.noor-teacher-activated .noor-t4 .nt-class-summary{display:block;padding:14px 18px;border:1px solid #ecdce4;border-radius:18px;background:var(--surface,#fff);box-shadow:0 8px 25px #53243a0b;margin:8px 0 15px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-overview-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;color:var(--ink,#4c2739)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-overview-title b{font-size:15px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-overview-title small{font-size:11px;color:var(--muted,#81566e)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-label{display:flex;justify-content:space-between;gap:10px;font-size:12px;font-weight:760;margin-bottom:7px;color:var(--ink,#4c2739)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-track{height:9px;border-radius:99px;overflow:hidden;background:#f0e9ed}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-track span{height:100%;display:block;border-radius:99px;transition:width .24s ease}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-item.present .nt-att-bar-track span{background:linear-gradient(90deg,#25a16a,#6cd5a0)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-item.absent .nt-att-bar-track span{background:linear-gradient(90deg,#db5279,#f39db5)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-bar-item.late .nt-att-bar-track span{background:linear-gradient(90deg,#e3a33b,#ffd381)}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-overview-footer{margin-top:9px;font-size:11px;color:var(--muted,#81566e)}
+#workspace.noor-teacher-activated .noor-t4 .nt-attendance-register-preview{display:block;min-width:0}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-scroll{overflow-x:auto;max-width:100%;border:1px solid #f1e8ec;border-radius:13px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-table{border-collapse:collapse;width:100%;min-width:580px;color:var(--ink,#4c2739);font-size:12px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-table th{background:#fbf3f6;text-align:left;padding:11px 12px;color:#72415b;font-size:11px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-table td{padding:10px 12px;border-top:1px solid #f4eaf0}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-student{display:flex;align-items:center;gap:8px}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-avatar{width:28px;height:28px;display:grid;place-items:center;background:#f7e3ed;color:#873652;border-radius:50%;font-weight:800;flex:none}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-indicator{font-size:17px;color:#d8cdd4}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-indicator.present.selected{color:#28aa6a}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-indicator.absent.selected{color:#e2517c}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-indicator.late.selected{color:#e5a53e}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-leave{display:block;color:#af771d}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 2px 0}
+#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-footer small{color:var(--muted,#81566e);font-size:11px}
+#workspace.noor-teacher-activated .noor-t4 .nt-timeline{border-left:0;padding-left:0;margin-left:0}
+@media(max-width:680px){#workspace.noor-teacher-activated .noor-t4 .nt-att-bars{grid-template-columns:1fr;gap:12px}#workspace.noor-teacher-activated .noor-t4 .nt-att-preview-footer{align-items:flex-start}}

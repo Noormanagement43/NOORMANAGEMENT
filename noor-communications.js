@@ -6,7 +6,9 @@ async function read(c){const [messages,seen]=await Promise.all([c.db.from('noor_
 async function send(c,values){
  if(!same(c)||!c.manage)throw Error('School leadership required.');
  const selected=Array.isArray(values.audience)?values.audience:[],channels=Array.isArray(values.channels)?values.channels:[];
- if(!selected.length||!channels.length)throw Error('Tick recipients and In-app or Email delivery.');
+ if(!selected.length||!channels.length||selected.some(x=>!['student','staff','manager','parent'].includes(x))||channels.some(x=>!['in_app','email'].includes(x)))throw Error('Invalid audience or delivery channel.');
+ if(!['notice','meeting','email'].includes(values.kind))throw Error('Invalid message type.');
+ if(values.kind==='meeting'&&(!values.starts_at||!Number.isFinite(new Date(values.starts_at).getTime())))throw Error('Choose a valid meeting date.');
  const request_key=values.request_key||crypto.randomUUID();
  const result=await c.db.functions.invoke('noor-communications-api',{body:{
   action:'dispatch',institution_id:c.sid,request_key,kind:values.kind,
@@ -90,7 +92,7 @@ async function mount(host){host.innerHTML='<section class="np-hub">Loading…</s
   }catch(error){status.textContent='Not sent: '+error.message;form.dataset.confirmed='';submit.textContent='Review & Send';}
   finally{submit.disabled=false;}
  };
- form.addEventListener('input',()=>{form.dataset.confirmed='';submit.textContent='Review & Send';});
+ form.addEventListener('input',()=>{form.dataset.confirmed='';form.dataset.requestKey='';submit.textContent='Review & Send';});
 });
 }catch(e){host.textContent='School messages unavailable: '+e.message;}}
 async function init(){const a=A();if(!a.user?.id||!a.schoolId||!window.NOOR_ACCOUNT_CONTEXT?.enabled())return;const mini=document.querySelector('#workspace .user-mini');if(mini&&!document.getElementById('noorSchoolBell')){const b=document.createElement('button');b.id='noorSchoolBell';b.type='button';b.className='np-bell';b.innerHTML=(window.NOOR_UI_POLISH?.icon('notifications')||'')+'<span>Notifications</span><b data-count></b>';b.onclick=inbox;mini.prepend(b);}await refreshBell();const next=a.user.id+':'+a.schoolId;if(next===key)return;document.getElementById('noor-school-inbox')?.remove();if(channel)a.db.removeChannel(channel);key=next;channel=a.db.channel('noor-school-inbox-'+key);for(const table of ['noor_school_messages','noor_message_reads'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a.schoolId},()=>{clearTimeout(timer);timer=setTimeout(()=>{refreshBell();window.dispatchEvent(new CustomEvent('noor:school-message-saved'));},150);});channel.subscribe();}

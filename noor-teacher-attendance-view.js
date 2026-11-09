@@ -42,8 +42,8 @@ async function summary(host){
  if(!same())return;
  const marks=[...saved.values()].filter(m=>roster.has(m.student_membership_id)),totals=counts(marks),total=roster.size;
  const bar=(label,n,tone)=>'<div class="nt-att-bar-item '+tone+'"><div class="nt-att-bar-label"><span>'+label+'</span><b>'+n+'</b></div><div class="nt-att-bar-track" role="meter" aria-label="'+label+'" aria-valuemin="0" aria-valuemax="'+Math.max(1,total)+'" aria-valuenow="'+n+'"><span style="width:'+(total?Math.min(100,100*n/total):0).toFixed(1)+'%"></span></div></div>';
- host.innerHTML='<div class="nt-att-overview"><div class="nt-att-overview-title"><b>Today’s Attendance</b><small>'+E(date)+' · '+total+' students</small></div><div class="nt-att-bars">'+bar('Present',totals.present,'present')+bar('Absent',totals.absent,'absent')+bar('Late',totals.late,'late')+'</div><div class="nt-att-overview-footer">'+Math.max(0,total-marks.length)+' not marked'+(totals.leave?' · '+totals.leave+' on leave':'')+'</div></div>';
- const preview=document.getElementById('ntAttendanceEmbed');
+ host.innerHTML='<div class="nt-att-overview"><div class="nt-att-overview-title"><b>Today’s Attendance</b><small>'+E(date)+' · '+total+' students</small></div><div class="nt-att-total">Students Present <strong>'+(totals.present+totals.late)+' <small>/ '+total+'</small></strong></div><div class="nt-att-bars">'+bar('Present',totals.present,'present')+bar('Absent',totals.absent,'absent')+bar('Late',totals.late,'late')+'</div><div class="nt-att-overview-footer">'+Math.max(0,total-marks.length)+' not marked'+(totals.leave?' · '+totals.leave+' on leave':'')+'</div></div>';
+ const preview=typeof document==='undefined'?null:document.getElementById('ntAttendanceEmbed');
  if(preview&&preview.closest('.noor-t4')){
   const students=[...roster.values()].sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'en',{numeric:true})).slice(0,12);
   const indicator=(selected,name)=>'<span class="nt-att-indicator '+name+(selected===name?' selected':'')+'" aria-label="'+(selected===name?name:'Not '+name)+'">'+(selected===name?'●':'○')+'</span>';
@@ -53,6 +53,6 @@ async function summary(host){
    '</tbody></table></div>'+(students.length?'':'<p class="nt-muted">No students enrolled in your assigned classes yet.</p>')+
    '<div class="nt-att-preview-footer"><small>Showing '+students.length+' of '+total+' students · '+E(date)+'</small><button type="button" class="nt-btn primary" data-action="take-attendance">Take Attendance →</button></div>';
  }
- }catch(e){if(same()){host.innerHTML='<p>Attendance unavailable. Open Take Attendance to retry.</p>';const preview=document.getElementById('ntAttendanceEmbed');if(preview)preview.innerHTML='<p>Attendance records could not be loaded. Open Take Attendance to retry.</p>';}}
+ }catch(e){if(same()){host.innerHTML='<p>Attendance unavailable. Open Take Attendance to retry.</p>';const preview=typeof document==='undefined'?null:document.getElementById('ntAttendanceEmbed');if(preview)preview.innerHTML='<p>Attendance records could not be loaded. Open Take Attendance to retry.</p>';}}
 }
 window.NOOR_TEACHER_ATTENDANCE_VIEW=Object.freeze({mount,counts,dayMarks,summary});})();

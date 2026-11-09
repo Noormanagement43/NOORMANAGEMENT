@@ -29,12 +29,12 @@ async function read(){
  c.db.from('teacher_timetable_periods').select('id,institution_id,teacher_membership_id,academic_group_id,weekday,period_number,start_time,end_time,subject_name,room_label,created_by,repeats_daily').eq('institution_id',c.school.id).order('weekday').order('start_time'),
  window.NOOR_SCHOOL_STRUCTURE?.fetchGroups?window.NOOR_SCHOOL_STRUCTURE.fetchGroups(c.db,c.school.id).then(rows=>({data:rows.filter(x=>x.is_active)})):c.db.from('academic_groups').select('id,name,group_type,parent_group_id,is_active').eq('institution_id',c.school.id).eq('is_active',true),
  c.db.from('institution_period_slots').select('period_number,start_time,end_time').eq('institution_id',c.school.id).order('period_number'),
- c.db.from('noor_daily_period_lessons').select('period_id,lesson_date,lesson,topic,completed,progress_status').eq('institution_id',c.school.id).eq('lesson_date',schoolDay(c.school.timezone))
+ c.db.from('noor_daily_period_lessons').select('period_id,lesson_date,lesson,topic,completed,progress_status,planned_subject_name').eq('institution_id',c.school.id).eq('lesson_date',schoolDay(c.school.timezone))
  ]);
  for(const result of [periods,groups,slots,lessons])if(result.error)throw result.error;
  if(A().user?.id!==c.userId)throw Error('Your account changed. Reopen the timetable.');
  const gs=groups.data||[];
- const stored=(periods.data||[]).filter(p=>{const g=gs.find(x=>x.id===p.academic_group_id);return g&&(g.group_type!=='section'||gs.some(parent=>parent.id===g.parent_group_id&&parent.is_active!==false));}).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
+ const stored=(periods.data||[]).filter(p=>{const g=gs.find(x=>x.id===p.academic_group_id);return g&&(g.group_type!=='section'||gs.some(parent=>parent.id===g.parent_group_id&&parent.is_active!==false));}).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),subject_name:((lessons.data||[]).find(x=>x.period_id===p.id)?.planned_subject_name||p.subject_name),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
  const data=expandPeriods(stored,c.school.timezone);
  return{...c,data,groups:gs,slots:slots.data||[]};
 }

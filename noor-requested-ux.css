@@ -59,3 +59,13 @@ body.noor-principal-mode #sidebar .schoolbadge{display:flex!important}
 #workspace .noor-t4 .nt-quick-icon.assignments{background:#f3e9fa;color:#8550a0}
 @media(max-width:760px){#workspace .np-recipient-picks{grid-template-columns:repeat(2,minmax(0,1fr))}#workspace .sidebar .brand .nmark{width:54px!important;height:54px!important;min-width:54px!important}#workspace .user-mini>div:has(#topName){min-width:0;max-width:110px}#workspace .user-mini #topName{max-width:110px;font-size:11px!important}}
 @media(max-width:480px){#workspace .np-hub,#workspace .np-card{padding:14px}#workspace .user-mini>div:has(#topName){max-width:85px}#workspace .user-mini #topName{max-width:85px}.nt-learning-choice .nt-choice-grid,#workspace .np-resources-cards{grid-template-columns:1fr}}
+
+/* Safe server-side delivery readiness feedback in Notices & Meetings. */
+#workspace .np-email-readiness{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line,#ead9df);border-radius:14px;background:var(--paper,#fff);padding:12px 14px;margin:12px 0}
+#workspace .np-email-readiness button{border:1px solid var(--berry,#54243b);background:var(--rose-soft,#f8eaf0);color:var(--berry,#54243b);border-radius:11px;min-height:42px;padding:9px 14px;font-weight:720}
+#workspace .np-email-readiness button:disabled{opacity:.6;cursor:progress}
+#workspace .np-email-readiness p{flex:1;min-width:160px;font-size:12px;line-height:1.45;margin:0;color:var(--ink,#2c2027)!important}
+#workspace #view-attendance .ta-status-cell{cursor:pointer;padding:4px 3px}
+#workspace #view-attendance .ta-status-option{width:48px;height:48px}
+#workspace #view-attendance .ta-status-option .ta-radio-hit{pointer-events:none}
+#workspace #view-attendance .ta-status-option input[type=radio]{min-width:22px;width:22px;height:22px}

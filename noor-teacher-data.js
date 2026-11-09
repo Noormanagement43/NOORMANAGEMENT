@@ -70,6 +70,14 @@ async function attendance(){
  group.onchange=refresh;date.onchange=refresh;
  function updateSummary(){const selected=[...form.querySelectorAll('input[data-student]:checked')];host.querySelector('[data-attendance-summary]').innerHTML=attendanceStatuses.map(status=>'<span class="ta-count '+status+'">'+selected.filter(x=>x.value===status).length+' '+status[0].toUpperCase()+status.slice(1)+'</span>').join('')+'<span class="ta-count">'+Math.max(0,students.length-selected.length)+' Unmarked</span>';}
  roster.onchange=e=>{if(e.target.matches('input[data-student]')){updateSummary();msg.textContent='Unsaved changes — review and save attendance.';}};
+ roster.addEventListener('click',event=>{
+  const cell=event.target.closest('.ta-status-cell');
+  if(!cell||event.target.closest('label,input'))return;
+  const radio=cell.querySelector('input[data-student]');
+  if(!radio||radio.disabled)return;
+  radio.checked=true;
+  radio.dispatchEvent(new Event('change',{bubbles:true}));
+ });
  form.onsubmit=async e=>{e.preventDefault();button.disabled=true;group.disabled=date.disabled=true;msg.textContent='Saving all attendance marks…';try{if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed. Reopen attendance.');const records=attendanceRecords(form,students);form.querySelectorAll('input[data-student]').forEach(input=>input.disabled=true);const r=await c.db.rpc('noor_save_class_register',{p_institution:c.school.id,p_group:group.value,p_date:date.value,p_records:records});if(r.error)throw r.error;if(r.data?.count!==students.length)throw Error('Attendance save was incomplete.');msg.textContent='✓ '+r.data.count+' students saved. Principal and My Class now use these records.';window.dispatchEvent(new CustomEvent('noor:attendance-saved'));}catch(ex){msg.textContent='Not saved: '+ex.message;}finally{button.disabled=!students.length;group.disabled=date.disabled=false;form.querySelectorAll('input[data-student]').forEach(input=>input.disabled=false);}};
  await refresh();
  

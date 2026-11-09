@@ -82,7 +82,7 @@ export async function handle(req:Request):Promise<Response>{
     try{await state(item,again?'queued':'failed',undefined,'DELIVERY_UNAVAILABLE');if(again)retry++;else failed++;}catch{}
    }
   }
-  await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId}).catch(()=>{});
+  try{await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId});}catch{}
  }
  // Accepted by Brevo does NOT mean delivered to the inbox.
  return res(200,{processed:rows.length,accepted_by_provider:accepted,failed_or_skipped:failed,retry_scheduled:retry});

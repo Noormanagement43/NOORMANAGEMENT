@@ -287,3 +287,12 @@
  .noor-t4 .nt-att-table{min-width:550px}
  .noor-t4 .nt-att-scroll{overflow-x:auto;overscroll-behavior-x:contain}
 }
+
+/* Reference-matched period timeline: progress reflects completed periods only. */
+#workspace.noor-teacher-activated .noor-t4 .np-period-flow{position:relative;border-left:3px solid #eadde2;padding-left:19px;margin-left:12px}
+#workspace.noor-teacher-activated .noor-t4 .np-period-flow:before{content:"";position:absolute;left:-3px;top:0;width:3px;height:var(--np-progress,0%);background:#28a65b;border-radius:3px;transition:height .3s ease}
+#workspace.noor-teacher-activated .noor-t4 .np-period-flow .nt-period{margin-left:12px}
+#workspace.noor-teacher-activated .noor-t4 .np-period-flow .nt-period.complete:before{background:#28a65b;border-color:#fff;box-shadow:0 0 0 2px #28a65b}
+#workspace.noor-teacher-activated .noor-t4 .np-period-flow .nt-period.ongoing:before{background:#e84989;box-shadow:0 0 0 2px #e84989}
+#workspace.noor-teacher-activated .noor-t4 .nt-period-badge.complete{background:#e0f6e9;color:#167744}
+#workspace.noor-teacher-activated .noor-t4 .nt-period-badge.current{background:#ffe1ef;color:#a12e69}

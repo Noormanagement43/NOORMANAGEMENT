@@ -39,16 +39,29 @@ function periodBadge(p,run){
  return{label:'Pending',tone:'pending'};
 }
 function statusHTML(p,run){
- const badge=periodBadge(p,run);
- const complete=badge.tone==='complete',active=badge.tone==='current';
- const action=complete?'✓ Completed':active?'✓ Complete':'○ Mark Complete';
- return '<div class="nt-period '+(complete?'complete':active?'ongoing':'')+'"><div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+'<br>– '+esc(prettyTime(p.end_time))+'</small></div>'+
- '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-label="'+esc(subjectVisual(p.subject_name).title)+'">'+subjectIcon(p.subject_name)+'</span><div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+(window.NOOR_CLASS_VISUALS?.label(p.class_label)||esc(p.class_label))+(p.room_label?' · '+esc(p.room_label):'')+'</small>'+
- '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">'+(!p.schedule_status?'<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">✎ Edit</button>':'')+
- (!p.schedule_status&&!complete&&!active?'<button type="button" class="nt-btn small" data-start-period="'+esc(p.id)+'">▶ Start</button>':'')+'</div></div>'+
- ''+(p.schedule_status?'<div class="nt-period-state">'+(!complete?'<button type="button" class="nt-btn small np-progress-button" '+(active?'data-complete-period':'data-start-period')+'="'+esc(p.id)+'">'+(active?'Mark Complete':'Start period')+'</button>':'')+'<span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'" aria-label="Edit Period '+esc(p.period_number)+'">Edit</button><button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button></div>':'<button type="button" class="nt-complete-btn" data-complete-period="'+esc(p.id)+'" aria-pressed="'+String(complete)+'" '+(complete?'disabled':'')+'>'+action+'</button>')+'</div>';
+ const badge=periodBadge(p,run),complete=badge.tone==='complete',active=badge.tone==='current';
+ const controls='nt-period-actions-'+p.id;
+ const topic=[p.lesson,p.topic].filter(Boolean).join(' · ');
+ const icon=window.NOOR_UI_POLISH?.subjectGlyph(p.subject_name)||subjectIcon(p.subject_name);
+ return '<article class="nt-period '+(complete?'complete':active?'ongoing':'pending')+'"><div class="nt-period-summary">'+
+ '<div class="nt-period-num"><b>Period '+esc(p.period_number)+'</b><small>'+esc(prettyTime(p.start_time))+' – '+esc(prettyTime(p.end_time))+'</small></div>'+
+ '<span class="nt-subject-icon subject-'+subjectVisual(p.subject_name).tone+'" aria-hidden="true">'+icon+'</span>'+
+ '<div class="nt-subject"><b>'+esc(p.subject_name)+'</b><small>'+(window.NOOR_CLASS_VISUALS?.label(p.class_label)||esc(p.class_label))+(p.room_label?' · '+esc(p.room_label):'')+'</small>'+
+ (topic?'<span class="nt-period-topic">'+esc(topic)+'</span>':'')+'</div>'+
+ '<span class="nt-period-badge '+badge.tone+'">'+badge.label+'</span>'+
+ '<button type="button" class="nt-period-expand" data-toggle-period="'+esc(p.id)+'" aria-expanded="false" aria-controls="'+esc(controls)+'" aria-label="Actions for Period '+esc(p.period_number)+'">'+(window.NOOR_UI_POLISH?.icon('chevron')||'⌄')+'</button></div>'+
+ '<div class="nt-period-actions" id="'+esc(controls)+'" hidden>'+
+ (!complete?'<button type="button" class="nt-btn small np-progress-button" '+(active?'data-complete-period':'data-start-period')+'="'+esc(p.id)+'">'+(active?'Mark Complete':'Start period')+'</button>':'')+
+ '<button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">Edit period</button>'+
+ (p.schedule_status?'<button type="button" class="nt-btn small" data-daily-period="'+esc(p.id)+'">Chapter / Topic</button>':'')+'</div></article>';
 }
-function periodSlotsHTML(periods,runs,defaults=[]){const max=Math.max(8,...defaults.map(p=>Number(p.period_number)||0),...periods.map(p=>Number(p.period_number)||0));const list=Array.from({length:max},(_,i)=>{const p=periods.find(p=>Number(p.period_number)===i+1);return p?statusHTML(p,runs.get(p.id)):'<div class="nt-period"><div class="nt-period-num"><b>Period '+(i+1)+'</b></div><div class="nt-subject"><small>Not set</small></div><button class="nt-btn small" type="button" data-add-period="'+(i+1)+'">+ Set Period</button></div>';}).join('');const slots=Array.from({length:max},(_,i)=>periods.find(p=>Number(p.period_number)===i+1)||{period_number:i+1});return '<div class="np-period-flow" style="--np-progress:'+ (Math.max(0,Math.min(100,(periods.filter(p=>periodBadge(p,runs.get(p.id)).tone==='complete').length/Math.max(1,max))*100)).toFixed(1))+'%">'+list+'</div>';}
+function periodSlotsHTML(periods,runs,defaults=[]){
+ const max=Math.max(8,...defaults.map(p=>Number(p.period_number)||0),...periods.map(p=>Number(p.period_number)||0));
+ const slots=Array.from({length:max},(_,i)=>{const p=periods.find(p=>Number(p.period_number)===i+1);return p?{...p,completed:periodBadge(p,runs.get(p.id)).tone==='complete',progress_status:periodBadge(p,runs.get(p.id)).tone==='current'?'ongoing':p.progress_status}:{period_number:i+1};});
+ const list=slots.map(p=>{if(p.id)return statusHTML(p,runs.get(p.id));const slot=defaults.find(d=>Number(d.period_number)===p.period_number);return '<article class="nt-period pending"><div class="nt-period-summary nt-period-unset"><div class="nt-period-num"><b>Period '+p.period_number+'</b>'+(slot?'<small>'+esc(prettyTime(slot.start_time))+' – '+esc(prettyTime(slot.end_time))+'</small>':'')+'</div><div class="nt-subject"><small>Not set</small></div><button class="nt-btn small" type="button" data-add-period="'+p.period_number+'">+ Set Period</button></div></article>';}).join('');
+ const progress=window.NOOR_UI_POLISH?.rail(slots,max)??100*slots.filter(p=>p.completed).length/max;
+ return '<div class="np-period-flow" style="--np-progress:'+progress.toFixed(1)+'%">'+list+'</div>';
+}
 function weeklyTimetableHTML(periods){
  const sorted=[...periods].filter(p=>p.approval_status==='approved').sort((a,b)=>a.weekday-b.weekday||String(a.start_time).localeCompare(String(b.start_time)));
  const content=sorted.map(p=>'<div class="nt-weekly-item"><span class="nt-weekly-day">'+esc(days[p.weekday]?.slice(0,3)||'Day')+'</span><span class="nt-weekly-subject-icon subject-'+subjectVisual(p.subject_name).tone+'">'+subjectIcon(p.subject_name)+'</span><span class="nt-weekly-name"><b>'+esc(p.subject_name)+'</b><small>'+esc(p.class_label||'Class')+' · '+esc(prettyTime(p.start_time))+'–'+esc(prettyTime(p.end_time))+'</small></span><button type="button" class="nt-btn small" data-edit-period="'+esc(p.id)+'">Edit</button></div>').join('')||'<p class="nt-muted">No periods saved yet. Create a period above.</p>';
@@ -144,16 +157,18 @@ async function render(){
  if(readErrors.length){const warning=document.createElement('p');warning.className='nt-followup';warning.textContent='Some school records could not be loaded. Check your account permissions or connection and try again.';wrapper.querySelector('.noor-t4')?.prepend(warning);}
  const dash=wrapper.querySelector('.noor-t4'),profileNode=dash?.querySelector('.nt-profile');
 
- // Daily teaching hierarchy: original large photo → attendance & actions → timetable → insights → optional advanced tools.
- const attendance=dash?.querySelector('.nt-attendance');
+ // Reference layout: timetable on the left, status and compact actions on the right.
+ const timetable=dash?.querySelector('.nt-timeline')?.closest('.nt-card');
+ const statusCard=dash?.querySelector('.nt-status-list')?.closest('.nt-card');
  const quickCard=dash?.querySelector('.nt-refined-actions')?.closest('.nt-card');
- const priority=document.createElement('section');priority.className='nt-priority-section';priority.setAttribute('aria-label','Daily class actions');
- priority.innerHTML='<div class="nt-priority-heading"><div><h2>Take Attendance</h2><p>Select class, section and date before marking the actual school roster.</p></div></div>';
- const priorityGrid=document.createElement('div');priorityGrid.className='nt-priority-grid';
- priority.appendChild(priorityGrid);
- if(attendance)priorityGrid.append(attendance);
- profileNode?.insertAdjacentElement('afterend',priority);
- if(quickCard){quickCard.classList.remove('nt-quote-actions');quickCard.classList.add('nt-bottom-actions');dash.append(quickCard);}
+ const workspaceGrid=document.createElement('section');workspaceGrid.className='nt-reference-workspace';workspaceGrid.setAttribute('aria-label','Daily teaching workspace');
+ const rail=document.createElement('aside');rail.className='nt-reference-rail';
+ if(timetable)workspaceGrid.append(timetable);workspaceGrid.append(rail);
+ if(statusCard)rail.append(statusCard);
+ if(quickCard){rail.append(quickCard);const ai=document.createElement('button');ai.type='button';ai.className='nt-reference-ai';ai.dataset.action='open-ai';ai.innerHTML=(window.NOOR_UI_POLISH?.icon('sparkles')||'')+'<span><b>AI Assistant</b><small>Lesson plans, notes and questions</small></span>';quickCard.append(ai);}
+ profileNode?.insertAdjacentElement('afterend',workspaceGrid);
+ const classSummary=dash?.querySelector('#ntClassSummary');if(classSummary)workspaceGrid.insertAdjacentElement('afterend',classSummary);
+ const oldColumns=dash?.querySelector('.nt-columns');if(oldColumns){for(const col of [...oldColumns.children])if(!col.children.length)col.remove();oldColumns.classList.add('nt-secondary-grid');}
  current.assignedTasks=assignedTasks;
  wrapper.onclick=onClick; // Replace handler on each render; avoid duplicate clicks/period submissions.
  $('#ntHiddenPhoto').onchange=uploadPhoto;
@@ -169,6 +184,8 @@ async function render(){
 }
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
+ if(b.dataset.togglePeriod){const panel=document.getElementById(b.getAttribute('aria-controls'));if(panel){panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));}return;}
+ if(b.dataset.action==='open-ai'){window.NOOR_SECURE_AI?.open();return;}
  if(b.dataset.addPeriod){window.NOOR_SHARED_TIMETABLE.openEditor(null,{period_number:Number(b.dataset.addPeriod)});return;}
  if(b.dataset.dailyPeriod){window.NOOR_SHARED_TIMETABLE.openDaily(current.periods.find(p=>p.id===b.dataset.dailyPeriod));return;}
  if(b.dataset.action==='learning-hub'){

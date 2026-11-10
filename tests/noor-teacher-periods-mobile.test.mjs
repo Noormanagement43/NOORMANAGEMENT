@@ -19,7 +19,7 @@ test('teacher can type freeform subject with automatic icon, no subject suggesti
  assert.doesNotMatch(s,/option value="Maths"|suggestedSubjects|datalist/);
 });
 
-test('teacher quick actions stay at the bottom without diary/report toolkits',async()=>{const s=await read('teacher-reference.js');assert.ok(s.includes('dash.append(quickCard)'));assert.doesNotMatch(s,/dash.append\(advance\)|dash.append\(toolkit\)/);for(const name of ['Take Attendance','Assignments &amp; Smart Notes','Weekly Planner','Today Notes'])assert.ok(s.includes(name));assert.doesNotMatch(s,/Daily School Report/);});
+test('teacher quick actions sit beside the timetable without diary/report toolkits',async()=>{const s=await read('teacher-reference.js');assert.ok(s.includes('rail.append(quickCard)'));assert.doesNotMatch(s,/dash.append\(advance\)|dash.append\(toolkit\)/);for(const name of ['Take Attendance','Assignments &amp; Smart Notes','Weekly Planner','Today Notes'])assert.ok(s.includes(name));assert.doesNotMatch(s,/Daily School Report/);});
 
 test('principal/manager phone content uses single column and restores real bottom navigation',async()=>{
  const html=await read('index.html'),css=await read('noor-mobile-teacher-principal.css'),principal=await read('principal-live.js');

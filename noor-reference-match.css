@@ -1,0 +1,139 @@
+/* Approved Teacher / Student references: shared sizes, compact periods and pastel action tiles.
+   School identity, saved theme, verified data and role permissions remain supplied by the app. */
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard){--ref-berry:#791d43;--ref-pink:#fbe7ef;--ref-mint:#e1f6ed;--ref-violet:#f0e7fc;--ref-peach:#fff0df;--ref-sky:#e9efff;--ref-gap:16px;font-family:Inter,'Segoe UI',sans-serif}
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) :is(.nt-card,.sp-card){border-radius:14px!important;border:1px solid var(--line,#ead8de)!important;background:var(--paper,#fffdfb)!important;padding:18px!important;box-shadow:0 3px 12px #6d163509!important;min-width:0;box-sizing:border-box}
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) :is(.nt-card-head h2,.sp-card-head h2){font:700 21px/1.25 'Playfair Display',Georgia,serif!important;color:var(--berry,var(--ref-berry))!important;letter-spacing:-.35px}
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) :is(button,a):focus-visible{outline:3px solid var(--berry,#791d43)!important;outline-offset:3px}
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) button{touch-action:manipulation}
+#workspace #view-overview :is(.nt-profile,.sp-ref-hero){background:radial-gradient(ellipse at 91% 70%,#f8dce74f,transparent 43%),var(--paper,#fffdfb)!important;border:1px solid var(--line,#ead8de)!important;border-radius:16px!important}
+#workspace #view-overview .nt-person-head h2,#workspace #view-overview .sp-ref-identity-head h1{font-family:'Playfair Display',Georgia,serif!important;letter-spacing:-.5px!important;color:var(--berry,#791d43)!important}
+#workspace #view-overview .noor-header-quote{border:0!important;border-left:1px solid var(--line,#ead8de)!important;border-radius:0!important;background:transparent!important;padding:16px 20px!important}
+#workspace #view-overview .noor-header-quote .noor-quote-label{display:none}
+#workspace #view-overview .noor-header-quote blockquote{color:var(--berry,#791d43)!important;font-size:21px!important}
+
+/* Teacher: timetable first, then the status and action rail. */
+#workspace #view-overview .nt-reference-workspace{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:var(--ref-gap);align-items:start;margin:18px 0}
+#workspace #view-overview .nt-reference-rail{display:grid;gap:var(--ref-gap);min-width:0}
+#workspace #view-overview .nt-reference-workspace .nt-card{margin:0!important}
+#workspace #view-overview .nt-reference-workspace .nt-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px!important}
+#workspace #view-overview .nt-reference-workspace .nt-card-head>div{min-width:0;display:block}
+#workspace #view-overview .nt-reference-workspace .nt-card-head .nt-icon{display:none!important}
+#workspace #view-overview .nt-reference-workspace .nt-card-head .nt-btn{min-height:36px!important;padding:8px 12px!important;font-size:12px!important;white-space:nowrap;border-radius:9px}
+#workspace #view-overview .nt-secondary-grid{display:block!important;margin:18px 0}
+#workspace #view-overview .nt-secondary-grid>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#workspace #view-overview .nt-secondary-grid>div>.nt-card{margin:0!important}
+#workspace #view-overview .nt-reference-rail .nt-status-box{padding:12px!important;border:0;border-radius:12px;background:var(--rose-soft,#fcf1f5);min-width:0}
+#workspace #view-overview .nt-reference-rail .nt-status-box.good{background:var(--ref-mint)}
+#workspace #view-overview .nt-reference-rail .nt-status-box b{font-size:13px!important;line-height:1.35}
+#workspace #view-overview .nt-reference-rail .nt-status-box small{font-size:12px!important;line-height:1.5}
+
+/* Timeline: subject, class / section, topic and status remain visible; controls expand on demand. */
+#workspace #view-overview .noor-t4 .np-period-flow{border:0!important;background:none!important;padding:0 0 0 22px!important;margin:0!important;position:relative}
+#workspace #view-overview .noor-t4 .np-period-flow:before{content:'';position:absolute;left:8px!important;top:22px!important;bottom:22px!important;width:2px!important;height:auto!important;border-radius:2px;background:linear-gradient(to bottom,#49ba85 var(--np-progress,0%),#dcd7dc var(--np-progress,0%))!important}
+#workspace #view-overview .noor-t4 .nt-period{position:relative;display:block!important;border:1px solid var(--line,#ead8de)!important;border-left-width:1px!important;border-radius:12px!important;margin:0 0 9px!important;padding:0!important;background:var(--paper,#fffdfb)!important;min-width:0}
+#workspace #view-overview .noor-t4 .nt-period:last-child{margin-bottom:0!important}
+#workspace #view-overview .noor-t4 .nt-period:before{content:'';position:absolute;left:-22px;top:23px;width:12px;height:12px;display:grid;place-items:center;border:3px solid var(--paper,#fffdfb);border-radius:50%;background:#b9b6bc;box-shadow:0 0 0 1px #ccc5cd;font:700 11px Inter;z-index:1}
+#workspace #view-overview .noor-t4 .nt-period.complete:before{content:'✓';background:#37b477;box-shadow:0 0 0 1px #37b477;color:#fff}
+#workspace #view-overview .noor-t4 .nt-period.ongoing:before{background:#e83980;box-shadow:0 0 0 2px #e83980}
+#workspace #view-overview .noor-t4 .nt-period.ongoing{background:color-mix(in srgb,var(--paper,#fff) 80%,#f9d9e8)!important}
+#workspace #view-overview .noor-t4 .nt-period-summary{display:grid;grid-template-columns:102px 32px minmax(0,1fr) auto 32px;align-items:center;gap:10px;min-height:70px;padding:10px 12px;box-sizing:border-box}
+#workspace #view-overview .noor-t4 .nt-period-unset{grid-template-columns:102px minmax(0,1fr) auto}
+#workspace #view-overview .noor-t4 .nt-period-num{min-width:0;text-align:left!important}
+#workspace #view-overview .noor-t4 .nt-period-num b{font-size:13px!important;line-height:1.4;color:var(--berry,#791d43)}
+#workspace #view-overview .noor-t4 .nt-period-num small{display:block;font-size:10px!important;line-height:1.5;white-space:nowrap}
+#workspace #view-overview .noor-t4 .nt-period-summary>.nt-subject-icon{display:grid!important;width:32px!important;height:36px!important;place-items:center;border:0!important;border-radius:9px;background:var(--ref-pink);color:#b82263;box-shadow:none!important}
+#workspace #view-overview .noor-t4 .nt-period:nth-child(5n+2) .nt-subject-icon{background:var(--ref-violet);color:#7850c9}
+#workspace #view-overview .noor-t4 .nt-period:nth-child(5n+3) .nt-subject-icon{background:#e2f4fa;color:#249bc4}
+#workspace #view-overview .noor-t4 .nt-period:nth-child(5n+4) .nt-subject-icon{background:var(--ref-peach);color:#dc8436}
+#workspace #view-overview .noor-t4 .nt-period:nth-child(5n+5) .nt-subject-icon{background:var(--ref-mint);color:#1d956a}
+#workspace #view-overview .noor-t4 .nt-subject-icon .np-icon{width:24px;height:24px}
+#workspace #view-overview .noor-t4 .nt-period .nt-subject{min-width:0;overflow-wrap:anywhere}
+#workspace #view-overview .noor-t4 .nt-period .nt-subject b{font-size:13px!important;line-height:1.35}
+#workspace #view-overview .noor-t4 .nt-period .nt-subject small,#workspace #view-overview .noor-t4 .nt-period-topic{display:block;font-size:11px!important;line-height:1.5;color:var(--muted,#816d7b)}
+#workspace #view-overview .noor-t4 .nt-period-badge{display:inline-flex!important;justify-content:center;border-radius:8px;min-width:74px;padding:7px 9px;font:600 10px/1.3 Inter,sans-serif;white-space:nowrap;background:var(--ref-peach);color:#805725;box-sizing:border-box}
+#workspace #view-overview .noor-t4 .nt-period-badge.complete{background:#dcf6e9;color:#22704f}
+#workspace #view-overview .noor-t4 .nt-period-badge.current{background:#fbd9eb;color:#a92067}
+#workspace #view-overview .noor-t4 .nt-period-expand{display:grid;place-items:center;width:32px;min-width:32px;min-height:36px!important;padding:0;border:0;border-radius:8px;color:var(--berry,#791d43);background:transparent}
+#workspace #view-overview .noor-t4 .nt-period-expand .np-icon{width:18px;height:18px;transition:transform .15s}
+#workspace #view-overview .noor-t4 .nt-period-expand[aria-expanded=true] .np-icon{transform:rotate(180deg)}
+#workspace #view-overview .noor-t4 .nt-period-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid var(--line,#ead8de)}
+#workspace #view-overview .noor-t4 .nt-period-actions[hidden]{display:none!important}
+
+/* Quick actions: consistent icon, label, hit area and spacing on both roles. */
+#workspace #view-overview .noor-t4 .nt-refined-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-3d-quick-btn{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:10px!important;text-align:center!important;min-height:104px!important;padding:14px 8px!important;border:1px solid transparent!important;border-radius:12px!important;box-shadow:none!important;background:var(--ref-mint)!important;color:#227864!important;transform:none!important;min-width:0}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-3d-quick-btn:nth-child(2){background:var(--ref-violet)!important;color:#7a45b1!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-3d-quick-btn:nth-child(3){background:var(--ref-peach)!important;color:#bf6b23!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-3d-quick-btn:nth-child(4){background:#fff0df!important;color:#aa632c!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-icon{display:grid!important;place-items:center;width:30px!important;height:30px!important;min-width:30px!important;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;color:inherit!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-icon .np-icon{width:30px;height:30px}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-text b{font:600 12px/1.4 Inter,sans-serif!important;color:var(--ink,#352735)!important}
+#workspace #view-overview .noor-t4 .nt-refined-actions .nt-quick-text small{display:none!important}
+#workspace #view-overview .nt-reference-ai{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #f2c8da;border-radius:12px;background:var(--ref-pink);color:#982253;padding:14px;margin-top:12px;min-height:70px}
+#workspace #view-overview .nt-reference-ai>.np-icon{width:30px;height:30px;flex:0 0 30px}
+#workspace #view-overview .nt-reference-ai span{display:grid;gap:4px}
+#workspace #view-overview .nt-reference-ai small{font-size:11px;line-height:1.4;color:var(--muted,#856b7b)}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action{min-height:96px!important;padding:12px 7px!important;gap:10px!important;border:1px solid transparent!important;border-radius:11px!important;box-shadow:none!important;color:#3e3a61!important;background:var(--ref-sky)!important;min-width:0}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action.mint{background:var(--ref-mint)!important;color:#287e67!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action.rose{background:var(--ref-pink)!important;color:#b32f62!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action.peach{background:var(--ref-peach)!important;color:#b5742a!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action.violet{background:var(--ref-violet)!important;color:#8148b6!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action-icon{display:grid;place-items:center;width:30px;height:30px}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action-icon .np-icon{width:30px;height:30px}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-action strong{font:600 12px/1.35 Inter,sans-serif!important;color:var(--ink,#3c2f3a)!important}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-learning-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-period{min-height:68px;padding:10px 12px!important;grid-template-columns:96px 34px minmax(0,1fr) auto!important;gap:10px!important;border:1px solid var(--line,#ead8de)!important;position:relative}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-period-icon .np-icon{width:25px;height:25px}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge{display:inline-flex!important;align-items:center;min-height:27px;padding:5px 10px!important;font-size:10px!important;line-height:1.3;background:#fff0df;color:#805725}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge.np-finished{background:#dcf6e9;color:#22704f}
+#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge.np-ongoing{background:#fbd9eb;color:#a92067}
+#workspace #view-overview .sp-ref-teacher-name{display:block;font-size:10px;color:var(--muted,#816d7b)}
+@media(hover:hover){#workspace #view-overview :is(.nt-3d-quick-btn,.sp-ref-action,.nt-reference-ai):hover{filter:brightness(.975);box-shadow:0 4px 14px #65244316!important;transform:translateY(-1px)!important}}
+@media(max-width:1200px){
+ #workspace #view-overview .nt-reference-workspace{grid-template-columns:minmax(0,1fr)}
+ #workspace #view-overview .nt-reference-rail{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+@media(max-width:760px){
+ #workspace #view-overview .nt-reference-rail,#workspace #view-overview .nt-secondary-grid>div{grid-template-columns:minmax(0,1fr)}
+ #workspace #view-overview .noor-t4 .nt-period-summary{grid-template-columns:88px 28px minmax(0,1fr) auto 28px;gap:7px;padding:10px 8px;min-height:78px}
+ #workspace #view-overview .noor-t4 .nt-period-unset{grid-template-columns:88px minmax(0,1fr) auto}
+ #workspace #view-overview .noor-t4 .nt-period-num small{font-size:9px!important;white-space:normal}
+ #workspace #view-overview .noor-t4 .nt-period .nt-subject b{font-size:12px!important}
+ #workspace #view-overview .noor-t4 .nt-period-summary>.nt-subject-icon{width:28px!important;height:32px!important}
+ #workspace #view-overview .noor-t4 .nt-period-badge{min-width:0;font-size:9px!important;padding:6px!important}
+ #workspace #view-overview .noor-t4 .nt-period-expand{width:28px;min-width:28px;min-height:44px!important}
+ #workspace #view-overview .noor-t4 .nt-period-expand .np-icon{width:16px;height:16px}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-period{grid-template-columns:78px 28px minmax(0,1fr)!important;gap:8px!important;padding:12px 9px!important}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge{grid-column:3;justify-self:start}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-period-time{grid-row:1/3}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-period-icon{grid-row:1/3;width:28px;height:32px}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-period-time b{font-size:10px!important;white-space:normal}
+ #workspace #view-overview .noor-header-quote{border-left:0!important;border-top:1px solid var(--line,#ead8de)!important}
+}
+@media(max-width:420px){
+ #workspace #view-overview .noor-t4 .nt-period-summary{grid-template-columns:74px minmax(0,1fr) auto 28px;gap:6px}
+ #workspace #view-overview .noor-t4 .nt-period-summary>.nt-subject-icon{display:none!important}
+ #workspace #view-overview .noor-t4 .nt-period-unset{grid-template-columns:74px minmax(0,1fr) auto}
+ #workspace #view-overview .sp-reference-dashboard .sp-ref-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+/* Preserve high contrast and readable status meaning when the user chooses dark mode. */
+html[data-noor-mode=dark] #workspace #view-overview :is(.noor-t4,.sp-reference-dashboard){--ref-pink:#40283b;--ref-mint:#1c3b34;--ref-violet:#332c4d;--ref-peach:#413524;--ref-sky:#28354b}
+html[data-noor-mode=dark] #workspace #view-overview :is(.nt-profile,.sp-ref-hero){background:var(--paper)!important}
+html[data-noor-mode=dark] #workspace #view-overview :is(.nt-period-badge,.sp-ref-period-badge){background:#493e2b!important;color:#ffe4ad!important}
+html[data-noor-mode=dark] #workspace #view-overview :is(.nt-period-badge.complete,.sp-ref-period-badge.np-finished){background:#214437!important;color:#b8f4d4!important}
+html[data-noor-mode=dark] #workspace #view-overview :is(.nt-period-badge.current,.sp-ref-period-badge.np-ongoing){background:#4c2841!important;color:#ffd0ec!important}
+html[data-noor-mode=dark] #workspace #view-overview :is(.nt-reference-ai,.nt-3d-quick-btn,.sp-ref-action){color:#e5c4f0!important;border-color:var(--line)!important}
+@media(prefers-reduced-motion:reduce){#workspace #view-overview :is(button,.np-icon){transition:none!important;transform:none!important}}
+
+/* Small botanical accents follow the approved reference without covering controls. */
+:root{--noor-reference-leaf:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20240%27%20fill%3D%27none%27%3E%3Cg%20stroke%3D%27%23c77c97%27%20stroke-width%3D%271.6%27%3E%3Cpath%20d%3D%27M36%20232Q73%20171%2087%20111Q99%2062%20144%2012%27%2F%3E%3Cpath%20d%3D%27M51%20207Q9%20191%2015%20158Q48%20163%2051%20207Z%27%20fill%3D%27%23e8b5c7%27%2F%3E%3Cpath%20d%3D%27M64%20179Q110%20175%20125%20142Q88%20138%2064%20179Z%27%20fill%3D%27%23dba3b9%27%2F%3E%3Cpath%20d%3D%27M77%20146Q35%20127%2043%2096Q80%20106%2077%20146Z%27%20fill%3D%27%23e8b5c7%27%2F%3E%3Cpath%20d%3D%27M88%20112Q134%20113%20153%2078Q112%2075%2088%20112Z%27%20fill%3D%27%23dba3b9%27%2F%3E%3Cpath%20d%3D%27M105%2076Q77%2050%2091%2024Q119%2043%20105%2076Z%27%20fill%3D%27%23e8b5c7%27%2F%3E%3Cpath%20d%3D%27M120%2047Q159%2054%20172%2018Q141%2016%20120%2047Z%27%20fill%3D%27%23dba3b9%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")}
+#workspace #view-overview .noor-header-quote{position:relative;overflow:hidden}
+#workspace #view-overview .noor-header-quote:after{content:'';position:absolute;right:-20px;bottom:-30px;width:110px;height:160px;opacity:.18;background:var(--noor-reference-leaf) center/contain no-repeat;pointer-events:none}
+#workspace #view-overview .noor-header-quote>:is(blockquote,cite){position:relative;z-index:1}
+html:is([data-noor-theme="rose-gold"],[data-noor-theme="burgundy-crest"]):not([data-noor-mode="dark"]) body:is(.noor-student-mode,:has(#workspace.noor-teacher-activated)) #workspace .sidebar{background:var(--noor-reference-leaf) left bottom/190px 270px no-repeat,linear-gradient(160deg,#4b0b24,#3a091c)!important;color:#fff0f0!important}
+html:is([data-noor-theme="rose-gold"],[data-noor-theme="burgundy-crest"]):not([data-noor-mode="dark"]) body:is(.noor-student-mode,:has(#workspace.noor-teacher-activated)) #workspace .sidebar #mainNav button{color:#f7e5eb!important}
+html:is([data-noor-theme="rose-gold"],[data-noor-theme="burgundy-crest"]):not([data-noor-mode="dark"]) body:is(.noor-student-mode,:has(#workspace.noor-teacher-activated)) #workspace .sidebar #mainNav button.active{background:linear-gradient(110deg,#b15b73,#782842)!important;border-color:#d59aab!important;box-shadow:inset 3px 0 #e6bd80!important;color:#fff!important}
+#workspace #view-overview .nt-reference-rail .nt-status-box>.nt-round{display:grid!important;place-items:center;width:36px;height:36px;min-width:36px;border-radius:50%;font-size:20px;background:var(--ref-pink);color:var(--berry,#791d43)}
+#workspace #view-overview .nt-reference-rail .nt-status-box.good>.nt-round{background:#39af78;color:#fff}
+#workspace #view-overview .noor-t4 .nt-period-topic{max-height:3em;overflow:hidden}

@@ -128,10 +128,10 @@ async function markEntry(d){
  const c=d.c;if(!active(c)||(!c.principal&&!c.teacher))throw Error('Class teacher or principal access required.');
  document.getElementById('nar-marks-editor')?.remove();
  const dlg=document.createElement('dialog');dlg.id='nar-marks-editor';dlg.className='nar-config-dialog';
- const subjects=[...new Set([...(d.cfg.subject_names||[]),...d.subjects.map(x=>x.name)].filter(Boolean))];
+ const subjects=[...new Set((d.cfg.subject_names?.length?d.cfg.subject_names:d.subjects.map(x=>x.name)).filter(Boolean))];
  const today=window.NOOR_SHARED_TIMETABLE?.schoolDay(c.schoolInfo.timezone)||date(new Date(),c.schoolInfo.timezone);
  dlg.innerHTML='<form><h2>Upload Student Marks</h2><p>Student: '+E(d.s.name)+' · '+E(d.s.class_label||c.group.name)+' · '+E(d.year.label)+'</p>'+
- '<label>Subject<select name="subject" required>'+subjects.map(x=>'<option value="'+E(x)+'">'+E(x)+'</option>').join('')+'</select></label>'+
+ '<label>Subject'+(subjects.length?'<select name="subject" required>'+subjects.map(x=>'<option value="'+E(x)+'">'+E(x)+'</option>').join('')+'</select>':'<input name="subject" required maxlength="140" placeholder="Subject name">')+'</label>'+
  '<label>Assessment category<select name="kind">'+examKeys(d.cfg).map(k=>'<option value="'+k+'">'+E(d.cfg.exam_labels[k]||k)+'</option>').join('')+'</select></label>'+
  '<label>Assessment date<input name="date" type="date" required min="'+E(d.year.start_date)+'" max="'+E(today<d.year.end_date?today:d.year.end_date)+'" value="'+E(today)+'"></label>'+
  '<label>Marks obtained<input name="marks" type="number" step="0.01" min="0" required></label><label>Maximum marks<input name="max" type="number" step="0.01" min="0.01" required></label>'+

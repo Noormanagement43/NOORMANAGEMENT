@@ -706,6 +706,7 @@ async function refresh(){
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
 
+    window.NOOR_LIVE_ANALYTICS?.decorate();
     q('#pd-notices').innerHTML=res.notices.error?empty('Notices unavailable.'):eventList(rows('notices').filter(x=>(!x.starts_at||Date.parse(x.starts_at)<=Date.now())&&(!x.ends_at||Date.parse(x.ends_at)>Date.now())).slice(0,5),'notices')||empty('No active notices.');
     q('#pd-meetings').innerHTML=res.events.error?empty('Meetings unavailable.'):eventList(upcoming.filter(x=>/meeting/i.test(x.event_type)).slice(0,4),'meetings')||empty('No upcoming meetings.');
     q('#pd-events').innerHTML=res.events.error?empty('Calendar unavailable.'):eventList(upcoming.filter(x=>!/meeting/i.test(x.event_type)).slice(0,4),'school-calendar')||empty('No upcoming school events.');

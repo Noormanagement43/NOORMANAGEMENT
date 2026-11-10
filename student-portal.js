@@ -221,6 +221,7 @@ function overview(){
  '<div class="sp-ref-grid sp-ref-grid-bottom">'+box('My Learning Hub','Your class learning tools','<div class="sp-ref-learning-grid">'+refAction(window.NOOR_UI_POLISH?.icon('book')||'▤','Smart Notes','student-learning','rose')+refAction(window.NOOR_UI_POLISH?.icon('assignments')||'☑','Assignments','student-homework','mint')+refAction(window.NOOR_UI_POLISH?.icon('calendar')||'▦','Study Planner','student-planner','peach')+'<button type="button" class="sp-ref-action violet" data-sp-ai><span class="sp-ref-action-icon" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('sparkles')||'✧')+'</span><strong>AI Doubt Solver</strong></button></div>')+box('School Calendar','Academic events and due dates',myCalendar,btn('View all','school-calendar'))+box('Notices & Meetings','Official school updates',noticeHTML,btn('View all','notices'))+'</div>'+
  '<div class="sp-ref-status">◆ Your school workspace</div></div>';
  document.body.classList.add('noor-student-mode');
+window.NOOR_LIVE_ANALYTICS?.decorate();
 }
 function barsMarkup(marks){const groups={};marks.forEach(x=>{const k=subject(x.assessment.subject_id);(groups[k]??=[]).push(x.pct)});
  const vals=Object.entries(groups).map(([k,x])=>[k,average(x.filter(z=>z!=null))]).filter(x=>x[1]!=null);

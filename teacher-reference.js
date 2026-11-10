@@ -179,6 +179,7 @@ async function render(){
  window.NOOR_TEACHER_DATA?.syncHeader();
  setLive();
  initTeacherQuotes();
+ window.NOOR_LIVE_ANALYTICS?.decorate();
  }catch(err){console.error('NOOR Teacher Dashboard:',err);if(root())root().innerHTML='<div class="noor-t4"><div class="nt-card"><h2>Teacher workspace unavailable</h2><p>'+esc(err?.message||'Please try again.')+'</p><button class="nt-btn primary" id="ntReload">Retry</button></div></div>';const retry=$('#ntReload');if(retry)retry.onclick=render}
  finally{rendering=false;if(rerender){rerender=false;queueMicrotask(render);}}
 }

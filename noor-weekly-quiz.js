@@ -1,0 +1,85 @@
+/* Online assessments. Keys and scoring authority stay on the server. */
+(()=>{'use strict';
+const A=()=>window.NOOR_AI_APP||{};
+const drafts=new Map();
+const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const day=c=>window.NOOR_SHARED_TIMETABLE.schoolDay(c.school.timezone);
+function saturday(value){const d=new Date(value+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+(6-d.getUTCDay()+7)%7);return d.toISOString().slice(0,10);}
+function same(c){if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed. Reopen this page.');}
+async function rpc(c,name,args){same(c);const r=await c.db.rpc(name,args);if(r.error)throw r.error;same(c);return r.data;}
+async function ai(c,args){same(c);const r=await c.db.functions.invoke('noor-v2-ai',{body:{institution_id:c.school.id,...args}});same(c);if(r.error||r.data?.error)throw Error('Could not complete this request. Retry, or review the work manually.');return r.data.output;}
+function card(title,body){return '<section class="nq-card"><h2>'+E(title)+'</h2>'+body+'</section>';}
+function compact(questions,keys){return keys.map((k,i)=>(i+1)+'. '+(questions[i]?.type==='short'?k.answer:String.fromCharCode(65+Number(k.answer)))).join(' · ');}
+async function confirmFinal(){return new Promise(resolve=>{const d=document.createElement('dialog');d.className='nq nq-dialog';d.innerHTML='<h2>Save final answers?</h2><p>After saving, your answers are locked. You cannot change or submit them again.</p><button type="button" data-final>Save final answers</button><button type="button" class="soft" data-cancel>Keep editing</button>';document.body.append(d);let result=false;d.querySelector('[data-final]').onclick=()=>{result=true;d.close();};d.querySelector('[data-cancel]').onclick=()=>d.close();d.onclose=()=>{d.remove();resolve(result);};d.showModal();});}
+
+async function teacher(host){
+ host.innerHTML='<div class="nq"><p role="status">Loading online quizzes…</p></div>';
+ try{
+ const c=await window.NOOR_TEACHER_DATA.context(),groups=await window.NOOR_TEACHER_DATA.assignments(c);same(c);
+ const periods=await c.db.from('teacher_timetable_periods').select('subject_name,academic_group_id').eq('institution_id',c.school.id).eq('teacher_membership_id',c.membership.id);if(periods.error)throw periods.error;same(c);
+ const subjects=[...new Set((periods.data||[]).map(x=>x.subject_name).filter(Boolean))];
+ host.innerHTML='<div class="nq"><h1>Assignments & Weekly Quizzes</h1><p>Create, review and approve an online quiz for each subject. Weekly quizzes are scheduled on Saturdays in your school timezone.</p><button class="soft" data-written>Written class assignment</button>'+card('Create Saturday quiz','<form data-create><div class="nq-grid"><label>Class / section<select name="group" required>'+groups.map(g=>'<option value="'+E(g.group_id)+'">'+E(g.class_label)+'</option>').join('')+'</select></label><label>Subject<input name="subject" list="nqSubjects" required maxlength="140"><datalist id="nqSubjects">'+subjects.map(s=>'<option value="'+E(s)+'">').join('')+'</datalist></label><label>Quiz date · Saturday<input type="date" name="date" required min="'+day(c)+'" value="'+saturday(day(c))+'"></label><label>Questions<input type="number" name="count" min="1" max="20" value="10" required></label></div><label>Syllabus / topics<textarea name="source" required maxlength="30000" placeholder="Paste the syllabus and topics taught this week."></textarea></label><button type="submit">Create quiz draft</button><p role="status"></p></form><div data-draft></div>')+card('Saturday schedule & results','<div data-coverage></div><div data-list>Loading…</div>')+'</div>';
+ host.querySelector('[data-written]').onclick=()=>window.NOOR_LEARNING_STUDIO.open(host,'paper-generator',true);
+ const form=host.querySelector('[data-create]'),draftArea=host.querySelector('[data-draft]'),list=host.querySelector('[data-list]');
+ let draft=null,draftContext=null;
+ function preview(){
+  draftArea.innerHTML='<form data-approve><h3>Review every question and answer</h3><label>Quiz title<input name="title" required maxlength="180" value="'+E(draft.title||'Weekly Quiz')+'"></label>'+draft.questions.map((q,i)=>'<fieldset><legend>Question '+(i+1)+' · '+E(q.type)+'</legend><label>Question<textarea name="prompt_'+i+'" required maxlength="2000">'+E(q.prompt)+'</textarea></label><label>Marks<input type="number" name="marks_'+i+'" min="1" max="20" required value="'+E(q.marks)+'"></label>'+(q.type==='short'?'<label>Model answer<textarea name="key_'+i+'" required maxlength="2000">'+E(draft.answer_key[i].answer)+'</textarea></label><label>Marking rubric<textarea name="rubric_'+i+'" maxlength="2000">'+E(draft.answer_key[i].rubric||'')+'</textarea></label>':q.options.map((o,j)=>'<label>Option '+String.fromCharCode(65+j)+'<input name="option_'+i+'_'+j+'" required maxlength="300" value="'+E(o)+'"></label>').join('')+'<label>Correct option<select name="key_'+i+'">'+q.options.map((_,j)=>'<option value="'+j+'" '+(String(j)===draft.answer_key[i].answer?'selected':'')+'>'+String.fromCharCode(65+j)+'</option>').join('')+'</select></label>')+'</fieldset>').join('')+'<label><input name="approved" type="checkbox" required> I checked the syllabus, questions, answer key and marks. Approve and publish to this class.</label><button type="submit">Approve & Publish Quiz</button><p role="status"></p></form>';
+  const approve=draftArea.querySelector('form');approve.onsubmit=async e=>{e.preventDefault();const button=approve.querySelector('[type=submit]'),note=approve.querySelector('[role=status]');button.disabled=true;try{
+   const v=Object.fromEntries(new FormData(approve));if(v.approved!=='on')throw Error('Teacher approval required.');
+   const questions=draft.questions.map((q,i)=>({...q,prompt:v['prompt_'+i].trim(),marks:Number(v['marks_'+i]),options:q.type==='short'?[]:q.options.map((_,j)=>v['option_'+i+'_'+j].trim())}));
+   const keys=draft.answer_key.map((k,i)=>({answer:v['key_'+i].trim(),rubric:v['rubric_'+i]||k.rubric||''}));
+   await rpc(c,'noor_publish_quiz',{p_institution:c.school.id,p_group:draftContext.group,p_title:v.title.trim(),p_subject:draftContext.subject,p_date:draftContext.date,p_questions:questions,p_keys:keys});
+   draftArea.innerHTML='<p role="status">Teacher-approved quiz published for '+E(draftContext.date)+'.</p>';draft=null;await saved();
+  }catch(ex){note.textContent=ex.code==='23505'?'A quiz for this subject, class and Saturday already exists.':ex.message;}finally{button.disabled=false;}};
+ }
+ form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]'),note=form.querySelector('[role=status]');button.disabled=true;try{
+  const v=Object.fromEntries(new FormData(form));if(!groups.some(g=>g.group_id===v.group)||saturday(v.date)!==v.date)throw Error('Choose your assigned class and a Saturday.');
+  draftContext={group:v.group,subject:v.subject.trim(),date:v.date};note.textContent='Preparing editable questions…';
+  draft=await ai(c,{action:'quiz',subject_name:draftContext.subject,class_label:groups.find(g=>g.group_id===v.group).class_label,reviewed_source_text:v.source,question_count:Number(v.count)});preview();note.textContent='Draft ready. Review below before publishing.';
+ }catch(ex){note.textContent=ex.message;}finally{button.disabled=false;}};
+ async function saved(){
+  const r=await c.db.from('noor_weekly_quizzes').select('*').eq('institution_id',c.school.id).in('academic_group_id',groups.map(g=>g.group_id)).order('quiz_date',{ascending:false}).limit(150);if(r.error)throw r.error;same(c);
+  const quizzes=r.data||[];
+  function coverage(){const date=form.elements.date.value,group=form.elements.group.value,required=[...new Set((periods.data||[]).filter(p=>p.academic_group_id===group).map(p=>p.subject_name))];const missing=required.filter(s=>!quizzes.some(q=>q.academic_group_id===group&&q.quiz_date===date&&q.subject_name===s));host.querySelector('[data-coverage]').textContent=required.length?(missing.length?'Still to prepare for '+date+': '+missing.join(', '):'All your scheduled subjects have a quiz for '+date+'.'):'Create one quiz per subject for each Saturday.';}
+  form.elements.date.onchange=coverage;form.elements.group.onchange=coverage;coverage();
+  list.innerHTML=quizzes.map(q=>'<article class="nq-review"><h3>'+E(q.title)+'</h3><p>'+E(q.subject_name)+' · '+E(groups.find(g=>g.group_id===q.academic_group_id)?.class_label)+' · '+E(q.quiz_date)+' · '+q.max_marks+' marks</p><button class="soft" data-review="'+q.id+'">Review submissions & approve marks</button><div data-results="'+q.id+'"></div></article>').join('')||'<p>No Saturday quizzes published yet.</p>';
+  list.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>review(c,quizzes.find(q=>q.id===b.dataset.review),list.querySelector('[data-results="'+b.dataset.review+'"]')).catch(ex=>A().toast?.(ex.message,'error')));
+ }
+ await saved();
+ }catch(ex){sameError(host,ex);}
+}
+
+async function review(c,q,host){
+ host.textContent='Loading submissions…';const [r,key]=await Promise.all([c.db.from('noor_quiz_attempts').select('*').eq('quiz_id',q.id).eq('institution_id',c.school.id).order('submitted_at'),rpc(c,'noor_quiz_review_data',{p_quiz:q.id})]);if(r.error)throw r.error;same(c);
+ host.innerHTML='<p class="nq-key">Private answer key: '+E(compact(q.questions,key.answer_key))+'</p>'+(r.data||[]).map(a=>'<form class="nq-review" data-grade="'+a.id+'"><h3>'+E(key.students.find(s=>s.membership_id===a.student_membership_id)?.name||'Student')+'</h3><p>Objective marks: '+a.objective_marks+' · '+a.correct_count+' correct · '+a.wrong_count+' wrong · '+a.unanswered_count+' unanswered</p>'+q.questions.map((item,i)=>'<div><b>'+(i+1)+'. '+E(item.prompt)+'</b><p>Answer: '+E(item.type==='short'?a.answers[i]:a.answers[i]===''?'Unanswered':String.fromCharCode(65+Number(a.answers[i]))+' · '+item.options[Number(a.answers[i])])+'</p>'+(item.type==='short'?'<label>Marks / '+item.marks+'<input type="number" name="score_'+i+'" min="0" max="'+item.marks+'" step="0.25" value="'+E(a.short_scores?.[i]??(a.answers[i].trim()? '':0))+'" required '+(a.reviewed_at?'disabled':'')+'></label><p data-reason="'+i+'"></p>':'')+'</div>').join('')+(a.reviewed_at?'<p>Approved: '+a.final_marks+' / '+q.max_marks+' · Added to weekly subject marks.</p>':'<label>Teacher feedback<textarea name="feedback" maxlength="4000"></textarea></label>'+(q.questions.some(item=>item.type==='short')?'<button type="button" class="soft" data-check>Suggest short-answer marks</button>':'')+'<label><input type="checkbox" name="approve" required> I reviewed these answers and approve the final marks.</label><button type="submit">Approve & Add Weekly Marks</button>')+'<p role="status"></p></form>').join('');
+ if(!r.data?.length)host.insertAdjacentHTML('beforeend','<p>No submissions yet.</p>');
+ host.querySelectorAll('[data-grade]').forEach(form=>{
+  const a=r.data.find(x=>x.id===form.dataset.grade);if(a.reviewed_at)return;
+  const check=form.querySelector('[data-check]');if(check)check.onclick=async()=>{check.disabled=true;const note=form.querySelector('[role=status]');try{const output=await ai(c,{action:'grade_quiz',attempt_id:a.id});output.scores.forEach(s=>{const field=form.elements['score_'+(s.number-1)];if(field)field.value=s.marks;const reason=form.querySelector('[data-reason="'+(s.number-1)+'"]');if(reason)reason.textContent=s.reason||'';});note.textContent='Suggested marks only. Review and approve before publishing.';}catch(ex){note.textContent=ex.message;}finally{check.disabled=false;}};
+  form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]'),note=form.querySelector('[role=status]');button.disabled=true;try{if(!form.elements.approve.checked)throw Error('Teacher approval required.');const scores=q.questions.map((item,i)=>item.type==='short'?Number(form.elements['score_'+i].value):null);await rpc(c,'noor_approve_quiz_marks',{p_attempt:a.id,p_short_scores:scores,p_feedback:form.elements.feedback.value.trim()});await review(c,q,host);window.dispatchEvent(new CustomEvent('noor:quiz-marks-approved'));}catch(ex){note.textContent=ex.message;}finally{button.disabled=false;}};
+ });
+}
+
+async function student(host){
+ const section=document.createElement('section');section.className='nq';section.dataset.weeklyQuiz='';host.append(section);section.innerHTML=card('Saturday Subject Quizzes','<p role="status">Loading your class quizzes…</p>');
+ try{
+ const c=await window.NOOR_SHARED_TIMETABLE.context();same(c);const today=day(c);
+ const [r,attempts]=await Promise.all([c.db.from('noor_weekly_quizzes').select('*').eq('institution_id',c.school.id).order('quiz_date',{ascending:false}).limit(150),c.db.from('noor_quiz_attempts').select('*').eq('institution_id',c.school.id).eq('student_membership_id',c.membership.id).limit(500)]);for(const x of [r,attempts])if(x.error)throw x.error;same(c);
+ section.innerHTML='<h2>Saturday Subject Quizzes</h2><p>Choose options, fill the blanks or type short answers. Change answers freely until you save your final submission.</p>'+(r.data||[]).map(q=>{
+  const a=(attempts.data||[]).find(x=>x.quiz_id===q.id),available=q.quiz_date===today;
+  return card(q.title,'<div class="nq-meta"><b>'+E(c.school.name)+'</b><span>'+E(A().profile.full_name)+'</span><span>'+E(A().profile.requested_class_name||A().profile.class_label||'My class')+' '+E(A().profile.requested_section_name||'')+'</span><span>'+E(q.subject_name)+' · '+q.quiz_date+'</span></div>'+(a?'<p><b>Final answers saved · Locked</b></p><p>Marks: '+(a.reviewed_at?a.final_marks:a.objective_marks)+' / '+q.max_marks+(a.reviewed_at?' · Teacher approved':' · Provisional, awaiting teacher approval')+'</p><p>'+a.correct_count+' correct · '+a.wrong_count+' wrong/partial · '+a.unanswered_count+' unanswered'+(a.pending_count?' · '+a.pending_count+' short answers pending':'')+'</p><p>'+E(a.feedback)+'</p><div data-key="'+q.id+'"></div>':!available?'<p>'+E(q.quiz_date>today?'Opens on Saturday, '+q.quiz_date:'Quiz closed · Not submitted')+'</p>':'<form data-attempt="'+q.id+'">'+q.questions.map((item,i)=>'<fieldset><legend>'+(i+1)+'. '+E(item.prompt)+' · '+item.marks+' mark(s)</legend>'+(item.type==='short'?'<textarea name="answer_'+i+'" maxlength="4000" aria-label="Answer '+(i+1)+'"></textarea>':item.options.map((o,j)=>'<label class="nq-option"><input type="radio" name="answer_'+i+'" value="'+j+'"><span>'+String.fromCharCode(65+j)+'. '+E(o)+'</span></label>').join('')+'<button type="button" class="soft" data-clear="answer_'+i+'">Clear selection</button>')+'</fieldset>').join('')+'<p data-count role="status">Answers can be changed until final save.</p><button type="submit">Save Final Answers</button><p data-status role="status"></p></form>'));
+ }).join('');
+ if(!r.data?.length)section.insertAdjacentHTML('beforeend','<p>Your teachers have not approved any Saturday quizzes yet.</p>');
+ section.querySelectorAll('[data-attempt]').forEach(form=>{
+  const q=r.data.find(x=>x.id===form.dataset.attempt),draftId=c.userId+':'+c.school.id+':'+q.id;let saving=false;
+  const stored=drafts.get(draftId);if(stored)q.questions.forEach((item,i)=>{if(item.type==='short')form.elements['answer_'+i].value=stored[i]||'';else form.querySelectorAll('input[name="answer_'+i+'"]').forEach(x=>x.checked=x.value===stored[i]);});
+  form.querySelectorAll('[data-clear]').forEach(button=>button.onclick=()=>{form.querySelectorAll('input[name="'+button.dataset.clear+'"]').forEach(x=>x.checked=false);form.dispatchEvent(new Event('input'));});
+  form.oninput=()=>{const f=new FormData(form),values=q.questions.map((_,i)=>String(f.get('answer_'+i)||'').trim()),answered=values.filter(Boolean).length;drafts.set(draftId,values);form.querySelector('[data-count]').textContent=answered+' / '+q.questions.length+' answered · '+(q.questions.length-answered)+' unanswered';};
+  form.onsubmit=async e=>{e.preventDefault();if(saving)return;saving=true;const button=form.querySelector('[type=submit]'),note=form.querySelector('[data-status]');button.disabled=true;try{if(!await confirmFinal())return;const f=new FormData(form),answers=q.questions.map((_,i)=>String(f.get('answer_'+i)||'').trim());await rpc(c,'noor_submit_quiz',{p_quiz:q.id,p_answers:answers});drafts.delete(draftId);section.remove();await student(host);}catch(ex){note.textContent=ex.message;}finally{saving=false;button.disabled=false;}};
+ });
+ for(const a of attempts.data||[]){if(!a.reviewed_at)continue;const el=section.querySelector('[data-key="'+a.quiz_id+'"]');if(!el)continue;const key=await rpc(c,'noor_quiz_result_key',{p_quiz:a.quiz_id});el.textContent=key.length?'Answer key: '+key.map(k=>k.number+'. '+k.answer).join(' · '):'Answer key appears after the Saturday quiz closes and marks are approved.';}
+ }catch(ex){sameError(section,ex);}
+}
+function sameError(host,ex){host.textContent='Could not open quizzes: '+ex.message;}
+window.NOOR_WEEKLY_QUIZ=Object.freeze({teacher,student,saturday,compact});
+})();

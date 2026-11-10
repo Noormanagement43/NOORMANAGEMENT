@@ -103,7 +103,7 @@ async function canonicalJobs(school,me){
  notes:ok(items.filter(x=>x.kind!=='assignment').map(x=>({...x,content:x.body,subject_id:x.subject_name,updated_at:x.updated_at||x.created_at}))),
  assignments:ok(items.filter(x=>x.kind==='assignment').map(x=>({...x,instructions:x.body,subject_id:x.subject_name,assignment_type:'Class assignment'}))),
  submissions:map(db().from('noor_assignment_submissions').select('*').eq('institution_id',school).eq('student_membership_id',me.membership_id),rows=>rows.map(x=>({...x,assignment_id:x.learning_item_id,answer_text:x.answer,status:'submitted'}))),
- assessments:ok((results.data||[]).map(x=>({id:x.id,title:x.assessment_title,assessment_date:x.assessed_on,max_marks:x.max_marks,subject_id:x.subject_name,status:'marked',assessment_type:'test'}))),
+ assessments:ok((results.data||[]).map(x=>({id:x.id,title:x.assessment_title,assessment_date:x.assessed_on,max_marks:x.max_marks,subject_id:x.subject_name,status:'marked',assessment_type:x.assessment_kind||'test'}))),
  results:ok((results.data||[]).map(x=>({id:x.id,assessment_id:x.id,marks_obtained:x.marks,teacher_feedback:x.feedback}))),
  attendance:db().from('attendance_records').select('id,session_id,status:attendance_status,marked_at').eq('institution_id',school).eq('student_membership_id',me.membership_id).order('marked_at',{ascending:false}).limit(420),
  events:map(eventQuery(),rows=>rows.filter(x=>x.kind!=='notice').map(x=>({...x,event_type:x.kind}))),
@@ -279,7 +279,7 @@ function progress(){
  '<div class="sp-kpis"><div class="sp-kpi"><div class="sp-label">Recorded tests</div><div class="sp-value">'+list.length+'</div></div><div class="sp-kpi"><div class="sp-label">Average marks</div><div class="sp-value">'+(score==null?'—':score+'%')+'</div></div><div class="sp-kpi"><div class="sp-label">Attendance trend</div><div class="sp-value">'+(at==null?'—':at+'%')+'</div></div><div class="sp-kpi"><div class="sp-label">All-time tests</div><div class="sp-value">'+all.length+'</div></div></div>'+
  '<div class="sp-grid">'+box('Subject-wise Marks','Average of recorded scored tests',barsMarkup(list))+box('Test Improvement','Chronological score trend; hover points for original test',lineMarkup(list.filter(x=>x.pct!=null)))+'</div>'+
  box('Assessment-wise Performance','Assessment title is used as the topic label until chapter metadata is available',topicBars(list.filter(x=>x.pct!=null)))+box('Attendance Trend','Weekly rates calculated only from teacher-submitted sessions',weekTrend())+
- box('Recent Results & Teacher Feedback','Original marks / maximum marks',marksTable(list)));
+ box('Weekly Subject Quiz Marks','Saturday dates · teacher-approved results only',marksTable(list.filter(x=>x.assessment.assessment_type==='weekly_quiz')))+box('Recent Results & Teacher Feedback','Original marks / maximum marks',marksTable(list)));
 }
 function attendance(){
  const ar=data.recordDays||[],cnt=ar.length,a=ar.filter(x=>x.status==='present').length,b=ar.filter(x=>x.status==='absent').length,l=ar.filter(x=>x.status==='late').length;
@@ -314,7 +314,7 @@ async function uploadAnswer(file,assignment){if(!file)return null;const allowed=
  const ext={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
  const path=[sid(),u().id,assignment.id,crypto.randomUUID()+'.'+ext].join('/');
  const r=await db().storage.from('noor-student-work').upload(path,file,{upsert:false,contentType:file.type});if(r.error)throw r.error;return path;}
-function homework(){
+async function homework(){
  const list=data.assignments||[];let content=list.length?list.map(x=>{
  const existing=(data.submissions||[]).find(s=>s.assignment_id===x.id),done=existing?.status==='reviewed',late=x.due_at&&new Date(x.due_at)<new Date();
  const form=done?'<div class="sp-status">Reviewed · '+(existing.marks_obtained!=null?money(existing.marks_obtained)+' / '+money(x.max_marks):'Teacher review recorded')+'<p>'+E(existing.teacher_feedback||'')+'</p></div>':
@@ -322,6 +322,7 @@ function homework(){
  return '<details class="sp-card sp-focus"><summary><strong>'+E(x.title)+'</strong> · '+badge(subject(x.subject_id))+' '+badge(existing?.status||'Not submitted')+(late?' '+badge('Past deadline'):'')+'</summary><p class="sp-muted">'+E(x.assignment_type)+' · '+(x.due_at?'Due '+dayTime(x.due_at):'No due date')+' · '+(x.max_marks==null?'Marks not set':money(x.max_marks)+' marks')+'</p><p style="white-space:pre-wrap;margin:12px 0">'+E(x.instructions||'')+'</p>'+(x.paper_text?'<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#faf6fc;border-radius:12px;padding:12px">'+E(x.paper_text)+'</pre>':'')+form+'<div class="sp-status" id="spSubmitMsg-'+E(x.id)+'" hidden></div></details>';
  }).join(''):empty('Your teachers have not published any assignments yet.');
  renderShell('student-homework','Assignments','Submit written answers or secure attachments. Teacher feedback updates after review.',box('Assigned Work','Open an assignment to submit', '<div class="sp-list">'+content+'</div>'));
+ if(window.NOOR_ACCOUNT_CONTEXT?.enabled()&&window.NOOR_WEEKLY_QUIZ)await window.NOOR_WEEKLY_QUIZ.student(view('student-homework').querySelector('.sp-root'));
 }
 function planner(){
  const list=data.plans||[],today=isoDay(new Date());

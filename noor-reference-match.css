@@ -83,11 +83,11 @@
 #workspace #view-overview .sp-reference-dashboard .sp-ref-action-icon .np-icon{width:30px;height:30px}
 #workspace #view-overview .sp-reference-dashboard .sp-ref-action strong{font:600 12px/1.35 Inter,sans-serif!important;color:var(--ink,#3c2f3a)!important}
 #workspace #view-overview .sp-reference-dashboard .sp-ref-learning-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-#workspace #view-overview .sp-reference-dashboard .sp-ref-period{min-height:68px;padding:10px 12px!important;grid-template-columns:96px 34px minmax(0,1fr) auto!important;gap:10px!important;border:1px solid var(--line,#ead8de)!important;position:relative}
-#workspace #view-overview .sp-reference-dashboard .sp-ref-period-icon .np-icon{width:25px;height:25px}
-#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge{display:inline-flex!important;align-items:center;min-height:27px;padding:5px 10px!important;font-size:10px!important;line-height:1.3;background:#fff0df;color:#805725}
-#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge.np-finished{background:#dcf6e9;color:#22704f}
-#workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge.np-ongoing{background:#fbd9eb;color:#a92067}
+#workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period{min-height:68px;padding:10px 12px!important;grid-template-columns:96px 34px minmax(0,1fr) auto!important;gap:10px!important;border:1px solid var(--line,#ead8de)!important;position:relative}
+#workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-icon .np-icon{width:25px;height:25px}
+#workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-badge{display:inline-flex!important;align-items:center;min-height:27px;padding:5px 10px!important;font-size:10px!important;line-height:1.3;background:#fff0df;color:#805725}
+#workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-badge.np-finished{background:#dcf6e9;color:#22704f}
+#workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-badge.np-ongoing{background:#fbd9eb;color:#a92067}
 #workspace #view-overview .sp-ref-teacher-name{display:block;font-size:10px;color:var(--muted,#816d7b)}
 @media(hover:hover){#workspace #view-overview :is(.nt-3d-quick-btn,.sp-ref-action,.nt-reference-ai):hover{filter:brightness(.975);box-shadow:0 4px 14px #65244316!important;transform:translateY(-1px)!important}}
 @media(max-width:1200px){
@@ -104,11 +104,11 @@
  #workspace #view-overview .noor-t4 .nt-period-badge{min-width:0;font-size:9px!important;padding:6px!important}
  #workspace #view-overview .noor-t4 .nt-period-expand{width:28px;min-width:28px;min-height:44px!important}
  #workspace #view-overview .noor-t4 .nt-period-expand .np-icon{width:16px;height:16px}
- #workspace #view-overview .sp-reference-dashboard .sp-ref-period{grid-template-columns:78px 28px minmax(0,1fr)!important;gap:8px!important;padding:12px 9px!important}
- #workspace #view-overview .sp-reference-dashboard .sp-ref-period-badge{grid-column:3;justify-self:start}
- #workspace #view-overview .sp-reference-dashboard .sp-ref-period-time{grid-row:1/3}
- #workspace #view-overview .sp-reference-dashboard .sp-ref-period-icon{grid-row:1/3;width:28px;height:32px}
- #workspace #view-overview .sp-reference-dashboard .sp-ref-period-time b{font-size:10px!important;white-space:normal}
+ #workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period{grid-template-columns:78px 28px minmax(0,1fr)!important;gap:8px!important;padding:12px 9px!important}
+ #workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-badge{grid-column:3;justify-self:start}
+ #workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-time{grid-row:1/3}
+ #workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-icon{grid-row:1/3;width:28px;height:32px}
+ #workspace :is(#view-overview,#view-student-schedule) .sp-reference-dashboard .sp-ref-period-time b{font-size:10px!important;white-space:normal}
  #workspace #view-overview .noor-header-quote{border-left:0!important;border-top:1px solid var(--line,#ead8de)!important}
 }
 @media(max-width:420px){
@@ -137,3 +137,14 @@ html:is([data-noor-theme="rose-gold"],[data-noor-theme="burgundy-crest"]):not([d
 #workspace #view-overview .nt-reference-rail .nt-status-box>.nt-round{display:grid!important;place-items:center;width:36px;height:36px;min-width:36px;border-radius:50%;font-size:20px;background:var(--ref-pink);color:var(--berry,#791d43)}
 #workspace #view-overview .nt-reference-rail .nt-status-box.good>.nt-round{background:#39af78;color:#fff}
 #workspace #view-overview .noor-t4 .nt-period-topic{max-height:3em;overflow:hidden}
+
+/* Student timetable remains legible to families, including the full timetable view. */
+#workspace .sp-schedule-explainer{margin:0 0 14px;font:12px/1.5 Inter,sans-serif;color:var(--muted,#856b7b)}
+#workspace .sp-ref-class-label{display:block;font:10px/1.5 Inter,sans-serif;color:var(--muted,#856b7b)}
+#workspace .sp-ref-teacher-name{display:flex;align-items:center;gap:6px;margin-top:4px;font:11px/1.5 Inter,sans-serif;color:var(--ink,#49333d)}
+#workspace .sp-ref-teacher-initials{display:inline-grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border-radius:50%;background:var(--rose-soft,#f6e8ef);color:var(--berry,#791d43);font:600 9px/1 Inter,sans-serif}
+#workspace .sp-ref-period-badge.np-scheduled{background:#eee6fb!important;color:#6943a1!important}
+#workspace .sp-ref-period-badge.np-waiting{background:#fff0df!important;color:#805725!important}
+#workspace .sp-schedule-detail .sp-ref-period{width:100%;color:var(--ink,#49333d);cursor:default}
+html[data-noor-mode=dark] #workspace .sp-ref-period-badge.np-scheduled{background:#332c4d!important;color:#e7d3ff!important}
+html[data-noor-mode=dark] #workspace .sp-ref-period-badge.np-waiting{background:#493e2b!important;color:#ffe4ad!important}

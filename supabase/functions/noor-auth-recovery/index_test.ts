@@ -1,0 +1,15 @@
+import {handle} from './index.ts';
+function assert(value:unknown,message='Assertion failed'){if(!value)throw Error(message);}
+function fixture(options:{limited?:boolean;unknown?:boolean;providerFailure?:boolean;senderMissing?:boolean}={}){
+ const calls:{url:string;body?:Record<string,unknown>}[]=[];
+ const db={rpc:async()=>({data:!options.limited}),auth:{admin:{generateLink:async()=>options.unknown?{error:{code:'user_not_found',status:404}}:{data:{properties:{email_otp:'12345678',hashed_token:'test-hash'}}}}}};
+ const deps={env:(n:string)=>({SUPABASE_URL:'https://ayrryemawwplguaauxij.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-test-key',brevo:'test-brevo'} as Record<string,string>)[n],client:()=>db,request:async(url:string,init?:RequestInit)=>{calls.push({url,body:init?.body?JSON.parse(String(init.body)):undefined});return url.endsWith('/senders')?Response.json({senders:options.senderMissing?[]:[{email:'noormanagement43@gmail.com',active:true}]}):Response.json({messageId:'test-id'},{status:options.providerFailure?503:201});}};
+ return {calls,deps:deps as unknown as NonNullable<Parameters<typeof handle>[1]>};
+}
+function req(origin='https://noormanagement43.github.io',key='sb_publishable_2e16MAulIE1locqlRov9iQ_VWtCjwOG',email='person@example.invalid'){return new Request('https://example.invalid',{method:'POST',headers:{Origin:origin,apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email})});}
+Deno.test('recovery rejects other origins and missing application key before contacting providers',async()=>{const f=fixture();assert((await handle(req('https://evil.invalid'),f.deps)).status===403);assert((await handle(req(undefined,''),f.deps)).status===401);assert(f.calls.length===0);});
+Deno.test('recovery rate limit stops delivery',async()=>{const f=fixture({limited:true});assert((await handle(req(),f.deps)).status===429);assert(f.calls.length===0);});
+Deno.test('recovery delivers code and direct production link without exposing credentials or tokens in response',async()=>{const f=fixture();const r=await handle(req(),f.deps);assert(r.status===200);assert(await r.text()==='{"requested":true}');const body=f.calls[1].body!;assert(String(body.textContent).includes('12345678'));assert(String(body.textContent).includes('https://noormanagement43.github.io/NOORMANAGEMENT/forgot-password.html#type=recovery&token_hash=test-hash'));assert(!JSON.stringify(body).includes('localhost'));assert(!JSON.stringify(body).includes('server-test-key'));});
+Deno.test('unknown account returns same result and sends nothing',async()=>{const f=fixture({unknown:true});const r=await handle(req(),f.deps);assert(r.status===200);assert(await r.text()==='{"requested":true}');assert(f.calls.length===1);});
+Deno.test('provider failure is never claimed as successful delivery',async()=>{const f=fixture({providerFailure:true});assert((await handle(req(),f.deps)).status===503);});
+Deno.test('no unverified or arbitrary sender is used',async()=>{const f=fixture({senderMissing:true});assert((await handle(req(),f.deps)).status===503);assert(f.calls.length===1);});

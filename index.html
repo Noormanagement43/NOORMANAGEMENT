@@ -67,8 +67,8 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
 <script src="./noor-class-visuals.js?v=20261109-clean-labels-1"></script>
 <script src="./noor-school-structure.js?v=20261111-analytics-1-20261106-teacher-flow-2"></script>
 <script src="./noor-student-enrolment.js?v=20261106-join-1"></script>
-<script src="./noor-institution-access.js?v=20261106-join-1"></script>
-<script src="./noor-signup-groups.js?v=20261106-join-1"></script><script src="./noor-canonical-onboarding.js?v=20261111-auth-2"></script>
+<script src="./noor-institution-access.js?v=20261111-name-only-2"></script>
+<script src="./noor-signup-groups.js?v=20261106-join-1"></script><script src="./noor-canonical-onboarding.js?v=20261111-saved-join-3"></script>
 <script src="./daily-quotes.js?v=20261109-role-profile-1"></script>
 <script src="./noor-subject-icons.js?v=20261028-1"></script>
 <script src="./noor-avatar-isolation.js?v=20261028-1"></script>
@@ -113,7 +113,18 @@ body.noor-principal-mode #noor-principal #pd-profile .pd-photo{width:100%!import
 body.noor-principal-mode #noor-principal #pd-profile .pd-photo img{width:100%!important;height:100%!important;object-fit:cover;object-position:center}
 body.noor-principal-mode #noor-principal #pd-profile .pd-profile-info{padding:22px 18px;min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){body.noor-principal-mode #noor-principal #pd-profile{grid-template-columns:36% minmax(0,1fr)}body.noor-principal-mode #noor-principal #pd-profile .pd-photo{min-height:280px}body.noor-principal-mode #noor-principal #pd-profile .pd-profile-info{padding:16px 12px}}
-</style></head>
+</style><style>
+#finishSchoolSetup{margin:20px 0 0;padding:0;color:var(--ink)}
+#finishSchoolSetup .formgrid{grid-template-columns:minmax(0,1fr)}
+#finishSchoolSetup .field input,#finishSchoolSetup .field select{font-size:16px;min-height:48px}
+#finishSchoolSetup .btn{min-height:48px;white-space:normal;line-height:1.5;font-size:13px}
+#finishSwitchAccount{margin-top:14px}
+#finishSchoolSetup .finish-owner{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+#finishSchoolSetup summary{cursor:pointer;color:var(--muted);font-size:12px;padding:4px 0 14px}
+#finishSchoolSetup small{display:block;line-height:1.6;color:var(--muted);margin-top:6px}
+@media(max-width:600px){.auth-card .tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important}.auth-card .tab{min-height:44px}}
+</style>
+</head>
 <body>
 <div id="authApp">
   <header class="topline"><div class="brand"><img class="nmark" src="./noor-official-logo.svg?v=20261020-brand1" width="52" height="52" alt="Noor School Management logo"><div><b>NOOR</b><small>SCHOOL MANAGEMENT</small></div></div><button class="btn light" id="authAppearance" type="button">Appearance</button><div id="dbState" class="dbstate"><span class="dbdot"></span><span id="dbStateText">Secure connection required</span></div></header>

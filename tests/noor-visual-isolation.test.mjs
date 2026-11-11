@@ -38,7 +38,7 @@ test('teacher attendance is actual authorised database workflow, never a fake de
  const [html,teacher,attendance]=await Promise.all([read('index.html'),read('teacher-reference.js'),read('teacher-attendance.js')]);
  assert.doesNotMatch(html,/script src="\.\/teacher-reference-attendance\.js/);
  assert.doesNotMatch(teacher,/NOOR_TEACHER_EMBED/);
- assert.match(teacher,/nt-quote-actions/);
+ assert.match(teacher,/nt-reference-rail/);
  assert.match(teacher,/Open Register/);
  assert.match(teacher,/School Class & Section/);
  assert.match(attendance,/\.from\('noor_teacher_periods'\)/);

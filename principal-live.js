@@ -673,14 +673,14 @@ async function refresh(){
     
     q('#pd-profile').innerHTML=`<div class="pd-photo" aria-label="Profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</div>
       <div class="pd-profile-info">
-        <h2>${e(p.full_name||leadershipLabel)}</h2>
-        <b>${e(leadershipLabel)} · School Leadership</b>
+        <div class="pd-profile-heading"><h2>${e(p.full_name||leadershipLabel)}</h2>
+        <b>${e(leadershipLabel)} · School Leadership</b></div>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||a().user?.user_metadata?.noor_contact?.location||school?.address||'Not added')}</p>
         <p>✉ ${e(p.email||ctx.user.email||'—')}</p>
         <p>☎ ${e(p.mobile_number||a().user?.user_metadata?.noor_contact?.phone||'Not added')}</p>
         <p>Date of birth · ${e(p.date_of_birth||a().user?.user_metadata?.noor_contact?.date_of_birth||'Not added')}</p>
-      </div>`;
+      </div>${window.NOOR_DAILY_QUOTES?.header(p.role)||''}`;
 
 
     // Primary Classes
@@ -706,6 +706,7 @@ async function refresh(){
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
 
+    window.NOOR_LIVE_ANALYTICS?.decorate();
     q('#pd-notices').innerHTML=res.notices.error?empty('Notices unavailable.'):eventList(rows('notices').filter(x=>(!x.starts_at||Date.parse(x.starts_at)<=Date.now())&&(!x.ends_at||Date.parse(x.ends_at)>Date.now())).slice(0,5),'notices')||empty('No active notices.');
     q('#pd-meetings').innerHTML=res.events.error?empty('Meetings unavailable.'):eventList(upcoming.filter(x=>/meeting/i.test(x.event_type)).slice(0,4),'meetings')||empty('No upcoming meetings.');
     q('#pd-events').innerHTML=res.events.error?empty('Calendar unavailable.'):eventList(upcoming.filter(x=>!/meeting/i.test(x.event_type)).slice(0,4),'school-calendar')||empty('No upcoming school events.');

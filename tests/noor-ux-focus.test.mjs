@@ -17,7 +17,7 @@ test('teacher has one concise navigation list with combined learning resources',
   assert.doesNotMatch(page,/id="creatorGeminiKey"|id="creatorBrevoKey"|btnSaveCreatorKeys|https:\/\/api\.brevo\.com\/v3\/smtp\/email/);
 });
 
-test('teacher first viewport has five high-value quick actions and attendance after profile',async()=>{
+test('teacher first viewport places timetable and active quick actions after the profile',async()=>{
   const code=await read('teacher-reference.js');
   assert.doesNotThrow(()=>new Script(code));
   const actions=code.slice(code.indexOf('const tiles')-200); // source tiles are built as HTML, not a JS constant
@@ -29,8 +29,9 @@ test('teacher first viewport has five high-value quick actions and attendance af
   assert.match(section,/Smart Notes/);
   assert.match(section,/Weekly Planner/);
   assert.match(section,/Today Notes/);
-  assert.match(code,/profileNode\?\.insertAdjacentElement\('afterend',priority\)/);
-  assert.match(code,/priorityGrid\.append\(attendance\)/);
+  assert.match(code,/profileNode\?\.insertAdjacentElement\('afterend',workspaceGrid\)/);
+  assert.match(code,/workspaceGrid\.append\(timetable\)/);
+  assert.match(code,/rail\.append\(quickCard\)/);
   assert.doesNotMatch(code,/dash.append\(advance\)|dash.append\(toolkit\)/);
   assert.equal((code.match(/id="ntTeacherIntelligence"/g)||[]).length,0);
   assert.ok(!code.includes('nt-reference-panels'),'No duplicate legacy dashboard panels');

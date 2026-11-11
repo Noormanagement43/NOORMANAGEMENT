@@ -1,4 +1,5 @@
 import { probeBrevoMcp } from './brevo-mcp.ts';
+import { checkBrevoEmailReadiness } from './brevo-email.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.0';
 
 export const PROJECT_REF = 'ayrryemawwplguaauxij';
@@ -102,6 +103,7 @@ export async function handle(req: Request): Promise<Response> {
   if (inst.error) throw inst.error;
   if (!inst.data) throw { code: '42501' };
   if (name === 'brevo.mcp.check') return await probeBrevoMcp(Deno.env.toObject());
+  if (name === 'brevo.email.check') return await checkBrevoEmailReadiness(Deno.env.toObject());
   if (name === 'ai.assist' || name === 'ai.plan') {
    const generated = await db.functions.invoke('noor-v2-ai', { body: { action: name === 'ai.plan' ? 'manager_plan' : 'chat_assist', institution_id: institution, message: string(input.message,3000) } });
    if (generated.error || generated.data?.error) throw { code: 'AI_UNAVAILABLE' };

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
+const awaitProfileValidator=await fs.readFile(new URL('../noor-profile-editor.js',import.meta.url),'utf8');
 const source=await fs.readFile(new URL('../noor-teacher-data.js',import.meta.url),'utf8');
 function setup({mismatch=false}={}){
  const writes=[],user={id:mismatch?'other':'own',email:'teacher@example.invalid',user_metadata:{noor_contact:{phone:'9876543210',joined_on:'2026-01-02',qualification:'B.Ed'}}};
@@ -12,6 +13,7 @@ function setup({mismatch=false}={}){
  const db={auth:{getUser:async()=>({data:{user}}),updateUser:async value=>{writes.push(value);Object.assign(user.user_metadata,value.data);return{data:{user}};}},from(table){if(!(table in tables)&&table!=='profiles')throw Error('Legacy table used: '+table);let patch;const q={select(){return q;},eq(){return q;},order(){return q;},gte(){return q;},limit(){return q;},range(){return q;},update(v){writes.push({table,...v});patch=v;return q;},single:async()=>({data:patch}),maybeSingle:async()=>({data:tables[table]}),then(resolve){resolve({data:tables[table]});}};return q;},rpc:async(name,args)=>{writes.push({name,args});return{data:{status:'present'}};}};
  app.db=db;
  const w={NOOR_AI_APP:app,NOOR_ACCOUNT_CONTEXT:{enabled:()=>true},NOOR_SCHOOL_STRUCTURE:{fetchGroups:async()=>groups},NOOR_SHARED_TIMETABLE:{schoolDay:()=> '2026-11-06',context:async()=>({db,userId:'own',membership,school:{id:'school',timezone:'Asia/Kolkata'}}),load:async()=>({data:[{id:'one',teacher_membership_id:'teacher-member',completed:true},{id:'two',teacher_membership_id:'teacher-member'},{id:'other',teacher_membership_id:'other-member'}]})},dispatchEvent(){}};
+ vm.runInNewContext(awaitProfileValidator,{window:w});
  vm.runInNewContext(source,{window:w,Intl,Date,document:{getElementById:()=>null},CustomEvent:class{},console});return{api:w.NOOR_TEACHER_DATA,app,writes,user};
 }
 test('canonical teacher data uses signup group, only own periods and actual staff attendance',async()=>{const x=setup(),r=await x.api.load();assert.equal(r.assignment.data[0].class_label,'Class 4 · Section B');assert.equal(x.app.profile.class_id,'class');assert.equal(x.app.profile.section_id,'section');assert.equal(r.periods.data.length,2);assert.equal(r.runs.data.length,1);assert.equal(r.checkin.data.status,'present');assert.equal(r.extra.data.joined_on,'2026-01-02');});
@@ -24,3 +26,11 @@ test('attendance table shows small portraits and roll numbers with four direct c
 test('attendance blocks incomplete marks and submits only roster identities',()=>{const x=setup(),students=[{membership_id:'s1'},{membership_id:'s2'}],form={querySelectorAll:()=>[{dataset:{student:'s1'},value:'present'}]};assert.throws(()=>x.api.attendanceRecords(form,students),/every student/);form.querySelectorAll=()=>[{dataset:{student:'s1'},value:'absent'},{dataset:{student:'s2'},value:'late'},{dataset:{student:'outside'},value:'present'}];const records=x.api.attendanceRecords(form,students);assert.deepEqual(JSON.parse(JSON.stringify(records)),[{student_membership_id:'s1',status:'absent'},{student_membership_id:'s2',status:'late'}]);});
 test('attendance names and image URLs cannot insert markup or executable photo URLs',()=>{const html=setup().api.attendanceTable([{membership_id:'s1',name:'<script>alert(1)</script>',roll_number:'<b>1</b>',photo:'javascript:alert(1)'}]);assert.doesNotMatch(html,/<script>|javascript:|<b>1<\/b>/);assert.match(html,/&lt;script&gt;/);});
 test('period badges use recorded completion and distinguish elapsed schedule from completed teaching',async()=>{const window={addEventListener(){}},document={body:{}};vm.runInNewContext(await fs.readFile(new URL('../teacher-reference.js',import.meta.url),'utf8'),{window,document,MutationObserver:class{observe(){}}});const badge=window.NOOR_TEACHER_REFERENCE.periodBadge;assert.equal(badge({schedule_status:'Finished'},null).label,'Pending');assert.equal(badge({schedule_status:'Finished',completed:true},null).label,'Completed');assert.equal(badge({schedule_status:'Scheduled now'},null).label,'In Progress');assert.equal(badge({schedule_status:'Upcoming'},null).label,'Pending');});
+
+test('teacher location persists and email changes stay pending confirmation',async()=>{
+ const x=setup();const result=await x.api.saveProfile({full_name:'Teacher',email:'new@example.invalid',mobile_number:'9876543210',city_or_area:'Sangareddy',date_of_birth:'1998-04-05'});
+ assert.equal(x.user.user_metadata.noor_contact.location,'Sangareddy');assert.equal(x.app.profile.city_or_area,'Sangareddy');assert.equal(x.writes.at(-1).email,'new@example.invalid');assert.match(result,/Confirm/);assert.notEqual(x.app.profile.email,'new@example.invalid');
+});
+test('invalid teacher email is rejected before any write',async()=>{
+ const x=setup();await assert.rejects(()=>x.api.saveProfile({full_name:'Teacher',email:'invalid'}),/valid email/);assert.equal(x.writes.length,0);
+});

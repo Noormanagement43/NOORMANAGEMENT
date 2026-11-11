@@ -58,5 +58,5 @@ test('student screenshot actions resolve to real accessible routes',async()=>{
  }
  assert.match(student,/data-sp-nav/);
  assert.match(student,/Notices & Meetings/);
- assert.match(student,/Today’s Period Schedule/);
+ assert.match(student,/Today’s Schedule/);
 });

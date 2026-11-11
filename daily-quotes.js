@@ -96,7 +96,13 @@
     }
   }
 
+  function header(role) {
+    const q=getFallbackQuote(role),escape=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    return '<aside class="noor-header-quote" aria-label="Daily inspiration"><span class="noor-quote-label">DAILY INSPIRATION</span><blockquote>“'+escape(q.quote)+'”</blockquote><cite>— '+escape(q.author)+'</cite></aside>';
+  }
+
   window.NOOR_DAILY_QUOTES = {
+    header,
     getDailyQuote,
     getFallbackQuote,
     applyQuotes

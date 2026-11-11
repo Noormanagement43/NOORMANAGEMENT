@@ -8,11 +8,15 @@ test('targeted teacher and student module changes remain parseable',()=>{
   assert.doesNotThrow(()=>new vm.Script(file(name),{filename:name}),name);
  }
 });
-test('school notices show exactly targeted recipients and do not claim Brevo email delivery',()=>{
+test('school notices offer multiple groups and separate In-app/Email delivery, never claim inbox receipt',()=>{
  const s=file('noor-communications.js');
- for(const role of ['teacher','student','parent','all'])assert.match(s,new RegExp('name="audience" value="'+role+'"'));
- assert.match(s,/External email requires a separately verified Brevo delivery connection/);
- assert.match(s,/noor_school_messages/);
+ for(const role of ['student','staff','manager','parent'])assert.match(s,new RegExp("'"+role+"'"));
+ assert.match(s,/name="audience"/);
+ assert.match(s,/name="channels" value="in_app"/);
+ assert.match(s,/name="channels" value="email"/);
+ assert.match(s,/noor-communications-api/);
+ assert.match(s,/queued for Brevo \(not yet delivered\)/);
+ assert.match(s,/Check Brevo email status/);
 });
 test('teacher attendance keeps one main register without duplicate calendars',()=>{
  const s=file('noor-teacher-data.js');

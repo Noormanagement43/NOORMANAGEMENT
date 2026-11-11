@@ -21,7 +21,7 @@ async function load(){
  for(const r of [tt,checkin,calendar])if(r.error)throw r.error;
  const periods=(tt.data||[]).filter(p=>p.teacher_membership_id===c.membership.id);
  const ok=data=>({data,error:null}),empty=()=>ok([]);
- Object.assign(A().profile,{mobile_number:contact.phone||'',date_of_birth:contact.date_of_birth||''});
+ Object.assign(A().profile,{mobile_number:contact.phone||'',city_or_area:contact.location||'',date_of_birth:contact.date_of_birth||''});
  return {slots:tt.slots||[],extra:ok({joined_on:contact.joined_on||c.membership.joined_at?.slice(0,10)||'',date_of_birth:contact.date_of_birth||'',qualification:contact.qualification||'',address:contact.address||contact.location||''}),periods:ok(periods),runs:ok(periods.filter(p=>p.completed||p.progress_status==='ongoing').map(p=>({period_id:p.id,status:p.completed?'done':'ongoing'}))),checkin:ok(checkin.data?{...checkin.data,checked_in_at:checkin.data.marked_at}:null),assignees:empty(),personal:empty(),notices:ok((calendar.data||[]).filter(x=>x.kind==='notice').map(x=>({...x,body:x.description}))),calendar:ok((calendar.data||[]).filter(x=>x.kind!=='notice')),assignment:ok(assigned),membership:ok({joined_at:c.membership.joined_at})};
 }
 async function saveProfile(values){
@@ -30,12 +30,15 @@ async function saveProfile(values){
  for(const k of ['joined_on','date_of_birth'])if(v(k)&&(!/^\d{4}-\d{2}-\d{2}$/.test(v(k))||!Number.isFinite(Date.parse(v(k)))||new Date(v(k)).toISOString().slice(0,10)!==v(k)||v(k)>day()||v(k)<'1900-01-01'))throw Error('Enter a valid '+(k==='joined_on'?'joining date':'date of birth')+'.');
  if(v('mobile_number')&&!/^\+?[0-9 ()-]{7,30}$/.test(v('mobile_number')))throw Error('Enter a valid phone number.');
  if(v('qualification').length>240||v('address').length>500)throw Error('Qualification or address is too long.');
+ window.NOOR_PROFILE_EDITOR.validate({...values,email:v('email')||auth.data.user.email});
  const r=await c.db.from('profiles').update({full_name:name}).eq('id',c.userId).select('full_name').single();if(r.error)throw r.error;
- const contact={...auth.data.user.user_metadata?.noor_contact,phone:v('mobile_number'),joined_on:v('joined_on'),date_of_birth:v('date_of_birth'),qualification:v('qualification'),address:v('address')};
+ const contact={...auth.data.user.user_metadata?.noor_contact,phone:v('mobile_number'),location:v('city_or_area'),joined_on:v('joined_on'),date_of_birth:v('date_of_birth'),qualification:v('qualification'),address:v('address')};
  const u=await c.db.auth.updateUser({data:{noor_contact:contact}});if(u.error)throw Error('Name saved; personal details not saved: '+u.error.message);
  if(A().user?.id!==c.userId)throw Error('Account changed. Refresh your profile.');
- Object.assign(A().profile,{full_name:name,mobile_number:contact.phone,date_of_birth:contact.date_of_birth});
+ Object.assign(A().profile,{full_name:name,mobile_number:contact.phone,city_or_area:contact.location,date_of_birth:contact.date_of_birth});
  syncHeader();
+ if(v('email')&&v('email').toLowerCase()!==auth.data.user.email.toLowerCase()){const changed=await c.db.auth.updateUser({email:v('email')});if(changed.error)throw Error('Profile saved; email change failed: '+changed.error.message);return 'Profile saved. Confirm the email change using the links in your inboxes.';}
+ return 'Teacher profile saved.';
 }
 function syncHeader(){const a=A(),photo=a.profile?.avatar_url;for(const id of ['topName','sideUserName']){const el=document.getElementById(id);if(el)el.textContent=a.profile?.full_name||'Teacher';}const av=document.getElementById('topAvatar');if(av){av.innerHTML=photo&&/^https:\/\//.test(photo)?'<img src="'+E(photo)+'" alt="My profile photo">':'<span aria-label="Profile photo not uploaded">◉</span>';}}
 async function checkIn(){const c=await context(),r=await c.db.rpc('noor_teacher_check_in',{p_institution:c.school.id});if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:staff-checkin-saved'));return r.data;}
@@ -58,18 +61,40 @@ async function rosterPhotos(db,students){return Promise.all(students.map(async s
 async function attendance(){
  const host=document.getElementById('view-attendance');if(!host)return;const version=++registerVersion;host.innerHTML=shell('Take Attendance','<p>Loading your class…</p>');
  try{const c=await context(),assigned=await assignments(c);if(version!==registerVersion)return;
- host.innerHTML=shell('Take Attendance','<div class="ta-panel"><div class="ta-fields"><label>My class / section<select data-group>'+assigned.map(x=>'<option value="'+E(x.group_id)+'">'+E(x.class_label)+'</option>').join('')+'</select></label><label>Date<input data-date type="date" value="'+day()+'" max="'+day()+'"></label></div></div><form class="ta-panel" data-register><div class="ta-register-heading"><h2>Student Attendance</h2><div data-attendance-summary aria-live="polite"></div></div><div data-roster></div><p role="status" data-status></p><button class="ta-primary" type="submit" disabled>Save attendance</button></form>');
+ host.innerHTML=shell('Take Attendance','<div class="ta-panel"><div class="ta-fields"><label>My class / section<select data-group>'+assigned.map(x=>'<option value="'+E(x.group_id)+'">'+E(x.class_label)+'</option>').join('')+'</select></label><label>Date<input data-date type="date" value="'+day()+'" max="'+day()+'"></label></div></div><form class="ta-panel" data-register><div class="ta-register-heading"><h2>Student Attendance</h2><div data-attendance-summary aria-live="polite"></div></div><div class="ta-mobile-quickbar"><label><span class="sr-only">Find student</span><input type="search" data-find-student placeholder="Search student or roll number" aria-label="Search student"></label><button type="button" data-mark-everyone-present>Mark all Present</button></div><div data-roster></div><p role="status" data-status></p><button class="ta-primary" type="submit" disabled>Save attendance</button></form>');
  host.querySelector('[data-back]').onclick=()=>A().openView('overview');const form=host.querySelector('form'),group=host.querySelector('[data-group]'),date=host.querySelector('[data-date]'),roster=host.querySelector('[data-roster]'),msg=host.querySelector('[data-status]'),button=form.querySelector('[type=submit]');let students=[],request=0;
+ const search=host.querySelector('[data-find-student]'),quick=host.querySelector('[data-mark-everyone-present]');
+ function filterStudents(){
+  const q=search.value.trim().toLowerCase();
+  roster.querySelectorAll('tbody tr').forEach(row=>{row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);});
+ }
+ search.addEventListener('input',filterStudents);
+ quick.addEventListener('click',()=>{
+  if(!students.length)return;
+  if(quick.dataset.confirm!=='yes'){quick.dataset.confirm='yes';quick.textContent='Confirm: All Present';msg.textContent='Review absences before saving. Tap again to mark everyone Present.';return;}
+  quick.dataset.confirm='';quick.textContent='Mark all Present';
+  roster.querySelectorAll('input[data-student][value="present"]').forEach(input=>{input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));});
+  msg.textContent='All selected Present locally. Adjust Absent/Late/Leave before Save attendance.';
+ });
+ 
  async function refresh(){const n=++request;button.disabled=true;students=[];if(!group.value){roster.textContent='No saved class selection. Ask your principal to review your class assignment.';return;}roster.textContent='Loading enrolled students…';msg.textContent='';try{
  const report=await c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:group.value,p_from:date.value,p_to:date.value});if(report.error)throw report.error;
  const saved=await c.db.from('class_sessions').select('id').eq('institution_id',c.school.id).eq('academic_group_id',group.value).eq('title','Daily class attendance').gte('starts_at',date.value+'T00:00:00'+offset(c.school.timezone,date.value)).lte('starts_at',date.value+'T23:59:59'+offset(c.school.timezone,date.value)).limit(1);if(saved.error)throw saved.error;
  let marks=[];if(saved.data?.length){const old=await rows(()=>c.db.from('attendance_records').select('id,student_membership_id,attendance_status').eq('institution_id',c.school.id).eq('session_id',saved.data[0].id).order('id'));marks=old;}
  if(n!==request||version!==registerVersion||A().user?.id!==c.userId)return;students=report.data.students||[];
- const withPhotos=await rosterPhotos(c.db,students);if(n!==request||version!==registerVersion||A().user?.id!==c.userId||A().schoolId!==c.school.id)return;students=withPhotos;roster.innerHTML=attendanceTable(students,marks);updateSummary();button.disabled=!students.length;
+ const withPhotos=await rosterPhotos(c.db,students);if(n!==request||version!==registerVersion||A().user?.id!==c.userId||A().schoolId!==c.school.id)return;students=withPhotos;roster.innerHTML=attendanceTable(students,marks);filterStudents();quick.dataset.confirm='';quick.textContent='Mark all Present';updateSummary();button.disabled=!students.length;
  }catch(e){if(n===request){roster.textContent='Could not load attendance: '+e.message;}}}
  group.onchange=refresh;date.onchange=refresh;
  function updateSummary(){const selected=[...form.querySelectorAll('input[data-student]:checked')];host.querySelector('[data-attendance-summary]').innerHTML=attendanceStatuses.map(status=>'<span class="ta-count '+status+'">'+selected.filter(x=>x.value===status).length+' '+status[0].toUpperCase()+status.slice(1)+'</span>').join('')+'<span class="ta-count">'+Math.max(0,students.length-selected.length)+' Unmarked</span>';}
  roster.onchange=e=>{if(e.target.matches('input[data-student]')){updateSummary();msg.textContent='Unsaved changes — review and save attendance.';}};
+ roster.addEventListener('click',event=>{
+  const cell=event.target.closest('.ta-status-cell');
+  if(!cell||event.target.closest('label,input'))return;
+  const radio=cell.querySelector('input[data-student]');
+  if(!radio||radio.disabled)return;
+  radio.checked=true;
+  radio.dispatchEvent(new Event('change',{bubbles:true}));
+ });
  form.onsubmit=async e=>{e.preventDefault();button.disabled=true;group.disabled=date.disabled=true;msg.textContent='Saving all attendance marks…';try{if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed. Reopen attendance.');const records=attendanceRecords(form,students);form.querySelectorAll('input[data-student]').forEach(input=>input.disabled=true);const r=await c.db.rpc('noor_save_class_register',{p_institution:c.school.id,p_group:group.value,p_date:date.value,p_records:records});if(r.error)throw r.error;if(r.data?.count!==students.length)throw Error('Attendance save was incomplete.');msg.textContent='✓ '+r.data.count+' students saved. Principal and My Class now use these records.';window.dispatchEvent(new CustomEvent('noor:attendance-saved'));}catch(ex){msg.textContent='Not saved: '+ex.message;}finally{button.disabled=!students.length;group.disabled=date.disabled=false;form.querySelectorAll('input[data-student]').forEach(input=>input.disabled=false);}};
  await refresh();
  

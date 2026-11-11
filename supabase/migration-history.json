@@ -1,6 +1,6 @@
 {
   "project_ref": "ayrryemawwplguaauxij",
-  "source": "Applied destination database migration history, read 2026-11-09",
+  "source": "Applied destination database migration history, read 2026-11-11",
   "migrations": [
     {
       "file": "20261022115103_noor_project_foundation.sql",
@@ -161,6 +161,58 @@
     {
       "file": "20261109131746_add_per_date_teacher_planned_subject_20261109.sql",
       "sha256": "fa698da01f820961f6d0c9112036f016026b03bd09bcca1fdf1e19f94a2cf4d6"
+    },
+    {
+      "file": "20261109140848_school_scoped_appearance_principal_only_20261109.sql",
+      "sha256": "c7e49f6a158df0d731dfb94a3f27ed2552baedee52722a748e5ac552476ece5b"
+    },
+    {
+      "file": "20261109141057_regional_school_holiday_reporting_config_20261109.sql",
+      "sha256": "f6c36b49b5c1049ff98de0b63a11ae4c30ba361627b01aebb4c557ad62903615"
+    },
+    {
+      "file": "20261109141736_publish_scoped_school_theme_updates_20261109.sql",
+      "sha256": "b4aa8cfbb9355e89626e1b1b430914712870eb9699b5abfc1fc249241f0cde0e"
+    },
+    {
+      "file": "20261109154351_noor_multichannel_email_queue_secure_20261109.sql",
+      "sha256": "362d9155ec61a5ec52996ecb938e94e4b0f954701cc8dded9ee5399d956c2a45"
+    },
+    {
+      "file": "20261109154701_noor_email_worker_secret_and_counters_20261109_v2.sql",
+      "sha256": "a84cef6c15875077e792f47093ffe1529dd457231e4ec6fcba9b81e0003c9ef8"
+    },
+    {
+      "file": "20261109160042_enable_noor_scheduled_email_workers_20261109.sql",
+      "sha256": "3bdf6381bbe2b91f1624b932f8cbaf51933a1b772694385c9aa4a4fbc1067593"
+    },
+    {
+      "file": "20261109160059_schedule_noor_brevo_email_queue_every_minute_20261109.sql",
+      "sha256": "b8300aa1fe422b772e59859ebbd6747c9d627ef94ac4ae33f75046c4a41975ae"
+    },
+    {
+      "file": "20261109160431_index_noor_email_delivery_scale_20261109.sql",
+      "sha256": "df783fe35cc0c8df303aa7831542c5731d0689a7992a5fbc64c48517ec9ef03c"
+    },
+    {
+      "file": "20261110184420_live_learning_analytics.sql",
+      "sha256": "63e26695ba79cd732c0cd1704c7e12838fdafce873c68aa5859670196ef96aa5"
+    },
+    {
+      "file": "20261110184946_analytics_photos_and_period_conflicts.sql",
+      "sha256": "d2508950b0cd3710b3788a84f2fabb1b33fc557e4d6dd526d5cba92f9d1eda5a"
+    },
+    {
+      "file": "20261110192234_weekly_online_quizzes.sql",
+      "sha256": "995a4775f1df96c658e9a01206ef6d9b5aa4701cd64d7d2371d4e5e72f590456"
+    },
+    {
+      "file": "20261110193143_weekly_quiz_indexes.sql",
+      "sha256": "3be981ded9bea6ff5685781157b83c3d482ab8bb9d824a701695d58f83b2e2de"
+    },
+    {
+      "file": "20261110194357_quiz_scoring_verification.sql",
+      "sha256": "15c47e577131ef076331f97e7295c1e0056121ec9e826f265381a471b1a5e5de"
     }
   ]
 }

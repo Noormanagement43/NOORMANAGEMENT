@@ -35,16 +35,19 @@ async function saveCanonicalForm(f,v){
  same();const roll=v('roll_number');if(roll.length>30)throw Error('Roll number must be within 30 characters.');
  const name=v('full_name');if(!name||name.length>160)throw Error('Enter your full name.');
  const auth=await db().auth.getUser();if(auth.error||auth.data.user.id!==uid)throw Error('Account changed.');
+ window.NOOR_PROFILE_EDITOR.validate({full_name:name,email:v('email'),mobile_number:'',city_or_area:v('city'),date_of_birth:v('date_of_birth')});
+ if(v('parentphone')&&!/^\+?[0-9 ()-]{7,30}$/.test(v('parentphone')))throw Error('Enter a valid parent phone number.');
  const updated=await db().from('profiles').update({full_name:name}).eq('id',uid).select('id,full_name').single();if(updated.error)throw updated.error;
  same();const rr=await db().from('noor_student_display_preferences').upsert({institution_id:school,membership_id:member,roll_number:roll||null},{onConflict:'membership_id'}).select('roll_number').single();if(rr.error)throw rr.error;same();
- const contact={...auth.data.user.user_metadata?.noor_contact,location:v('city'),parent_name:v('parent'),parent_phone:v('parentphone'),address:v('address')};
+ const contact={...auth.data.user.user_metadata?.noor_contact,location:v('city'),date_of_birth:v('date_of_birth'),parent_name:v('parent'),parent_phone:v('parentphone'),address:v('address')};
  const r=await db().auth.updateUser({data:{noor_contact:contact}});if(r.error)throw r.error;
  if(u().id!==uid||sid()!==school)throw Error('Account changed. Refresh your profile.');
  const photo=f.elements.photo?.files?.[0];if(photo){const result=await window.NOOR_AVATAR_SAFE.uploadOwn({client:db(),userId:uid,profile:p(),schoolId:school,file:photo,backend:'v2'});p().avatar_reference=result.stored_reference;p().avatar_url=result.avatar_url;}
  if(u().id!==uid||sid()!==school)throw Error('Account changed. Refresh your profile.');
- Object.assign(p(),{roll_number:roll,full_name:name,mobile_number:contact.phone,city_or_area:contact.location,parent_name:contact.parent_name,parent_phone:contact.parent_phone,residential_address:contact.address});
+ Object.assign(p(),{roll_number:roll,full_name:name,mobile_number:contact.phone,city_or_area:contact.location,date_of_birth:contact.date_of_birth,parent_name:contact.parent_name,parent_phone:contact.parent_phone,residential_address:contact.address});
  for(const id of ['topName','sideUserName']){const el=document.getElementById(id);if(el)el.textContent=name;}
  const avatar=document.getElementById('topAvatar');if(avatar&&p().avatar_url)avatar.innerHTML='<img alt="My profile" src="'+E(p().avatar_url)+'">';
+ if(v('email').toLowerCase()!==auth.data.user.email.toLowerCase()){const changed=await db().auth.updateUser({email:v('email')});if(changed.error)throw Error('Profile saved; email change failed: '+changed.error.message);return 'Profile saved. Confirm the email change using the links in your inboxes.';}
  return 'Student profile saved.';
  }
  if(f.hasAttribute('data-sp-submit')){const a=data.assignments.find(x=>x.id===f.dataset.spSubmit);if(!a)throw Error('Assignment no longer available.');if(f.elements.attachment?.files?.length)throw Error('Submit your written answer here. Attachment upload is not available yet.');if(!v('answer'))throw Error('Write your answer first.');const r=await db().from('noor_assignment_submissions').upsert({institution_id:school,student_membership_id:p().membership_id,learning_item_id:a.id,answer:v('answer'),submitted_at:new Date().toISOString()},{onConflict:'learning_item_id,student_membership_id'}).select('id').single();if(r.error)throw r.error;return 'Assignment submitted.';}
@@ -52,10 +55,35 @@ async function saveCanonicalForm(f,v){
  const plan=f.id==='spGoalForm';if(!v(plan?'goal':'title'))throw Error('Enter a title.');if(!plan&&v('url')&&!/^https:\/\//i.test(v('url')))throw Error('Evidence link must use HTTPS.');
  const r=await db().from('noor_student_personal_items').insert({institution_id:school,student_id:uid,kind:plan?'plan':'achievement',title:v(plan?'goal':'title'),planned_for:plan?v('date'):null,description:plan?'':v('description'),evidence_url:plan?null:v('url')||null}).select('id').single();if(r.error)throw r.error;return plan?'Study goal saved.':'Achievement saved.';
 }
+function ownClassPeriods(rows,me,school){
+ if(!school||!me?.class_id)return [];
+ return (rows||[]).filter(row=>{
+  if(row.institution_id||row.academic_group_id)return row.institution_id===school&&!!row.academic_group_id&&(row.academic_group_id===me.class_id||!!me.section_id&&row.academic_group_id===me.section_id);
+  return row.school_id===school&&row.class_id===me.class_id&&(!row.section_id||!!me.section_id&&row.section_id===me.section_id);
+ });
+}
+function studentPeriodState(row){
+ if(row.completed||row.progress_status==='completed')return{label:'Completed',tone:'np-finished'};
+ if(row.progress_status==='ongoing')return{label:'In Progress',tone:'np-ongoing'};
+ if(row.schedule_status==='Scheduled now')return{label:'Scheduled now',tone:'np-scheduled'};
+ if(row.schedule_status==='Finished')return{label:'Awaiting update',tone:'np-waiting'};
+ return{label:'Upcoming',tone:''};
+}
+function studentDayPeriods(rows,me,school,weekday){
+ return ownClassPeriods(rows,me,school).filter(row=>Number(row.weekday)===Number(weekday)).sort((a,b)=>Number(a.period_number)-Number(b.period_number)||String(a.start_time).localeCompare(String(b.start_time))||String(a.id).localeCompare(String(b.id)));
+}
+function studentPeriodCards(rows,linked=true){
+ if(!rows.length)return empty('No teacher periods saved for your class and section today.');
+ return '<div class="sp-ref-schedule">'+rows.map((x,i)=>{
+  const status=studentPeriodState(x),teacher=x.teacher_name||'Teacher',initials=teacher.trim().split(/\s+/).slice(0,2).map(n=>n[0]||'').join('');
+  const tag=linked?'button':'article',attrs=linked?' type="button" data-sp-nav="student-schedule"':'';
+  return '<'+tag+attrs+' class="sp-ref-period '+status.tone+'"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'" aria-hidden="true">'+(window.NOOR_UI_POLISH?.subjectGlyph(x.subject_name)||'▤')+'</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E([x.lesson,x.topic].filter(Boolean).join(' · ')||'Lesson / topic not added yet')+'</small><span class="sp-ref-class-label">'+E(classText()+' · '+sectionText())+'</span><span class="sp-ref-teacher-name"><span class="sp-ref-teacher-initials" aria-hidden="true">'+E(initials)+'</span>'+E(teacher)+'</span></span><span class="sp-ref-period-badge '+status.tone+'">'+status.label+'</span></'+tag+'>';
+ }).join('')+'</div>';
+}
 async function studentPeriods(school){
  const result=await window.NOOR_SHARED_TIMETABLE.load();if(result.error||!result.data?.length)return result;
  const names=await db().rpc('noor_period_teacher_names',{p_institution:school});if(names.error)return {...result,error:names.error};
- return {...result,data:result.data.map(x=>({...x,teacher_name:(names.data||[]).find(p=>p.period_id===x.id)?.teacher_name||'Teacher'}))};
+ return {...result,data:ownClassPeriods(result.data,p(),school).map(x=>({...x,teacher_name:(names.data||[]).find(p=>p.period_id===x.id)?.teacher_name||'Teacher'}))};
 }
 async function canonicalJobs(school,me){
  const ok=data=>({data:data||[],error:null}),map=async(q,fn)=>{const r=await q;return r.error?r:ok(fn(r.data||[]));};
@@ -75,7 +103,7 @@ async function canonicalJobs(school,me){
  notes:ok(items.filter(x=>x.kind!=='assignment').map(x=>({...x,content:x.body,subject_id:x.subject_name,updated_at:x.updated_at||x.created_at}))),
  assignments:ok(items.filter(x=>x.kind==='assignment').map(x=>({...x,instructions:x.body,subject_id:x.subject_name,assignment_type:'Class assignment'}))),
  submissions:map(db().from('noor_assignment_submissions').select('*').eq('institution_id',school).eq('student_membership_id',me.membership_id),rows=>rows.map(x=>({...x,assignment_id:x.learning_item_id,answer_text:x.answer,status:'submitted'}))),
- assessments:ok((results.data||[]).map(x=>({id:x.id,title:x.assessment_title,assessment_date:x.assessed_on,max_marks:x.max_marks,subject_id:x.subject_name,status:'marked',assessment_type:'test'}))),
+ assessments:ok((results.data||[]).map(x=>({id:x.id,title:x.assessment_title,assessment_date:x.assessed_on,max_marks:x.max_marks,subject_id:x.subject_name,status:'marked',assessment_type:x.assessment_kind||'test'}))),
  results:ok((results.data||[]).map(x=>({id:x.id,assessment_id:x.id,marks_obtained:x.marks,teacher_feedback:x.feedback}))),
  attendance:db().from('attendance_records').select('id,session_id,status:attendance_status,marked_at').eq('institution_id',school).eq('student_membership_id',me.membership_id).order('marked_at',{ascending:false}).limit(420),
  events:map(eventQuery(),rows=>rows.filter(x=>x.kind!=='notice').map(x=>({...x,event_type:x.kind}))),
@@ -89,7 +117,7 @@ async function readAll(){
  const jobs=canonical?await canonicalJobs(school,me):{
   classes:db().from('classes').select('id,name').eq('school_id',school).eq('is_active',true),
   sections:db().from('sections').select('id,name,class_id').eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000'),
-  periods:window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load():db().from('noor_teacher_periods').select('id,weekday,period_number,start_time,end_time,subject_name,class_label,block_type,section_id,approval_status').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('approval_status','approved').order('weekday').order('start_time'),
+  periods:window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load():db().from('noor_teacher_periods').select('id,school_id,class_id,weekday,period_number,start_time,end_time,subject_name,class_label,block_type,section_id,approval_status').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('approval_status','approved').order('weekday').order('start_time'),
   subjects:db().from('subjects').select('id,name,class_id').eq('school_id',school),
   notes:db().from('smart_notes').select('id,title,content,subject_id,updated_at,teacher_id').eq('school_id',school).eq('class_id',me.class_id||'00000000-0000-0000-0000-000000000000').eq('status','published').eq('published_to_students',true).order('updated_at',{ascending:false}).limit(150),
   notices:db().from('school_notices').select('id,title,body,starts_at,ends_at,created_at').eq('school_id',school).eq('is_active',true).contains('target_roles',['student']).order('starts_at',{ascending:false}).limit(100),
@@ -114,7 +142,7 @@ async function readAll(){
  data.assignments=data.assignments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.assessments=data.assessments.filter(x=>!x.section_id||x.section_id===sectionId);
  data.marks=data.results.map(r=>{const a=data.assessments.find(x=>x.id===r.assessment_id && x.status!=='planned');return a?{...r,assessment:a,pct:N(a.max_marks)>0?100*N(r.marks_obtained)/N(a.max_marks):null}:null}).filter(Boolean).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));
- data.periods=data.periods.filter(x=>(!x.class_id||x.class_id===me.class_id)&&(!x.section_id||x.section_id===sectionId));data.exams=data.assessments.filter(x=>x.status==='planned'&&x.assessment_date>=isoDay(new Date()));const reviewedHomework=data.submissions.filter(x=>x.status==='reviewed'&&x.marks_obtained!=null).map(x=>{const asg=data.assignments.find(a=>a.id===x.assignment_id);if(!asg||!N(asg.max_marks))return null;return {marks_obtained:x.marks_obtained,teacher_feedback:x.teacher_feedback,assessment:{id:asg.id,title:asg.title,subject_id:asg.subject_id,assessment_type:'homework',assessment_date:(x.reviewed_at||x.submitted_at).slice(0,10),max_marks:asg.max_marks},pct:100*N(x.marks_obtained)/N(asg.max_marks)};}).filter(Boolean);data.marks=data.marks.concat(reviewedHomework).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));data.recordDays=data.attendance.map(r=>{const s=data.sessions.find(s=>s.id===r.session_id);return s?{day:s.attendance_date,status:r.status}:null}).filter(Boolean);
+ data.periods=ownClassPeriods(data.periods,me,school);data.exams=data.assessments.filter(x=>x.status==='planned'&&x.assessment_date>=isoDay(new Date()));const reviewedHomework=data.submissions.filter(x=>x.status==='reviewed'&&x.marks_obtained!=null).map(x=>{const asg=data.assignments.find(a=>a.id===x.assignment_id);if(!asg||!N(asg.max_marks))return null;return {marks_obtained:x.marks_obtained,teacher_feedback:x.teacher_feedback,assessment:{id:asg.id,title:asg.title,subject_id:asg.subject_id,assessment_type:'homework',assessment_date:(x.reviewed_at||x.submitted_at).slice(0,10),max_marks:asg.max_marks},pct:100*N(x.marks_obtained)/N(asg.max_marks)};}).filter(Boolean);data.marks=data.marks.concat(reviewedHomework).sort((a,b)=>new Date(a.assessment.assessment_date)-new Date(b.assessment.assessment_date));data.recordDays=data.attendance.map(r=>{const s=data.sessions.find(s=>s.id===r.session_id);return s?{day:s.attendance_date,status:r.status}:null}).filter(Boolean);
 }
 const subject=id=>data.subjects?.find(s=>s.id===id)?.name||'General subject';
 const eligible=()=>data.marks||[];
@@ -171,28 +199,29 @@ function overview(){
  const attendanceCard=box('Today’s Attendance','Recorded school sessions · '+E(new Date().toLocaleDateString('en-IN',{month:'short',year:'numeric'})),attendanceHTML,btn('Details','student-attendance'));
  const performanceCard=box('Subject-Wise Performance','Actual teacher-marked results',barsMarkup(markList),btn('This term','student-progress'));
  const actionsCard=box('Quick Actions','Your classroom tools','<div class="sp-ref-action-grid">'+[
-  refAction('▦','Period Schedule','student-schedule','blue'),refAction('▤','Class Notes','student-learning','mint'),
-  refAction('☑','Assignments','student-homework','rose'),refAction('▥','Progress','student-progress','sky'),
-  refAction('▦','School Calendar','school-calendar','peach'),refAction('◷','Study Planner','student-planner','violet')
+  refAction(window.NOOR_UI_POLISH?.icon('calendar')||'▦','View Timetable','student-schedule','blue'),refAction(window.NOOR_UI_POLISH?.icon('notes')||'▤','Class Notes','student-learning','mint'),
+  refAction(window.NOOR_UI_POLISH?.icon('upload')||'↑','Submit Assignment','student-homework','rose'),refAction(window.NOOR_UI_POLISH?.icon('assignments')||'☑','Study Planner','student-planner','peach'),
+  '<button type="button" class="sp-ref-action violet" data-sp-ai><span class="sp-ref-action-icon" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('sparkles')||'✧')+'</span><strong>Ask AI Doubt Solver</strong></button>',refAction(window.NOOR_UI_POLISH?.icon('progress')||'▥','View Results','student-progress','sky')
  ].join('')+'</div>');
  const currentDay=window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.weekday():new Date().getDay();
- const todays=(data.periods||[]).filter(x=>x.weekday===currentDay).sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
- const scheduleHTML=todays.length?'<div class="sp-ref-schedule">'+todays.map((x,i)=>'<button type="button" class="sp-ref-period '+(x.completed?'np-finished':x.progress_status==='ongoing'?'np-ongoing':'')+'" data-sp-nav="student-schedule"><span class="sp-ref-period-time"><small>Period '+E(x.period_number||i+1)+'</small><b>'+E((x.start_time||'').slice(0,5))+' – '+E((x.end_time||'').slice(0,5))+'</b></span><span class="sp-ref-period-icon p'+i%5+'">▤</span><span class="sp-ref-period-name"><strong>'+E(x.subject_name||'Class subject')+'</strong><small>'+E((x.teacher_name||'Teacher')+' · '+classText()+' · '+sectionText())+'</small></span><span class="sp-ref-period-badge '+(x.completed?'np-finished':x.progress_status==='ongoing'?'np-ongoing':'')+'">'+(x.completed?'Finished':x.progress_status==='ongoing'?'In progress':'Scheduled')+'</span></button>').join('')+'</div>':empty('No teacher periods saved for your class today.');
- const scheduleCard=box('Today’s Period Schedule',new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'}),scheduleHTML,btn('Period Schedule','student-schedule'));
+ const todays=studentDayPeriods(data.periods,me,sid(),currentDay);
+ const scheduleHTML=studentPeriodCards(todays);
+ const scheduleDay=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',timeZone:school.timezone||'Asia/Kolkata'});
+ const scheduleCard=box('Today’s Schedule',classText()+' · '+sectionText()+' · '+scheduleDay,'<p class="sp-schedule-explainer">Your class timetable · updated by your teachers</p>'+scheduleHTML,btn('View Full Timetable','student-schedule'));
  const dueHTML=due.length?'<div class="sp-ref-list">'+due.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-homework"><span class="sp-ref-list-icon">▤</span><span><strong>'+E(x.title)+'</strong><small>'+E(subject(x.subject_id)+(x.due_at?' · Due '+dayTime(x.due_at):' · No deadline'))+'</small></span><em>'+(x.due_at&&new Date(x.due_at)<new Date()?'Overdue':'Pending')+'</em></button>').join('')+'</div>':empty('No pending assignments.');
  const resultRows=(data.marks||[]).slice().reverse().slice(0,3);
  const resultsHTML=resultRows.length?'<div class="sp-ref-list">'+resultRows.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="student-progress"><span class="sp-ref-list-icon violet">▥</span><span><strong>'+E(x.assessment.title)+'</strong><small>'+E(subject(x.assessment.subject_id)+' · '+date(x.assessment.assessment_date))+'</small></span><em class="score">'+E(money(x.marks_obtained)+' / '+money(x.assessment.max_marks))+'</em></button>').join('')+'</div>':empty('No teacher-marked results have been published.');
  const noticeRows=notices().slice(0,3);
  const noticeHTML=noticeRows.length?'<div class="sp-ref-list">'+noticeRows.map(x=>'<button type="button" class="sp-ref-list-row" data-sp-nav="notices"><span class="sp-ref-list-icon rose">◈</span><span><strong>'+E(x.title)+'</strong><small>'+E((x.body||'').slice(0,70)||date(x.starts_at||x.created_at))+'</small></span><b>›</b></button>').join('')+'</div>':empty('No active school notices.');
- const profile='<section class="sp-ref-hero"><div class="sp-avatar">'+avatar+'</div><div class="sp-ref-student-identity"><div class="sp-ref-identity-head"><span class="sp-kicker">WELCOME TO '+E(school.name||'Your school')+'</span><h1>'+E(greeting())+' <span aria-hidden="true">✦</span></h1><time class="sp-welcome-date">'+E(new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:school.timezone||'Asia/Kolkata'}))+'</time><div class="sp-ref-role"><span>Student</span><b>'+(window.NOOR_CLASS_VISUALS?.label(classText()+' · '+sectionText())||E(classText()+' · '+sectionText()))+'</b></div></div><div class="sp-ref-detail-grid"><span>▤ <strong>Roll Number:</strong> '+E(me.roll_number||'Not assigned')+'</span><span>⌂ <strong>School:</strong> '+E(school.name||'Your school')+'</span><span>♧ <strong>Parent:</strong> '+E(me.parent_name||'Not provided')+'</span><span>☎ <strong>Parent Phone:</strong> '+E(me.parent_phone||'Not provided')+'</span><span>✉ <strong>Email:</strong> '+E(me.email||u().email||'Not provided')+'</span></div></div></section>';
- const dailyQuote='<aside class="np-student-quote"><small>Today’s encouragement</small><blockquote>'+E(window.NOOR_UI_POLISH?.quote(window.NOOR_SHARED_TIMETABLE.schoolDay(school.timezone))||'Keep learning, one step at a time.')+'</blockquote></aside>';
+ const profile='<section class="sp-ref-hero"><div class="sp-avatar">'+avatar+'</div><div class="sp-ref-student-identity"><div class="sp-ref-identity-head"><span class="sp-kicker">WELCOME TO '+E(school.name||'Your school')+'</span><h1>'+E(greeting())+' <span aria-hidden="true">✦</span></h1><time class="sp-welcome-date">'+E(new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:school.timezone||'Asia/Kolkata'}))+'</time><div class="sp-ref-role"><span>Student</span><b>'+(window.NOOR_CLASS_VISUALS?.label(classText()+' · '+sectionText())||E(classText()+' · '+sectionText()))+'</b></div></div><div class="sp-ref-detail-grid"><span>▤ <strong>Roll Number:</strong> '+E(me.roll_number||'Not assigned')+'</span><span>⌂ <strong>School:</strong> '+E(school.name||'Your school')+'</span><span>♧ <strong>Parent:</strong> '+E(me.parent_name||'Not provided')+'</span><span>☎ <strong>Parent Phone:</strong> '+E(me.parent_phone||'Not provided')+'</span><span>✉ <strong>Email:</strong> '+E(me.email||u().email||'Not provided')+'</span><span>⌖ <strong>Location:</strong> '+E(me.city_or_area||'Not provided')+'</span><span>▣ <strong>Date of birth:</strong> '+E(me.date_of_birth?date(me.date_of_birth):'Not provided')+'</span></div></div>'+(window.NOOR_DAILY_QUOTES?.header('student')||'')+'</section>';
  const myCalendar='<div class="sp-ref-compact-calendar">'+calGrid(new Date().getFullYear(),new Date().getMonth())+'</div>';
- root().innerHTML='<div class="sp-root sp-reference-dashboard">'+profile+dailyQuote+window.NOOR_CLASSROOM_CONNECT.homeworkCard(data.homework||[])+alertErrors()+
+ root().innerHTML='<div class="sp-root sp-reference-dashboard">'+profile+window.NOOR_CLASSROOM_CONNECT.homeworkCard(data.homework||[])+alertErrors()+
  '<div class="sp-ref-grid sp-ref-grid-top">'+attendanceCard+performanceCard+actionsCard+'</div>'+
  '<div class="sp-ref-grid sp-ref-grid-middle">'+scheduleCard+'<div class="sp-ref-stack">'+box('Upcoming Assignments','School-published homework',dueHTML,btn('View all','student-homework'))+box('Recent Test Results','Graded assessments only',resultsHTML,btn('View all','student-progress'))+'</div></div>'+
- '<div class="sp-ref-grid sp-ref-grid-bottom">'+box('Study Planner','Your goals and completed work',item('Study goals',(data.plans||[]).filter(x=>!x.is_done).length+' pending goals',btn('Open planner','student-planner'))+item('Completed goals',(data.plans||[]).filter(x=>x.is_done).length+' completed'))+box('School Calendar','Academic events and due dates',myCalendar,btn('View all','school-calendar'))+box('Notices & Meetings','Official school updates',noticeHTML,btn('View all','notices'))+'</div>'+
+ '<div class="sp-ref-grid sp-ref-grid-bottom">'+box('My Learning Hub','Your class learning tools','<div class="sp-ref-learning-grid">'+refAction(window.NOOR_UI_POLISH?.icon('book')||'▤','Smart Notes','student-learning','rose')+refAction(window.NOOR_UI_POLISH?.icon('assignments')||'☑','Assignments','student-homework','mint')+refAction(window.NOOR_UI_POLISH?.icon('calendar')||'▦','Study Planner','student-planner','peach')+'<button type="button" class="sp-ref-action violet" data-sp-ai><span class="sp-ref-action-icon" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('sparkles')||'✧')+'</span><strong>AI Doubt Solver</strong></button></div>')+box('School Calendar','Academic events and due dates',myCalendar,btn('View all','school-calendar'))+box('Notices & Meetings','Official school updates',noticeHTML,btn('View all','notices'))+'</div>'+
  '<div class="sp-ref-status">◆ Your school workspace</div></div>';
  document.body.classList.add('noor-student-mode');
+window.NOOR_LIVE_ANALYTICS?.decorate();
 }
 function barsMarkup(marks){const groups={};marks.forEach(x=>{const k=subject(x.assessment.subject_id);(groups[k]??=[]).push(x.pct)});
  const vals=Object.entries(groups).map(([k,x])=>[k,average(x.filter(z=>z!=null))]).filter(x=>x[1]!=null);
@@ -218,14 +247,14 @@ function topicBars(m){
 }
 
 function scheduleRows(weekday){
- const rows=(data.periods||[]).filter(x=>x.weekday===weekday).sort((a,b)=>a.start_time.localeCompare(b.start_time));
- return rows.length?'<div class="sp-list">'+rows.map(x=>item('Period '+x.period_number+' · '+(x.subject_name||'Subject'),'Period time: '+(x.start_time||'').slice(0,5)+'–'+(x.end_time||'').slice(0,5)+' · '+(x.teacher_name||'Teacher')+' · '+(x.schedule_status||x.block_type||'Class')+(x.lesson?' · Lesson: '+x.lesson:'')+(x.topic?' · Topic: '+x.topic:'')+(x.completed?' · Completed':''))).join('')+'</div>':empty('No saved periods for this day.');
+ const rows=studentDayPeriods(data.periods,p(),sid(),weekday);
+ return '<div class="sp-reference-dashboard sp-schedule-detail">'+studentPeriodCards(rows,false)+'</div>';
 }
 function schedule(){
  const weekday=window.NOOR_SHARED_TIMETABLE?.weekday()??new Date().getDay();
  const dayLabel=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:app().school?.timezone||'Asia/Kolkata'});
  renderShell('student-schedule','My Period Schedule','Teacher-published periods for your class / section.',
- box('Today’s Periods',dayLabel,scheduleRows(weekday)));
+ box('Today’s Periods',classText()+' · '+sectionText()+' · '+dayLabel,'<p class="sp-schedule-explainer">Your class timetable · updated by your teachers. Completion is confirmed by your teacher.</p>'+scheduleRows(weekday)));
 }
 function studentNotices(){
  const list=notices();renderShell('notices','Notices & Meetings','Published notices for your authorised school, class and section.',
@@ -250,7 +279,7 @@ function progress(){
  '<div class="sp-kpis"><div class="sp-kpi"><div class="sp-label">Recorded tests</div><div class="sp-value">'+list.length+'</div></div><div class="sp-kpi"><div class="sp-label">Average marks</div><div class="sp-value">'+(score==null?'—':score+'%')+'</div></div><div class="sp-kpi"><div class="sp-label">Attendance trend</div><div class="sp-value">'+(at==null?'—':at+'%')+'</div></div><div class="sp-kpi"><div class="sp-label">All-time tests</div><div class="sp-value">'+all.length+'</div></div></div>'+
  '<div class="sp-grid">'+box('Subject-wise Marks','Average of recorded scored tests',barsMarkup(list))+box('Test Improvement','Chronological score trend; hover points for original test',lineMarkup(list.filter(x=>x.pct!=null)))+'</div>'+
  box('Assessment-wise Performance','Assessment title is used as the topic label until chapter metadata is available',topicBars(list.filter(x=>x.pct!=null)))+box('Attendance Trend','Weekly rates calculated only from teacher-submitted sessions',weekTrend())+
- box('Recent Results & Teacher Feedback','Original marks / maximum marks',marksTable(list)));
+ box('Weekly Subject Quiz Marks','Saturday dates · teacher-approved results only',marksTable(list.filter(x=>x.assessment.assessment_type==='weekly_quiz')))+box('Recent Results & Teacher Feedback','Original marks / maximum marks',marksTable(list)));
 }
 function attendance(){
  const ar=data.recordDays||[],cnt=ar.length,a=ar.filter(x=>x.status==='present').length,b=ar.filter(x=>x.status==='absent').length,l=ar.filter(x=>x.status==='late').length;
@@ -285,7 +314,7 @@ async function uploadAnswer(file,assignment){if(!file)return null;const allowed=
  const ext={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
  const path=[sid(),u().id,assignment.id,crypto.randomUUID()+'.'+ext].join('/');
  const r=await db().storage.from('noor-student-work').upload(path,file,{upsert:false,contentType:file.type});if(r.error)throw r.error;return path;}
-function homework(){
+async function homework(){
  const list=data.assignments||[];let content=list.length?list.map(x=>{
  const existing=(data.submissions||[]).find(s=>s.assignment_id===x.id),done=existing?.status==='reviewed',late=x.due_at&&new Date(x.due_at)<new Date();
  const form=done?'<div class="sp-status">Reviewed · '+(existing.marks_obtained!=null?money(existing.marks_obtained)+' / '+money(x.max_marks):'Teacher review recorded')+'<p>'+E(existing.teacher_feedback||'')+'</p></div>':
@@ -293,6 +322,7 @@ function homework(){
  return '<details class="sp-card sp-focus"><summary><strong>'+E(x.title)+'</strong> · '+badge(subject(x.subject_id))+' '+badge(existing?.status||'Not submitted')+(late?' '+badge('Past deadline'):'')+'</summary><p class="sp-muted">'+E(x.assignment_type)+' · '+(x.due_at?'Due '+dayTime(x.due_at):'No due date')+' · '+(x.max_marks==null?'Marks not set':money(x.max_marks)+' marks')+'</p><p style="white-space:pre-wrap;margin:12px 0">'+E(x.instructions||'')+'</p>'+(x.paper_text?'<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#faf6fc;border-radius:12px;padding:12px">'+E(x.paper_text)+'</pre>':'')+form+'<div class="sp-status" id="spSubmitMsg-'+E(x.id)+'" hidden></div></details>';
  }).join(''):empty('Your teachers have not published any assignments yet.');
  renderShell('student-homework','Assignments','Submit written answers or secure attachments. Teacher feedback updates after review.',box('Assigned Work','Open an assignment to submit', '<div class="sp-list">'+content+'</div>'));
+ if(window.NOOR_ACCOUNT_CONTEXT?.enabled()&&window.NOOR_WEEKLY_QUIZ)await window.NOOR_WEEKLY_QUIZ.student(view('student-homework').querySelector('.sp-root'));
 }
 function planner(){
  const list=data.plans||[],today=isoDay(new Date());
@@ -312,9 +342,9 @@ function portfolio(){
  renderShell('student-portfolio','My Student Portfolio','Track your real school projects and academic achievements.',box('Add Work','Your own private achievements',form)+box('Portfolio History','Projects and achievements','<div class="sp-list">'+rows+'</div>'));
 }
 async function profile(){
- const q=p(),avatar=q.avatar_url?'<img src="'+E(q.avatar_url)+'" alt="Student profile photo">':E((q.full_name||'S')[0]),fields=[['School',app().school?.name],['Student full name',q.full_name],['Roll number',q.roll_number],['Class / section',classText()+' / '+sectionText()],['Email address',q.email||u().email],['Parent / Guardian',q.parent_name],['Parent mobile number',q.parent_phone],['City / area',q.city_or_area],['Residential address',q.residential_address]];
+ const q=p(),avatar=q.avatar_url?'<img src="'+E(q.avatar_url)+'" alt="Student profile photo">':E((q.full_name||'S')[0]),fields=[['School',app().school?.name],['Student full name',q.full_name],['Roll number',q.roll_number],['Class / section',classText()+' / '+sectionText()],['Email address',q.email||u().email],['Date of birth',q.date_of_birth],['Parent / Guardian',q.parent_name],['Parent mobile number',q.parent_phone],['City / area',q.city_or_area],['Residential address',q.residential_address]];
  const details='<div class="sp-profile-grid">'+fields.map(([label,value])=>'<div class="sp-detail"><small>'+E(label)+'</small><strong>'+E(value||'Not provided')+'</strong></div>').join('')+'</div>';
- const form='<form id="spProfileForm" class="sp-form two"><label>Full name<input name="full_name" required maxlength="160" value="'+E(q.full_name||'')+'"></label><label>Roll number<input name="roll_number" maxlength="30" value="'+E(q.roll_number||'')+'"></label><label>Parent name<input name="parent" maxlength="120" value="'+E(q.parent_name||'')+'"></label><label>Parent phone<input type="tel" name="parentphone" maxlength="30" value="'+E(q.parent_phone||'')+'"></label><label>City / area<input name="city" maxlength="120" value="'+E(q.city_or_area||'')+'"></label><label class="wide">Residential address<textarea name="address" maxlength="500">'+E(q.residential_address||'')+'</textarea></label><button class="sp-action" type="submit">Save Profile</button></form><div id="spProfileMsg" hidden></div>';
+ const form='<form id="spProfileForm" class="sp-form two"><label>Email<input name="email" type="email" required value="'+E(q.email||u().email||'')+'"></label><label>Date of birth<input name="date_of_birth" type="date" min="1900-01-01" max="'+isoDay(new Date())+'" value="'+E(q.date_of_birth||'')+'"></label><label>Full name<input name="full_name" required maxlength="160" value="'+E(q.full_name||'')+'"></label><label>Roll number<input name="roll_number" maxlength="30" value="'+E(q.roll_number||'')+'"></label><label>Parent name<input name="parent" maxlength="120" value="'+E(q.parent_name||'')+'"></label><label>Parent phone<input type="tel" name="parentphone" maxlength="30" value="'+E(q.parent_phone||'')+'"></label><label>City / area<input name="city" maxlength="120" value="'+E(q.city_or_area||'')+'"></label><label class="wide">Residential address<textarea name="address" maxlength="500">'+E(q.residential_address||'')+'</textarea></label><button class="sp-action" type="submit">Save Profile</button></form><div id="spProfileMsg" hidden></div>';
  renderShell('profile','Profile Details','Your profile, school and class details.','<div class="sp-intro"><div><span class="sp-kicker">STUDENT IDENTITY</span><h1>'+E(q.full_name)+'</h1><p class="sp-muted">'+E(classText())+' · '+E(sectionText())+'</p>'+badge('Roll '+(q.roll_number||'Unassigned'))+'</div><div class="sp-avatar">'+avatar+'</div></div><div class="sp-grid">'+box('Edit My Profile','Your name, roll number and parent contact details',form)+box('School Details','Class and section are linked to your school',details)+'</div>');
 }
 async function run(id){
@@ -326,7 +356,7 @@ function connectLive(){
  const current=u().id+':'+sid();if(channel&&activeStudent===current)return;
  if(channel){db().removeChannel(channel);channel=null;}
  activeStudent=current;
- const tables=window.NOOR_ACCOUNT_CONTEXT?.enabled()?['noor_learning_items','noor_assignment_submissions','noor_assessment_results','noor_calendar_events','noor_student_personal_items','attendance_records','teacher_timetable_periods','academic_group_memberships','noor_class_questions']:['noor_student_assignments','noor_student_submissions','school_notices','calendar_events','smart_notes','assessment_results','attendance_records'];
+ const tables=window.NOOR_ACCOUNT_CONTEXT?.enabled()?['noor_learning_items','noor_assignment_submissions','noor_assessment_results','noor_calendar_events','noor_student_personal_items','attendance_records','teacher_timetable_periods','noor_daily_period_lessons','academic_group_memberships','noor_class_questions']:['noor_student_assignments','noor_student_submissions','school_notices','calendar_events','smart_notes','assessment_results','attendance_records'];
  const c=db().channel('noor-student-live-'+u().id);
  tables.forEach(table=>c.on('postgres_changes',{event:'*',schema:'public',table,filter:(window.NOOR_ACCOUNT_CONTEXT?.enabled()?'institution_id':'school_id')+'=eq.'+sid()},()=>{
    if(document.visibilityState==='visible')refresh(true);
@@ -338,8 +368,9 @@ async function refresh(silent=false){if(loading||!mine())return;loading=true;try
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&mine())refresh(true);});
 const eventArea=()=>document.getElementById('workspace');
 document.addEventListener('click',async ev=>{
- if(!mine())return;const t=ev.target.closest('[data-sp-nav],[data-sp-month],[data-sp-cal-mode],[data-sp-day],[data-sp-note-tab],[data-sp-goal],[data-sp-delete-goal],[data-sp-delete-portfolio],[data-sp-refresh],[data-nc-homework]');if(!t)return;
+ if(!mine())return;const t=ev.target.closest('[data-sp-ai],[data-sp-nav],[data-sp-month],[data-sp-cal-mode],[data-sp-day],[data-sp-note-tab],[data-sp-goal],[data-sp-delete-goal],[data-sp-delete-portfolio],[data-sp-refresh],[data-nc-homework]');if(!t)return;
  try{
+ if(t.hasAttribute('data-sp-ai')){window.NOOR_SECURE_AI?.open();return;}
  if(t.hasAttribute('data-nc-homework')){const item=(data.homework||[]).find(x=>x.id===t.dataset.ncHomework);if(item)window.NOOR_CLASSROOM_CONNECT.showHomework(item);return;}
  if(t.hasAttribute('data-sp-nav')){if(t.dataset.spNav==='student-learning'&&/Practice/.test(t.textContent))noteTab='papers';return app().openView(t.dataset.spNav);}
  if(t.hasAttribute('data-sp-refresh'))return await refresh();

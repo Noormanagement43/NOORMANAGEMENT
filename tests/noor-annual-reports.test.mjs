@@ -15,3 +15,6 @@ test('school custom year and empty months display missing values, not fabricated
  const html=report.reportHTML({...fake,monthly:[],subjects:[],final:{got:0,max:0,pct:null},marksCount:0,remarks:''},'marks');assert.match(html,/No marks have been recorded/);assert.match(html,/Not recorded/);});
 test('report launch rejects missing authenticated school context without opening content',async()=>{
  await assert.rejects(report.open({membership_id:'00000000-0000-0000-0000-000000000000'},'00000000-0000-0000-0000-000000000000'),/Select a class/);});
+test('custom exam categories appear in annual marks reports without hardcoded term columns',()=>{
+ const html=report.reportHTML({...fake,cfg:{exam_labels:{weekly:'Weekly Review',custom:'Midyear Assessment'}},subjects:[{name:'Science',weekly:{got:8,max:10,pct:80},custom:{got:72,max:80,pct:90}}],final:{got:72,max:80,pct:90}},'marks');assert.match(html,/Midyear Assessment/);assert.match(html,/72\/80/);assert.doesNotMatch(html,/<th>Term 3<\/th>/);
+});

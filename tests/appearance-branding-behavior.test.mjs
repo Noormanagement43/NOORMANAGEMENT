@@ -3,33 +3,46 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 const source=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
-function appearance(code,options={}){
- const store=new Map(),root={dataset:{},classList:{toggle(){}}};
- const account={id:'user-a',user_metadata:options.metadata||{}},writes=[];
- const app={user:account,db:{auth:{getUser:options.getUser|| (async()=>({data:{user:account}})),updateUser:async value=>{writes.push(value);return{data:{user:account}}}},from(){throw Error('Legacy table should not be required for metadata preferences');}}};
- const context={window:{NOOR_AI_APP:app,addEventListener(){},dispatchEvent(){}},document:{documentElement:root,querySelectorAll(){return[]}},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},CustomEvent:class{},console,setTimeout:()=>1,clearTimeout(){}};
- runInNewContext(code,context);return{api:context.window.NOOR_THEME_SETTINGS,root,app,writes,store,account};
+function appearance(code, options={}){
+ const root={dataset:{},classList:{toggle(){} }},writes=[],reads=[];
+ const account={id:'user-a'},app={
+  user:account,schoolId:options.schoolId||'school-a',school:{id:options.schoolId||'school-a',name:'Demo School'},
+  profile:{role:options.role||'principal'},db:null
+ };
+ const database={
+  auth:{getUser:async()=>({data:{user:account}})},
+  from(table){assert.equal(table,'noor_school_appearance');let row;
+   const q={select(){return q},eq(k,v){if(k==='institution_id')reads.push(v);return q},maybeSingle:async()=>({data:options.remote||{theme_key:'linen-pearl',color_mode:'light'}}),upsert(x){writes.push(x);row=x;return q},single:async()=>({data:{institution_id:row.institution_id}})};return q;}
+ };
+ app.db=database;
+ const w={NOOR_AI_APP:app,addEventListener(){},dispatchEvent(){}};
+ const doc={documentElement:root,querySelectorAll(){return[]},addEventListener(){},activeElement:null,hidden:false};
+ const ctx={window:w,document:doc,CustomEvent:class{},console,Date,setTimeout:()=>1,clearTimeout(){}};
+ runInNewContext(code,ctx);return{api:w.NOOR_THEME_SETTINGS,root,app,writes,reads,account};
 }
-test('appearance sync saves all-page dark mode without relying on obsolete palette constraints',async()=>{
- const x=appearance(await source('theme-system.js'),{metadata:{noor_appearance:{theme_key:'linen-pearl',color_mode:'light',updated_at:'2026-10-28T10:00:00Z'}}});
+test('principal theme is loaded and saved ONLY in current institution',async()=>{
+ const x=appearance(await source('theme-system.js'));
  await x.api.loadForCurrentUser();
  assert.equal(x.root.dataset.noorTheme,'linen-pearl');
  x.api.setMode('dark');await x.api.flush();
  assert.equal(x.root.dataset.noorMode,'dark');
- assert.equal(x.store.get('noor.login-mode'),'dark');
- assert.equal(x.writes[0].data.noor_appearance.color_mode,'dark');
- assert.equal(x.writes[0].data.noor_appearance.theme_key,'linen-pearl');
+ assert.equal(x.reads[0],'school-a');
+ assert.equal(x.writes[0].institution_id,'school-a');
+ assert.equal(x.writes[0].color_mode,'dark');
 });
-test('late account load cannot undo a newer appearance selection',async()=>{
- let resolve;
- const x=appearance(await source('theme-system.js'),{getUser:()=>new Promise(r=>resolve=r)});
- const loading=x.api.loadForCurrentUser();x.api.setMode('dark');
- resolve({data:{user:{id:'user-a',user_metadata:{noor_appearance:{theme_key:'rose-whisper',color_mode:'light',updated_at:'2099-01-01'}}}}});
- await loading;assert.equal(x.root.dataset.noorMode,'dark');
+test('teachers cannot change school theme or write settings',async()=>{
+ const x=appearance(await source('theme-system.js'),{role:'teacher',remote:{theme_key:'sage-garden',color_mode:'light'}});
+ await x.api.loadForCurrentUser();assert.equal(x.root.dataset.noorTheme,'sage-garden');
+ x.api.setMode('dark');await x.api.flush();
+ assert.equal(x.root.dataset.noorMode,'light');
+ assert.equal(x.writes.length,0);
 });
-test('a switched account cannot receive another account’s queued preference save',async()=>{
- const x=appearance(await source('theme-system.js'));x.api.setMode('dark');
- const writing=x.api.flush();x.app.user={id:'user-b'};await writing;
+test('switching to a different school does not inherit the previous theme',async()=>{
+ const x=appearance(await source('theme-system.js'),{remote:{theme_key:'rose-gold',color_mode:'light'}});
+ await x.api.loadForCurrentUser();assert.equal(x.root.dataset.noorTheme,'rose-gold');
+ x.app.schoolId='school-b';x.app.school={id:'school-b'};
+ await x.api.loadForCurrentUser();assert.equal(x.reads.at(-1),'school-b');
+ x.api.reset();assert.equal(x.root.dataset.noorTheme,'pastel-aurora');
  assert.equal(x.writes.length,0);
 });
 function branding(code){

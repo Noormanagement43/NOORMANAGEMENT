@@ -37,7 +37,7 @@ async function load(){
 }
 async function upload(file){
  const {db,user,school,profile}=app();
- if(!db||!user?.id||!school?.id||(!['owner','principal'].includes(profile?.role)&&!(profile?.role==='manager'&&window.NOOR_ACCOUNT_CONTEXT?.enabled())))throw Error('Only authorised school leadership can change the logo.');
+ if(!db||!user?.id||!school?.id||!['owner','principal'].includes(profile?.role))throw Error('Only authorised school leadership can change the logo.');
  const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
  if(!types[file?.type]||!file.size||file.size>3*1024*1024)throw Error('Choose JPG, PNG or WebP under 3 MB.');
  const verify=async()=>{const r=await db.auth.getUser();if(r.error||r.data?.user?.id!==user.id||!same(user.id,school))throw Error('Account changed. Sign in again before changing the school logo.');};

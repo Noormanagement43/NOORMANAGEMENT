@@ -35,11 +35,11 @@ test('untrusted period text cannot inject markup through subject or topic',()=>{
  const html=teacher().statusHTML({...period,subject_name:'<img onerror=bad()>',topic:'<script>bad()</script>'},null);
  assert.doesNotMatch(html,/<img|<script>/);assert.match(html,/&lt;script&gt;/);
 });
-test('both role AI buttons open the existing assistant rather than a dummy page',async()=>{
- const api=teacher();api.onClick({target:{closest:()=>({dataset:{action:'open-ai'},closest:()=>true})}});assert.deepEqual(api.calls,['ai']);
+test('retired role AI actions make no calls while timetable navigation remains available',async()=>{
+ const api=teacher();api.onClick({target:{closest:()=>({dataset:{action:'open-ai'},closest:()=>true})}});assert.deepEqual(api.calls,[]);
  const listeners={},calls=[],window={addEventListener(){},NOOR_AI_APP:{profile:{role:'student',status:'active'},user:{id:'me'},schoolId:'school',db:{},openView:view=>calls.push(view)},NOOR_SECURE_AI:{open:()=>calls.push('ai')}};
  const document={addEventListener:(name,fn)=>listeners[name]=fn};
  vm.runInNewContext(read('student-portal.js'),{window,document,console});
- await listeners.click({target:{closest:()=>({hasAttribute:name=>name==='data-sp-ai'})}});assert.deepEqual(calls,['ai']);
+ await listeners.click({target:{closest:()=>({hasAttribute:name=>name==='data-sp-ai'})}});assert.deepEqual(calls,[]);
  calls.length=0;await listeners.click({target:{closest:()=>({dataset:{spNav:'student-schedule'},hasAttribute:name=>name==='data-sp-nav',textContent:'View Timetable'})}});assert.deepEqual(calls,['student-schedule']);
 });

@@ -37,6 +37,7 @@ async function saveCanonicalForm(f,v){
  const auth=await db().auth.getUser();if(auth.error||auth.data.user.id!==uid)throw Error('Account changed.');
  window.NOOR_PROFILE_EDITOR.validate({full_name:name,email:v('email'),mobile_number:'',city_or_area:v('city'),date_of_birth:v('date_of_birth')});
  if(v('parentphone')&&!/^\+?[0-9 ()-]{7,30}$/.test(v('parentphone')))throw Error('Enter a valid parent phone number.');
+ await window.NOOR_PROFILE_GROUPS?.save(Object.fromEntries(new FormData(f)));
  const updated=await db().from('profiles').update({full_name:name}).eq('id',uid).select('id,full_name').single();if(updated.error)throw updated.error;
  same();const rr=await db().from('noor_student_display_preferences').upsert({institution_id:school,membership_id:member,roll_number:roll||null},{onConflict:'membership_id'}).select('roll_number').single();if(rr.error)throw rr.error;same();
  const contact={...auth.data.user.user_metadata?.noor_contact,location:v('city'),date_of_birth:v('date_of_birth'),parent_name:v('parent'),parent_phone:v('parentphone'),address:v('address')};
@@ -89,8 +90,8 @@ async function canonicalJobs(school,me){
  const ok=data=>({data:data||[],error:null}),map=async(q,fn)=>{const r=await q;return r.error?r:ok(fn(r.data||[]));};
  const identity=await window.NOOR_ACCOUNT_CONTEXT.profile(db(),u().id);if(identity.error)throw identity.error;Object.assign(me,identity.data);if(me.avatar_url?.startsWith('noor-profile-photos/')){me.avatar_reference=me.avatar_url;me.avatar_url=await window.NOOR_AVATAR_SAFE.signedUrl({client:db(),storedReference:me.avatar_reference,userId:me.id})||'';}
  const groups=await window.NOOR_SCHOOL_STRUCTURE.fetchGroups(db(),school),auth=await db().auth.getUser();if(auth.error)throw auth.error;
- const contact=auth.data.user.user_metadata?.noor_contact||{};Object.assign(me,{parent_name:contact.parent_name||'',parent_phone:contact.parent_phone||'',residential_address:contact.address||''});
- const prefs=await db().from('noor_student_display_preferences').select('roll_number').eq('institution_id',school).eq('membership_id',me.membership_id).maybeSingle();if(prefs.error)throw prefs.error;me.roll_number=prefs.data?.roll_number||'';
+ const metadata=auth.data.user.user_metadata||{},contact=metadata.noor_contact||{};Object.assign(me,{parent_name:contact.parent_name??metadata.parent_name??'',parent_phone:contact.parent_phone??metadata.mobile_number??'',residential_address:contact.address||''});
+ const prefs=await db().from('noor_student_display_preferences').select('roll_number').eq('institution_id',school).eq('membership_id',me.membership_id).maybeSingle();if(prefs.error)throw prefs.error;me.roll_number=prefs.data?.roll_number??metadata.roll_number??'';
  const learning=db().from('noor_learning_items').select('*').eq('institution_id',school).eq('status','published').in('academic_group_id',[me.class_id,me.section_id].filter(Boolean)).order('created_at',{ascending:false}).limit(250);
  const lr=await learning;if(lr.error)throw lr.error;
  const items=(lr.data||[]).filter(x=>[me.class_id,me.section_id].includes(x.academic_group_id)),subjects=[...new Set(items.map(x=>x.subject_name).filter(Boolean))].map(name=>({id:name,name}));
@@ -201,7 +202,7 @@ function overview(){
  const actionsCard=box('Quick Actions','Your classroom tools','<div class="sp-ref-action-grid">'+[
   refAction(window.NOOR_UI_POLISH?.icon('calendar')||'▦','View Timetable','student-schedule','blue'),refAction(window.NOOR_UI_POLISH?.icon('notes')||'▤','Class Notes','student-learning','mint'),
   refAction(window.NOOR_UI_POLISH?.icon('upload')||'↑','Submit Assignment','student-homework','rose'),refAction(window.NOOR_UI_POLISH?.icon('assignments')||'☑','Study Planner','student-planner','peach'),
-  '<button type="button" class="sp-ref-action violet" data-sp-ai><span class="sp-ref-action-icon" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('sparkles')||'✧')+'</span><strong>Ask AI Doubt Solver</strong></button>',refAction(window.NOOR_UI_POLISH?.icon('progress')||'▥','View Results','student-progress','sky')
+  refAction(window.NOOR_UI_POLISH?.icon('progress')||'▥','View Results','student-progress','sky')
  ].join('')+'</div>');
  const currentDay=window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.weekday():new Date().getDay();
  const todays=studentDayPeriods(data.periods,me,sid(),currentDay);
@@ -344,7 +345,7 @@ function portfolio(){
 async function profile(){
  const q=p(),avatar=q.avatar_url?'<img src="'+E(q.avatar_url)+'" alt="Student profile photo">':E((q.full_name||'S')[0]),fields=[['School',app().school?.name],['Student full name',q.full_name],['Roll number',q.roll_number],['Class / section',classText()+' / '+sectionText()],['Email address',q.email||u().email],['Date of birth',q.date_of_birth],['Parent / Guardian',q.parent_name],['Parent mobile number',q.parent_phone],['City / area',q.city_or_area],['Residential address',q.residential_address]];
  const details='<div class="sp-profile-grid">'+fields.map(([label,value])=>'<div class="sp-detail"><small>'+E(label)+'</small><strong>'+E(value||'Not provided')+'</strong></div>').join('')+'</div>';
- const form='<form id="spProfileForm" class="sp-form two"><label>Email<input name="email" type="email" required value="'+E(q.email||u().email||'')+'"></label><label>Date of birth<input name="date_of_birth" type="date" min="1900-01-01" max="'+isoDay(new Date())+'" value="'+E(q.date_of_birth||'')+'"></label><label>Full name<input name="full_name" required maxlength="160" value="'+E(q.full_name||'')+'"></label><label>Roll number<input name="roll_number" maxlength="30" value="'+E(q.roll_number||'')+'"></label><label>Parent name<input name="parent" maxlength="120" value="'+E(q.parent_name||'')+'"></label><label>Parent phone<input type="tel" name="parentphone" maxlength="30" value="'+E(q.parent_phone||'')+'"></label><label>City / area<input name="city" maxlength="120" value="'+E(q.city_or_area||'')+'"></label><label class="wide">Residential address<textarea name="address" maxlength="500">'+E(q.residential_address||'')+'</textarea></label><button class="sp-action" type="submit">Save Profile</button></form><div id="spProfileMsg" hidden></div>';
+ const form='<form id="spProfileForm" class="sp-form two"><label>Email<input name="email" type="email" required value="'+E(q.email||u().email||'')+'"></label><label>Date of birth<input name="date_of_birth" type="date" min="1900-01-01" max="'+isoDay(new Date())+'" value="'+E(q.date_of_birth||'')+'"></label><label>Full name<input name="full_name" required maxlength="160" value="'+E(q.full_name||'')+'"></label><label>Roll number<input name="roll_number" maxlength="30" value="'+E(q.roll_number||'')+'"></label><label>Parent name<input name="parent" maxlength="120" value="'+E(q.parent_name||'')+'"></label><label>Parent phone<input type="tel" name="parentphone" maxlength="30" value="'+E(q.parent_phone||'')+'"></label><label>City / area<input name="city" maxlength="120" value="'+E(q.city_or_area||'')+'"></label><label class="wide">Residential address<textarea name="address" maxlength="500">'+E(q.residential_address||'')+'</textarea></label>'+(window.NOOR_PROFILE_GROUPS?.markup()||'')+'<button class="sp-action" type="submit">Save Profile</button></form><div id="spProfileMsg" hidden></div>';
  renderShell('profile','Profile Details','Your profile, school and class details.','<div class="sp-intro"><div><span class="sp-kicker">STUDENT IDENTITY</span><h1>'+E(q.full_name)+'</h1><p class="sp-muted">'+E(classText())+' · '+E(sectionText())+'</p>'+badge('Roll '+(q.roll_number||'Unassigned'))+'</div><div class="sp-avatar">'+avatar+'</div></div><div class="sp-grid">'+box('Edit My Profile','Your name, roll number and parent contact details',form)+box('School Details','Class and section are linked to your school',details)+'</div>');
 }
 async function run(id){
@@ -370,7 +371,6 @@ const eventArea=()=>document.getElementById('workspace');
 document.addEventListener('click',async ev=>{
  if(!mine())return;const t=ev.target.closest('[data-sp-ai],[data-sp-nav],[data-sp-month],[data-sp-cal-mode],[data-sp-day],[data-sp-note-tab],[data-sp-goal],[data-sp-delete-goal],[data-sp-delete-portfolio],[data-sp-refresh],[data-nc-homework]');if(!t)return;
  try{
- if(t.hasAttribute('data-sp-ai')){window.NOOR_SECURE_AI?.open();return;}
  if(t.hasAttribute('data-nc-homework')){const item=(data.homework||[]).find(x=>x.id===t.dataset.ncHomework);if(item)window.NOOR_CLASSROOM_CONNECT.showHomework(item);return;}
  if(t.hasAttribute('data-sp-nav')){if(t.dataset.spNav==='student-learning'&&/Practice/.test(t.textContent))noteTab='papers';return app().openView(t.dataset.spNav);}
  if(t.hasAttribute('data-sp-refresh'))return await refresh();
@@ -433,6 +433,6 @@ document.addEventListener('submit',async e=>{
  finally{if(button)button.disabled=false}
 });
 window.addEventListener('noor:timetable-saved',()=>{if(mine()){readAll().then(()=>{const id=document.querySelector('.view.active')?.id?.replace('view-','');if(id==='student-schedule')schedule();else if(id==='school-calendar')window.NOOR_SCHOOL_CALENDAR?.open();else if(id==='overview')overview();}).catch(()=>{});}});
-async function mountSettings(host){if(!host)return;await profile();const content=view('profile').querySelector('.sp-root');host.replaceChildren(content);}
+async function mountSettings(host){if(!host)return;await profile();const content=view('profile').querySelector('.sp-root');host.replaceChildren(content);await window.NOOR_PROFILE_GROUPS?.load(host.querySelector('#spProfileForm'));}
 window.NOOR_STUDENT_PORTAL={render,open:run,refresh,mountSettings};
 })();

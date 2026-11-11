@@ -213,6 +213,10 @@
     {
       "file": "20261110194357_quiz_scoring_verification.sql",
       "sha256": "15c47e577131ef076331f97e7295c1e0056121ec9e826f265381a471b1a5e5de"
+    },
+    {
+      "file": "20261111113032_principal_only_school_logo.sql",
+      "sha256": "ebc57d4d3a96d636228dc4660fe3547f969cc486ae89267589aa9c3deeaf7209"
     }
   ]
 }

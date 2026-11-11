@@ -73,3 +73,4 @@ test('manager keeps own identity and cannot bypass school-logo write permissions
  await assert.rejects(x.api.upload({type:'image/png',size:100}),/authorised school leadership/);
  assert.equal(x.stats().uploaded,0);assert.equal(x.app.profile.role,'manager');
 });
+test('canonical manager cannot upload a school logo',async()=>{const x=branding(await source('noor-school-branding.js'));x.app.profile.role='manager';await assert.rejects(x.api.upload({type:'image/png',size:100}),/authorised school leadership/);assert.equal(x.stats().uploaded,0);});

@@ -165,7 +165,7 @@ async function render(){
  const rail=document.createElement('aside');rail.className='nt-reference-rail';
  if(timetable)workspaceGrid.append(timetable);workspaceGrid.append(rail);
  if(statusCard)rail.append(statusCard);
- if(quickCard){rail.append(quickCard);const ai=document.createElement('button');ai.type='button';ai.className='nt-reference-ai';ai.dataset.action='open-ai';ai.innerHTML=(window.NOOR_UI_POLISH?.icon('sparkles')||'')+'<span><b>AI Assistant</b><small>Lesson plans, notes and questions</small></span>';quickCard.append(ai);}
+ if(quickCard)rail.append(quickCard);
  profileNode?.insertAdjacentElement('afterend',workspaceGrid);
  const classSummary=dash?.querySelector('#ntClassSummary');if(classSummary)workspaceGrid.insertAdjacentElement('afterend',classSummary);
  const oldColumns=dash?.querySelector('.nt-columns');if(oldColumns){for(const col of [...oldColumns.children])if(!col.children.length)col.remove();oldColumns.classList.add('nt-secondary-grid');}
@@ -186,8 +186,7 @@ async function render(){
 function onClick(e){
  const b=e.target.closest('button');if(!b||!b.closest('.noor-t4'))return;
  if(b.dataset.togglePeriod){const panel=document.getElementById(b.getAttribute('aria-controls'));if(panel){panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));}return;}
- if(b.dataset.action==='open-ai'){window.NOOR_SECURE_AI?.open();return;}
- if(b.dataset.addPeriod){window.NOOR_SHARED_TIMETABLE.openEditor(null,{period_number:Number(b.dataset.addPeriod)});return;}
+  if(b.dataset.addPeriod){window.NOOR_SHARED_TIMETABLE.openEditor(null,{period_number:Number(b.dataset.addPeriod)});return;}
  if(b.dataset.dailyPeriod){window.NOOR_SHARED_TIMETABLE.openDaily(current.periods.find(p=>p.id===b.dataset.dailyPeriod));return;}
  if(b.dataset.action==='learning-hub'){
   document.getElementById('ntLearningChoice')?.remove();
@@ -258,8 +257,9 @@ function showProfileEditor(){
  field('Date of birth','date_of_birth',d.date_of_birth,'date')+
  field('Qualification','qualification',d.qualification,'text','maxlength="240"')+
  '<label class="nt4-span">Address<textarea name="address" maxlength="500">'+esc(d.address||'')+'</textarea></label>'+
+ (window.NOOR_PROFILE_GROUPS?.markup()||'')+
  '<p class="nt4-span">Change your photo in the Profile photo section of Settings.</p>';
- modal('Edit Teacher Profile',inputs,async f=>{
+ const editor=modal('Edit Teacher Profile',inputs,async f=>{
  const a=get(),val=name=>String(f.elements[name]?.value||'').trim();
  if(!val('full_name'))throw Error('Full name cannot be empty.');
  if(window.NOOR_TEACHER_DATA?.current()){const message=await window.NOOR_TEACHER_DATA.saveProfile(Object.fromEntries(new FormData(f)));notify(message||'Teacher profile saved.');return;}
@@ -270,6 +270,7 @@ function showProfileEditor(){
  const r=await a.db.from('noor_teacher_profile_details').upsert(row,{onConflict:'school_id,teacher_id'});
  if(r.error)throw r.error;const top=document.getElementById('topName');if(top)top.textContent=a.profile.full_name;notify('Teacher profile updated.');
  });
+ window.NOOR_PROFILE_GROUPS?.load(editor.querySelector('form'));
 }
 async function uploadPhoto(e){
  const file=e.target.files?.[0],a=get();if(!file)return;

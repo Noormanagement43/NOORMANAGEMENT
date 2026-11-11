@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+const code=fs.readFileSync(new URL('../noor-profile-groups.js',import.meta.url),'utf8');
+function setup({role='student',linked=false,changed=false,denied=false}={}){
+ const calls=[],profile={role,class_id:linked?'saved-class':null},app={user:{id:'own'},schoolId:'school',profile,db:{auth:{getUser:async()=>({data:{user:{id:changed?'other':'own'}}})},rpc:async(name,args)=>{calls.push({name,args});return denied?{error:Error('Choose a class from your school')}:{data:{}}}}};
+ const window={NOOR_AI_APP:app,NOOR_ACCOUNT_CONTEXT:{enabled:()=>true,profile:async()=>({data:{class_id:'chosen-class',section_id:'chosen-section'}})}};vm.runInNewContext(code,{window});return{api:window.NOOR_PROFILE_GROUPS,calls,profile};
+}
+test('missing student/teacher class uses its own guarded RPC and verifies saved assignment',async()=>{for(const role of ['student','teacher']){const x=setup({role});await x.api.save({profile_class:'chosen-class',profile_section:'chosen-section'});assert.equal(x.calls[0].name,role==='teacher'?'noor_select_teacher_section':'noor_select_student_section');assert.equal(x.profile.class_id,'chosen-class');assert.equal(x.calls[0].args.p_institution,'school');}});
+test('existing class and other roles cannot be reassigned by profile input',async()=>{for(const options of [{linked:true},{role:'principal'},{role:'manager'}]){const x=setup(options);await x.api.save({profile_class:'different'});assert.equal(x.calls.length,0);}});
+test('changed account and backend denial never update the displayed assignment',async()=>{for(const options of [{changed:true},{denied:true}]){const x=setup(options);await assert.rejects(()=>x.api.save({profile_class:'chosen-class'}));assert.equal(x.profile.class_id,null);}});

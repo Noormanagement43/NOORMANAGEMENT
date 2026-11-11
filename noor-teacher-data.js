@@ -9,9 +9,9 @@ async function assignments(c){
  const [groups,enrolled]=await Promise.all([window.NOOR_SCHOOL_STRUCTURE.fetchGroups(c.db,c.school.id),rows(()=>c.db.from('academic_group_memberships').select('group_id,group_role').eq('institution_id',c.school.id).eq('membership_id',c.membership.id).eq('status','active').order('id'))]);
  const ids=enrolled.filter(x=>['teacher','faculty'].includes(x.group_role)).map(x=>x.group_id);
  const allowed=groups.filter(g=>g.is_active&&ids.includes(g.id));
- const list=allowed.map(g=>{const parent=groups.find(x=>x.id===g.parent_group_id);return{group_id:g.id,class_id:parent?.id||g.id,section_id:parent?g.id:null,class_label:parent?parent.name+' · '+g.name:g.name};});
+ const list=allowed.map(g=>{const parent=groups.find(x=>x.id===g.parent_group_id);return{group_id:g.id,class_id:parent?.id||g.id,section_id:parent?g.id:null,class_name:parent?.name||g.name,section_name:parent?g.name:'',class_label:parent?parent.name+' · '+g.name:g.name};});
  // These are verified group memberships saved at signup, never user metadata grants.
- Object.assign(A().profile,{class_id:list[0]?.class_id||null,section_id:list[0]?.section_id||null,class_label:list[0]?.class_label||''});
+ Object.assign(A().profile,{class_id:list[0]?.class_id||null,section_id:list[0]?.section_id||null,class_label:list[0]?.class_label||'',requested_class_name:list[0]?.class_name||'',requested_section_name:list[0]?.section_name||''});
  return list;
 }
 async function teachingGroups(c){
@@ -26,7 +26,7 @@ async function load(){
  for(const r of [tt,checkin,calendar])if(r.error)throw r.error;
  const periods=(tt.data||[]).filter(p=>p.teacher_membership_id===c.membership.id);
  const ok=data=>({data,error:null}),empty=()=>ok([]);
- Object.assign(A().profile,{mobile_number:contact.phone||'',city_or_area:contact.location||'',date_of_birth:contact.date_of_birth||''});
+ Object.assign(A().profile,{mobile_number:contact.phone??auth.data.user.user_metadata?.mobile_number??'',city_or_area:contact.location||'',date_of_birth:contact.date_of_birth||''});
  return {slots:tt.slots||[],extra:ok({joined_on:contact.joined_on||c.membership.joined_at?.slice(0,10)||'',date_of_birth:contact.date_of_birth||'',qualification:contact.qualification||'',address:contact.address||contact.location||''}),periods:ok(periods),runs:ok(periods.filter(p=>p.completed||p.progress_status==='ongoing').map(p=>({period_id:p.id,status:p.completed?'done':'ongoing'}))),checkin:ok(checkin.data?{...checkin.data,checked_in_at:checkin.data.marked_at}:null),assignees:empty(),personal:empty(),notices:ok((calendar.data||[]).filter(x=>x.kind==='notice').map(x=>({...x,body:x.description}))),calendar:ok((calendar.data||[]).filter(x=>x.kind!=='notice')),assignment:ok(assigned),membership:ok({joined_at:c.membership.joined_at})};
 }
 async function saveProfile(values){
@@ -36,6 +36,7 @@ async function saveProfile(values){
  if(v('mobile_number')&&!/^\+?[0-9 ()-]{7,30}$/.test(v('mobile_number')))throw Error('Enter a valid phone number.');
  if(v('qualification').length>240||v('address').length>500)throw Error('Qualification or address is too long.');
  window.NOOR_PROFILE_EDITOR.validate({...values,email:v('email')||auth.data.user.email});
+ await window.NOOR_PROFILE_GROUPS?.save(values);
  const r=await c.db.from('profiles').update({full_name:name}).eq('id',c.userId).select('full_name').single();if(r.error)throw r.error;
  const contact={...auth.data.user.user_metadata?.noor_contact,phone:v('mobile_number'),location:v('city_or_area'),joined_on:v('joined_on'),date_of_birth:v('date_of_birth'),qualification:v('qualification'),address:v('address')};
  const u=await c.db.auth.updateUser({data:{noor_contact:contact}});if(u.error)throw Error('Name saved; personal details not saved: '+u.error.message);

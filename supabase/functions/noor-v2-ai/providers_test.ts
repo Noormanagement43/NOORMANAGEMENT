@@ -4,6 +4,15 @@ function assert(v:unknown,m='Assertion failed'):asserts v{if(!v)throw Error(m)}
 const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','GROQ_MODEL','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY','groq','gemini','chatgpt','brevo','BREVO_API_KEY','EMAIL_FROM'];
 async function isolated(run:()=>Promise<void>){const env=names.map(n=>Deno.env.get(n));const old=globalThis.fetch;try{names.forEach(n=>Deno.env.delete(n));await run()}finally{globalThis.fetch=old;names.forEach((n,i)=>env[i]===undefined?Deno.env.delete(n):Deno.env.set(n,env[i]!))}}
 const response=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}});
+Deno.test('Gemini generation retries temporary 503 failures within a fixed bound, never auth or quota failures',()=>isolated(async()=>{
+ Deno.env.set('GEMINI_API_KEY','test-only');let calls=0;
+ globalThis.fetch=async()=>++calls===1?response({error:'temporarily unavailable'},503):response({candidates:[{content:{parts:[{text:'Checked answer'}]}}]});
+ assert(await generate('gemini','Check an answer')==='Checked answer'&&calls===2);
+ calls=0;globalThis.fetch=async()=>{calls++;return response({error:'temporary'},503);};
+ try{await generate('gemini','Check');throw Error('Expected failure');}catch(e){assert(e instanceof ProviderError&&e.code==='PROVIDER_ERROR'&&calls===3);}
+ calls=0;globalThis.fetch=async()=>{calls++;return response({error:'private upstream error'},403);};
+ try{await generate('gemini','Check');throw Error('Expected failure');}catch(e){assert(e instanceof ProviderError&&e.code==='PROVIDER_AUTH'&&calls===1&&!e.message.includes('private upstream'));}
+}));
 Deno.test('Online quiz uses server Gemini routing, rejects invalid keys and never publishes marks',()=>isolated(async()=>{
  Deno.env.set('SUPABASE_URL','https://ayrryemawwplguaauxij.supabase.co');Deno.env.set('SUPABASE_ANON_KEY','test-public');Deno.env.set('GEMINI_API_KEY','test-only');Deno.env.set('NOOR_AI_PROVIDER','groq');
  const institution='42000000-0000-4000-8000-000000000001';let role='teacher',calls=0,invalid=false;
@@ -27,10 +36,10 @@ Deno.test('Short-answer checking reads saved tenant submission and requires teac
   if(url.includes('/institution_memberships?'))return response([{role:'teacher',status:'active'}]);
   if(url.includes('/institutions?'))return response([{name:'Test School',status:'active'}]);
   if(url.includes('/rpc/noor_take_ai_budget'))return response(true);
-  if(url.includes('/noor_quiz_attempts?')){assert(url.includes('institution_id=eq.'+institution));return response({quiz_id:'q',answers:['Combining quantities']});}
-  if(url.includes('/rpc/noor_quiz_review_data'))return allowed?response({answer_key:[{answer:'Combining quantities'}]}):response({message:'Denied'},403);
-  if(url.includes('/noor_weekly_quizzes?'))return response({questions:[{type:'short',prompt:'Explain addition',marks:3}],subject_name:'Maths'});
-  if(url.includes('googleapis.com')){providerCalls++;const sent=JSON.stringify(JSON.parse(String(init?.body)));assert(sent.includes('Combining quantities')&&!sent.includes('UNTRUSTED_CLIENT_OVERRIDE'));return response({candidates:[{content:{parts:[{text:JSON.stringify({scores:[{number:1,marks:overmark?10:2,reason:'Partial explanation'}]})}]}}]});}
+  if(url.includes('/noor_quiz_attempts?')){assert(url.includes('institution_id=eq.'+institution));return response({quiz_id:'q',answers:['0','Combining quantities']});}
+  if(url.includes('/rpc/noor_quiz_review_data'))return allowed?response({answer_key:[{answer:'0'},{answer:'Combining quantities'}]}):response({message:'Denied'},403);
+  if(url.includes('/noor_weekly_quizzes?'))return response({questions:[{type:'mcq',prompt:'2+2?',marks:1,options:['4','5']},{type:'short',prompt:'Explain addition',marks:3}],subject_name:'Maths'});
+  if(url.includes('googleapis.com')){providerCalls++;const payload=JSON.parse(String(init?.body));assert(payload.generationConfig.responseJsonSchema.properties.scores.required[0]==='2');const sent=JSON.stringify(payload);assert(sent.includes('Combining quantities')&&!sent.includes('UNTRUSTED_CLIENT_OVERRIDE'));return response({candidates:[{content:{parts:[{text:JSON.stringify({scores:{'2':{marks:overmark?10:2,reason:'Partial explanation'}}})}]}}]});}
   throw Error('Unexpected call or attempted grade write: '+url);
  };
  const request=()=>new Request('https://example.invalid',{method:'POST',headers:{authorization:'Bearer test.token','content-type':'application/json'},body:JSON.stringify({action:'grade_quiz',institution_id:institution,attempt_id:'43000000-0000-4000-8000-000000000001',message:'UNTRUSTED_CLIENT_OVERRIDE'})});

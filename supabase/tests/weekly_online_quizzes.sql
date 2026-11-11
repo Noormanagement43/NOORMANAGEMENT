@@ -1,5 +1,17 @@
 -- Rollback-only checks against existing enrolled test accounts. No records survive.
 begin;
+do $score$
+declare q jsonb='[{"type":"mcq","options":["3","4"],"marks":2},{"type":"blank","options":["2","3"],"marks":1},{"type":"short","marks":3}]';
+ k jsonb='[{"answer":"1"},{"answer":"0"},{"answer":"Combine quantities"}]';x jsonb;denied boolean;
+begin
+ x=private.noor_score_quiz(q,k,'["1","0","Combine quantities"]');
+ if x<>'{"objective_marks":3,"correct_count":2,"wrong_count":0,"unanswered_count":0,"pending_count":1}'::jsonb then raise exception 'Incorrect objective scoring';end if;
+ x=private.noor_score_quiz(q,k,'["0","1",""]');
+ if (x->>'wrong_count')::int<>2 or (x->>'unanswered_count')::int<>1 or (x->>'objective_marks')::numeric<>0 then raise exception 'Incorrect wrong/blank scoring';end if;
+ x=private.noor_score_quiz(q,k,'["","",""]');if (x->>'unanswered_count')::int<>3 then raise exception 'Incorrect unanswered count';end if;
+ denied=false;begin perform private.noor_score_quiz(q,k,'["9","0",""]');exception when others then denied=true;end;if not denied then raise exception 'Invalid option accepted';end if;
+ denied=false;begin perform private.noor_score_quiz(q,k,'[1,"0",""]');exception when others then denied=true;end;if not denied then raise exception 'Invalid answer type accepted';end if;
+end $score$;
 do $test$
 declare t public.institution_memberships; s public.institution_memberships; g uuid; quiz uuid; attempt uuid; result uuid; result2 uuid; upcoming date; denied boolean; k jsonb;
 begin

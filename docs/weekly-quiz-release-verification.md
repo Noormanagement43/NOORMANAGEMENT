@@ -15,7 +15,7 @@ Verified on 11 November 2026 against the destination backend with disposable tea
 - Direct student changes to submitted answers were denied.
 - The student key was hidden before closing. Moving only the disposable quiz fixture to the previous Saturday verified compact-key release after closing.
 - Moving the disposable student to another class hid the quiz and denied key access.
-- The test school was archived and its memberships revoked after testing. The short-lived operator check was replaced by a disabled endpoint with JWT verification enabled. Test records are retained only in the archived test institution.
+- After confirmation, the disposable test school, both test accounts and their quiz, submission, marks, sessions and institution-scoped audit records were permanently removed. A follow-up query verified zero test schools, quizzes, attempts, marks and accounts. The short-lived operator check remains disabled with JWT verification enabled.
 
 ## Fixes and validation
 

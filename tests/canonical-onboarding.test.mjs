@@ -41,3 +41,9 @@ test('old signup choices cannot replace an existing verified class or cross scho
   const api=window.NOOR_CANONICAL_ONBOARDING.install({db:{rpc:()=>{rpcCalls++;throw Error('Must not reassign')}},enter:async()=>{entered=true},message:assert.fail,showLogin(){}});await api.resume(user);assert(entered);assert.equal(rpcCalls,0);
  }
 });
+test('signup roll number is saved for school rosters without overwriting later profile edits',async()=>{
+ const window={NOOR_ACCOUNT_CONTEXT:{enabled:()=>true,profile:async()=>({data:{status:'active',role:'student',institution_id:'school',membership_id:'member',class_id:'class'}})}};let saved;
+ vm.runInNewContext(code,{window,document:{getElementById(){return null}},sessionStorage:{getItem(){return null},removeItem(){}},localStorage:{removeItem(){}}});
+ const db={from:table=>{assert.equal(table,'noor_student_display_preferences');return{upsert:async(row,options)=>{saved={row,options};return{};}}}};
+ const api=window.NOOR_CANONICAL_ONBOARDING.install({db,enter:async()=>{},message:assert.fail,showLogin(){}});await api.resume({id:'own',user_metadata:{roll_number:'024'}});assert.equal(saved.row.roll_number,'024');assert.equal(saved.row.membership_id,'member');assert.equal(saved.options.ignoreDuplicates,true);
+});

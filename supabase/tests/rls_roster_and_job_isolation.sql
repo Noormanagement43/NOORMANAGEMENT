@@ -1,0 +1,72 @@
+begin;
+set local statement_timeout='15s';
+create temp table rls_audit_results(check_name text, observed integer, expected integer);
+grant insert,select on rls_audit_results to authenticated;
+do $fixture$
+declare users uuid[]; a uuid=gen_random_uuid();b uuid=gen_random_uuid();g uuid=gen_random_uuid();g2 uuid=gen_random_uuid();s uuid=gen_random_uuid();t uuid=gen_random_uuid();p uuid=gen_random_uuid();peer uuid=gen_random_uuid();j uuid=gen_random_uuid();jb uuid=gen_random_uuid();unassigned uuid=gen_random_uuid();q uuid=gen_random_uuid();
+begin
+select array_agg(user_id) into users from(select distinct m.user_id from public.institution_memberships m where m.user_id is not null and not exists(select 1 from public.platform_roles pr where pr.user_id=m.user_id) order by m.user_id limit 3)x;
+if array_length(users,1)<>3 then raise exception 'Three non-platform actors required';end if;
+insert into public.institutions(id,name,slug,institution_type,status) values(a,'RLS rollback audit A','rls-audit-'||a,'school','active'),(b,'RLS rollback audit B','rls-audit-'||b,'school','active');
+insert into public.institution_memberships(id,institution_id,user_id,role,status) values(s,a,users[1],'student','active'),(t,a,users[2],'teacher','active'),(p,a,users[3],'principal','active');
+insert into public.institution_memberships(id,institution_id,invited_email,role,status) values(peer,a,'rollback-peer@example.invalid','student','active');
+insert into public.academic_groups(id,institution_id,name,group_type) values(g,a,'Audit Class A','class'),(g2,b,'Audit Class B','class');
+insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(a,g,s,'student'),(a,g,t,'teacher'),(a,g,peer,'student');
+insert into public.ai_generation_jobs(id,institution_id,requested_by,generation_type,status) values(j,a,users[2],'smart_note','queued'),(jb,b,users[2],'smart_note','queued');
+insert into public.academic_groups(id,institution_id,name,group_type) values(unassigned,a,'Audit unassigned class','class');
+insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(a,unassigned,peer,'student');
+perform set_config('request.jwt.claim.sub',users[2]::text,true);
+insert into public.noor_assessment_results(institution_id,academic_group_id,student_membership_id,assessment_title,subject_name,assessed_on,marks,max_marks,feedback,graded_by) values(a,g,s,'RLS audit own','Maths',current_date,5,10,'',users[2]),(a,g,peer,'RLS audit peer','Maths',current_date,7,10,'',users[2]);
+insert into public.noor_weekly_quizzes(id,institution_id,academic_group_id,teacher_membership_id,created_by,title,subject_name,quiz_date,questions,max_marks) values(q,a,g,t,users[2],'RLS audit quiz','Audit Maths',current_date+(6-extract(dow from current_date)::int+7)%7,'[{"type":"mcq","prompt":"Audit","options":["A","B"],"marks":1}]',1);
+insert into private.noor_quiz_keys(quiz_id,answer_key) values(q,'[{"answer":"0"}]');
+insert into public.noor_quiz_attempts(quiz_id,institution_id,student_membership_id,answers,objective_marks,correct_count,wrong_count,unanswered_count,pending_count) values(q,a,s,'["0"]',1,1,0,0,0),(q,a,peer,'["1"]',0,0,1,0,0);
+perform set_config('audit.unassigned',unassigned::text,true);perform set_config('audit.quiz',q::text,true);
+perform set_config('audit.school',a::text,true);perform set_config('audit.other_school',b::text,true);perform set_config('audit.group',g::text,true);perform set_config('audit.student',s::text,true);perform set_config('audit.teacher',t::text,true);perform set_config('audit.principal',p::text,true);perform set_config('audit.peer',peer::text,true);perform set_config('audit.job',j::text,true);perform set_config('audit.other_job',jb::text,true);
+perform set_config('audit.student_user',users[1]::text,true);perform set_config('audit.teacher_user',users[2]::text,true);perform set_config('audit.principal_user',users[3]::text,true);
+end $fixture$;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('audit.student_user'),true);
+insert into rls_audit_results select 'student_own_roster',count(*),1 from public.academic_group_memberships where membership_id=current_setting('audit.student')::uuid;
+insert into rls_audit_results select 'student_peer_roster',count(*),0 from public.academic_group_memberships where membership_id=current_setting('audit.peer')::uuid;
+
+insert into rls_audit_results select 'student_own_marks',count(*),1 from public.noor_assessment_results where student_membership_id=current_setting('audit.student')::uuid;
+insert into rls_audit_results select 'student_peer_marks',count(*),0 from public.noor_assessment_results where student_membership_id=current_setting('audit.peer')::uuid;
+insert into rls_audit_results select 'student_own_quiz_attempt',count(*),1 from public.noor_quiz_attempts where student_membership_id=current_setting('audit.student')::uuid;
+insert into rls_audit_results select 'student_peer_quiz_attempt',count(*),0 from public.noor_quiz_attempts where student_membership_id=current_setting('audit.peer')::uuid;
+insert into rls_audit_results select 'student_private_key_privilege',has_table_privilege('authenticated','private.noor_quiz_keys','select')::int,0;
+do $denial$
+declare denied boolean=false;n integer;
+begin
+begin insert into public.ai_generation_jobs(institution_id,requested_by,generation_type) values(current_setting('audit.other_school')::uuid,auth.uid(),'smart_note');exception when insufficient_privilege then denied=true;end;
+insert into rls_audit_results values('student_cross_school_insert',denied::int,1);
+denied=false;
+begin insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(current_setting('audit.school')::uuid,current_setting('audit.unassigned')::uuid,current_setting('audit.student')::uuid,'teacher');exception when insufficient_privilege then denied=true;end;
+insert into rls_audit_results values('student_self_assign_teacher',denied::int,1);
+update public.profiles set full_name='RLS audit blocked update' where id=current_setting('audit.principal_user')::uuid;get diagnostics n=row_count;
+insert into rls_audit_results values('student_peer_profile_update',n,0);
+end $denial$;
+
+select set_config('request.jwt.claim.sub',current_setting('audit.teacher_user'),true);
+insert into rls_audit_results select 'teacher_unassigned_roster',count(*),0 from public.academic_group_memberships where group_id=current_setting('audit.unassigned')::uuid;
+insert into rls_audit_results select 'teacher_assigned_roster',count(*),3 from public.academic_group_memberships where group_id=current_setting('audit.group')::uuid;
+insert into rls_audit_results select 'teacher_own_ai_job',count(*),1 from public.ai_generation_jobs where id=current_setting('audit.job')::uuid;
+insert into rls_audit_results select 'teacher_foreign_school_ai_job',count(*),0 from public.ai_generation_jobs where id=current_setting('audit.other_job')::uuid;
+reset role;
+update public.institution_memberships set status='suspended' where id=current_setting('audit.teacher')::uuid;
+set local role authenticated;
+insert into rls_audit_results select 'suspended_teacher_ai_job',count(*),0 from public.ai_generation_jobs where id=current_setting('audit.job')::uuid;
+reset role;
+update public.institution_memberships set status='active' where id=current_setting('audit.teacher')::uuid;
+update public.institutions set status='suspended' where id=current_setting('audit.school')::uuid;
+set local role authenticated;
+insert into rls_audit_results select 'paused_school_ai_job',count(*),0 from public.ai_generation_jobs where id=current_setting('audit.job')::uuid;
+reset role;
+update public.institutions set status='active' where id=current_setting('audit.school')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('audit.principal_user'),true);
+insert into rls_audit_results select 'principal_school_roster',count(*),3 from public.academic_group_memberships where group_id=current_setting('audit.group')::uuid;
+insert into rls_audit_results select 'principal_foreign_school',count(*),0 from public.academic_groups where institution_id=current_setting('audit.other_school')::uuid;
+reset role;
+do $assert$ begin if exists(select 1 from rls_audit_results where observed<>expected) then raise exception 'RLS isolation regression failed';end if;end $assert$;
+select check_name,observed,expected,observed=expected as passed from rls_audit_results order by check_name;
+rollback;

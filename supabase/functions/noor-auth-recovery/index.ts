@@ -5,7 +5,28 @@ const ORIGIN='https://noormanagement43.github.io';
 const RESET=ORIGIN+'/NOORMANAGEMENT/forgot-password.html';
 const PUBLIC_KEY='sb_publishable_2e16MAulIE1locqlRov9iQ_VWtCjwOG';
 export async function hash(value:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),x=>x.toString(16).padStart(2,'0')).join('');}
+// Cache only verified sender details, never codes, recovery links or recipient addresses.
+// A short TTL and a shared pending request avoid repeated Brevo lookups during login bursts.
+export function createSenderResolver(now=Date.now){
+ let cached:{email:string}|null=null,until=0,pending:Promise<{email:string}>|null=null;
+ return async(env:(name:string)=>string|undefined,request:typeof fetch,brevo:string)=>{
+  if(cached&&now()<until)return cached;
+  if(pending)return pending;
+  pending=(async()=>{
+   const r=await request('https://api.brevo.com/v3/senders',{headers:{'api-key':brevo,accept:'application/json'},signal:AbortSignal.timeout(12000)});
+   if(!r.ok)throw Error('Sender unavailable');
+   const data=await r.json();const active=(data.senders||[]).filter((s:{email?:string;active?:boolean;verified?:boolean})=>s.email&&(s.active===true||s.verified===true));
+   const configured=env('EMAIL_FROM')?.trim().toLowerCase();
+   const sender=configured?active.find((s:{email:string})=>s.email.toLowerCase()===configured):active.find((s:{email:string})=>s.email.toLowerCase()==='noormanagement43@gmail.com')||(active.length===1?active[0]:null);
+   if(!sender)throw Error('Verified sender unavailable');
+   cached={email:sender.email};until=now()+300000;return cached;
+  })();
+  try{return await pending;}finally{pending=null;}
+ };
+}
+const productionSender=createSenderResolver();
 export async function handle(req:Request,dependencies?:{env:(name:string)=>string|undefined;client:typeof createClient;request:typeof fetch}):Promise<Response>{
+ const started=performance.now();
  const env=dependencies?.env||((name:string)=>Deno.env.get(name));
  const request=dependencies?.request||fetch;
  const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'};
@@ -25,14 +46,9 @@ export async function handle(req:Request,dependencies?:{env:(name:string)=>strin
  if(limit.error)return response(503,{error:'Recovery email is temporarily unavailable'});
  if(limit.data!==true)return response(429,{error:'Wait before requesting another recovery email'});
  try{
-  // Only a registered, active sender from the same Brevo account can send recovery emails.
-  const senders=await request('https://api.brevo.com/v3/senders',{headers:{'api-key':brevo,accept:'application/json'},signal:AbortSignal.timeout(12000)});
-  if(!senders.ok)throw Error('Sender unavailable');
-  const data=await senders.json();const active=(data.senders||[]).filter((s:{email?:string;active?:boolean;verified?:boolean})=>s.email&&(s.active===true||s.verified===true));
-  const configured=env('EMAIL_FROM')?.trim().toLowerCase();
-  const sender=configured?active.find((s:{email:string})=>s.email.toLowerCase()===configured):active.find((s:{email:string})=>s.email.toLowerCase()==='noormanagement43@gmail.com')||(active.length===1?active[0]:null);
-  if(!sender)throw Error('Verified sender unavailable');
-  const link=await db.auth.admin.generateLink({type:'recovery',email,options:{redirectTo:RESET}});
+  const resolveSender=dependencies?createSenderResolver():productionSender;
+  // These independent calls run together after the durable abuse checks.
+  const [sender,link]=await Promise.all([resolveSender(env,request,brevo),db.auth.admin.generateLink({type:'recovery',email,options:{redirectTo:RESET}})]);
   // Identical response for an unknown email. Never return tokens or user existence.
   if(link.error){if(link.error.code==='user_not_found'||link.error.status===404)return response(200,{requested:true});throw Error('Recovery unavailable');}
   const properties=link.data?.properties;if(!properties?.email_otp||!properties?.hashed_token)throw Error('Recovery unavailable');
@@ -40,7 +56,7 @@ export async function handle(req:Request,dependencies?:{env:(name:string)=>strin
   const url=RESET+'#type=recovery&token_hash='+encodeURIComponent(properties.hashed_token);
   const sent=await request('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':brevo,'Content-Type':'application/json',accept:'application/json'},body:JSON.stringify({sender:{email:sender.email,name:'NOOR School Management'},to:[{email}],subject:'Your NOOR password reset code',textContent:'Your NOOR verification code: '+properties.email_otp+'\n\nEnter this code on the password reset page, or open:\n'+url+'\n\nIf you did not request this, ignore this email. Never share your code.',tags:['noor-password-recovery']}),signal:AbortSignal.timeout(20000)});
   if(!sent.ok){await sent.body?.cancel();throw Error('Email provider unavailable');}
-  await sent.body?.cancel();return response(200,{requested:true});
+  await sent.body?.cancel();console.info(JSON.stringify({event:'recovery_provider_accepted',request_ms:Math.round(performance.now()-started)}));return response(200,{requested:true});
  }catch{return response(503,{error:'Recovery email could not be sent. Please retry shortly.'});}
 }
 if(import.meta.main)Deno.serve(req=>handle(req));

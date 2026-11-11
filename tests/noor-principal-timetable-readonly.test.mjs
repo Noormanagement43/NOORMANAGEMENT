@@ -7,7 +7,7 @@ const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 test('Principal dashboard does not assign or edit a teacher period; timetable remains visible',async()=>{
  const code=await read('principal-live.js');
  assert.doesNotThrow(()=>new Script(code));
- assert.match(code,/Teacher Daily Schedule & Active Periods/);
+ assert.match(code,/Currently Active Periods/);
  assert.match(code,/id="pd-timetable"/);
  assert.match(code,/showTimetable/);
  assert.match(code,/id="pd-periods"/);

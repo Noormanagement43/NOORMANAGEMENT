@@ -10,6 +10,16 @@ const card=(title,id,route,label='Manage →',extra='')=>`<section class="pd-car
 
 function clock(tz){const ps=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'}).formatToParts(new Date()),g=k=>ps.find(x=>x.type===k)?.value||'';return {day:`${g('year')}-${g('month')}-${g('day')}`,time:g('hour')+':'+g('minute'),weekday:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(g('weekday')),tz};}
 
+// The dashboard is a current-time view; full schedules remain in Staff → All Periods.
+function activePeriods(periods,runs,now){
+ return periods.filter(p=>{
+  const start=String(p.start_time||'').slice(0,5),end=String(p.end_time||'').slice(0,5),run=runs.get(p.id);
+  return (p.weekday==null||Number(p.weekday)===now.weekday)&&(!p.block_type||p.block_type==='class')&&
+   /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(start)&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(end)&&
+   start<=now.time&&now.time<end&&!p.completed&&!['done','completed'].includes(run?.status)&&p.progress_status!=='completed';
+ }).sort((a,b)=>a.start_time.localeCompare(b.start_time));
+}
+
 function setup(){
   const r=root(),key=a().user.id+':'+a().schoolId;if(r.dataset.liveIdentity===key)return;r.dataset.liveIdentity=key;
   r.innerHTML=`<div id="noor-principal">
@@ -58,9 +68,9 @@ function setup(){
         </div>
         <section class="pd-card pd-schedule">
           <header>
-            <h2>◷ Teacher Daily Schedule & Active Periods</h2>
+            <h2>◷ Currently Active Periods</h2>
             <div style="display:flex;gap:8px;align-items:center">
-              <button class="pd-link" id="pd-timetable">View full timetable →</button>
+              <button class="pd-link" id="pd-timetable">Staff · All Periods →</button>
             </div>
           </header>
           <div id="pd-periods"></div>
@@ -119,7 +129,7 @@ function setup(){
   r.querySelector('#pd-refresh').onclick=refresh;
 
   const tchKpi=r.querySelector('#pd-kpi-teachers-card');if(tchKpi)tchKpi.onclick=()=>a().openView?.('teacher-directory');
-  r.querySelector('#pd-timetable').onclick=showTimetable;
+  r.querySelector('#pd-timetable').onclick=()=>a().openView('staff-management');
   r.querySelector('#pd-mode').onclick=()=>{
     const dark=document.documentElement.dataset.noorMode==='dark';
     window.NOOR_THEME_SETTINGS?.setMode(dark?'light':'dark');
@@ -653,7 +663,8 @@ async function refresh(){
       total+=agg.marked;present+=agg.present;
     }
     const staffPresent=new Set(rows('staff').filter(s=>s.status==='present'&&teacherMap.has(s.teacher_id)).map(s=>s.teacher_id)).size;
-    const active=canonical?rows('periods').filter(p=>p.schedule_status==='Scheduled now'&&!runs.get(p.id)?.status).length:rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
+    const runningPeriods=activePeriods(rows('periods'),runs,d);
+    const active=canonical?runningPeriods.length:rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
     // Verified daily summary only, never a synthetic school-health percentage.
     q('#pd-pulse-title').textContent='Live School Overview';
     q('#pd-pulse-desc').textContent=classes.length+' active class records · '+today.marked+' student attendance marks today · '+active+(canonical?' periods scheduled now':' active teaching periods');
@@ -690,18 +701,18 @@ async function refresh(){
     // Secondary Trend
     q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
 
-    // Teacher Daily Schedule with Clickable Teacher Names for Deep Profile View
-    q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):rows('periods').length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${rows('periods').sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(p=>{
-      const run=runs.get(p.id),now=p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time,done=run?.status==='done',status=done?'Completed':run?.status==='ongoing'?'In progress':p.schedule_status|| (now&&run?.status==='ongoing'?(p.block_type==='class'?'Teaching':'In progress'):p.end_time.slice(0,5)<=d.time?'Not completed':now?'Awaiting start':'Scheduled');
+    // Only periods running within the school-local time window belong on the dashboard.
+    q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):runningPeriods.length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${runningPeriods.map(p=>{
+      const run=runs.get(p.id),status=run?.status==='ongoing'?'In progress':p.progress_status==='ongoing'?'In progress':'Scheduled now';
       return `<tr>
         <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
         <td>${e(p.subject_name)}</td>
         <td>${e(classes.find(c=>c.id===p.class_id)?.name||p.class_label)}</td>
         <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
         <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
-        <td><span class="pd-tag ${done?'done':status==='Teaching'?'now':''}">● ${status}</span></td>
+        <td><span class="pd-tag now">● ${status}</span></td>
       </tr>`;
-    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No saved class periods for today.');
+    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No periods are running right now.');
 
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
@@ -750,5 +761,5 @@ function render(){
 }
 
 window.addEventListener('noor:timetable-saved',()=>{if(permitted())refresh();});
-window.NOOR_PRINCIPAL_LIVE={render,refresh,aggregate,clock,showStaffProfile,showStudentDashboard};
+window.NOOR_PRINCIPAL_LIVE={render,refresh,aggregate,clock,activePeriods,showStaffProfile,showStudentDashboard};
 })();

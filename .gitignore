@@ -12,6 +12,7 @@ node_modules/
 *.key
 
 # Build & Editor artifacts
+dist/
 .vercel/
 .idea/
 .vscode/

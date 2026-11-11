@@ -1,6 +1,20 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
 const source=fs.readFileSync(new URL('../noor-institution-access.js',import.meta.url),'utf8');
 function setup(){const window={};vm.runInNewContext(source,{window});return window.NOOR_INSTITUTION_ACCESS;}
+test('student and staff school suggestions show only names and retain the selected school identity', async()=>{
+ for(const inputId of ['regSchool','staffSchool']){
+  const callbacks=[],created=[],events=[];
+  const element=()=>({dataset:{},style:{},value:'',children:[],removeAttribute(){},setAttribute(){},setCustomValidity(v){this.validity=v;},replaceChildren(){this.children=[];},append(x){this.children.push(x);},after(){},addEventListener(type,fn){this[type]=fn;}});
+  const window={},input=element();input.id=inputId;
+  const school={id:'school-123',name:'Al-Falah',institution_type:'school',slug:'al-falah-97531'};
+  vm.runInNewContext(source,{window,document:{createElement(){const e=element();created.push(e);return e;},dispatchEvent(e){events.push(e);}},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},setTimeout(fn){callbacks.push(fn);return callbacks.length;},clearTimeout(){}});
+  window.NOOR_INSTITUTION_ACCESS.picker(input,{rpc:async()=>({data:[school]})});
+  input.value='Al-Falah';input.input();await callbacks.shift()();
+  const button=created[0].children[0];assert.equal(button.textContent,'Al-Falah');button.onclick();
+  assert.equal(input.value,'Al-Falah');assert.equal(input.dataset.institution,school.id);assert.equal(input.validity,'');
+  assert.equal(events[0].type,'noor:school-selected');assert.equal(events[0].detail.inputId,inputId);assert.equal(events[0].detail.institution,school.id);
+ }
+});
 test('school search is bounded, name-only RPC and never a direct institution-table query',async()=>{const calls=[],api=setup(),db={rpc:async(name,args)=>{calls.push({name,args});return{data:[{id:'school',name:'Example'}]};}};assert.equal((await api.search(db,'Al')).length,0);assert.equal(calls.length,0);assert.equal((await api.search(db,'Example')).length,1);assert.equal(calls[0].name,'noor_find_institutions');assert.deepEqual(Object.keys(calls[0].args),['p_search']);await api.search(db,'A'.repeat(200));assert.equal(calls[1].args.p_search.length,100);});
 test('editable code saving uses current institution, preserves blank codes, and requires explicit success',async()=>{const api=setup(),calls=[],db={rpc:async(name,args)=>{calls.push({name,args});return{data:{saved:true}};}};await api.saveCodes(db,'own-school',{teacher:'Replacement_123'});assert.equal(calls[0].name,'noor_save_join_codes');assert.equal(calls[0].args.p_institution,'own-school');assert.equal(calls[0].args.p_student,null);assert.equal(calls[0].args.p_management,null);assert.equal(calls[0].args.p_staff,'Replacement_123');await assert.rejects(()=>api.saveCodes({rpc:async()=>({data:{}})},'own',{}));});
 test('search and save propagate backend denial instead of claiming success',async()=>{const api=setup(),db={rpc:async()=>({error:Error('Denied')})};await assert.rejects(()=>api.search(db,'Example'),/Denied/);await assert.rejects(()=>api.saveCodes(db,'own',{manager:'Code123456'}),/Denied/);});

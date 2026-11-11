@@ -21,6 +21,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Block release on regression failures
+        run: node --test tests/*.test.mjs
+      - name: Package and verify browser assets
+        run: node scripts/build-pages.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -28,7 +36,7 @@ jobs:
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
   deploy:
     environment:
       name: github-pages

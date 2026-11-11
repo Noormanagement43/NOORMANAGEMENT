@@ -1,5 +1,5 @@
 import { generate, probe, primary, config, probeBrevo, probeAll, ProviderError } from './providers.ts';
-import { handle } from './index.ts';
+import { handle, testSchema } from './index.ts';
 function assert(v:unknown,m='Assertion failed'):asserts v{if(!v)throw Error(m)}
 const names=['GEMINI_API_KEY','GEMINI_MODEL','OPENAI_API_KEY','OPENAI_MANAGER_MODEL','GROQ_API_KEY','GROQ_MODEL','NOOR_AI_PROVIDER','SUPABASE_URL','SUPABASE_ANON_KEY','groq','gemini','chatgpt','brevo','BREVO_API_KEY','EMAIL_FROM'];
 async function isolated(run:()=>Promise<void>){const env=names.map(n=>Deno.env.get(n));const old=globalThis.fetch;try{names.forEach(n=>Deno.env.delete(n));await run()}finally{globalThis.fetch=old;names.forEach((n,i)=>env[i]===undefined?Deno.env.delete(n):Deno.env.set(n,env[i]!))}}
@@ -137,3 +137,6 @@ Deno.test('School test draft respects principal marks, formats and multi-image s
  const r=await handle(new Request('https://example.invalid',{method:'POST',headers:{authorization:'Bearer test.user.token','content-type':'application/json'},body:JSON.stringify({action:'test',institution_id:institution,academic_group_id:group,question_count:20,max_marks:100,exam_key:'weekly',images:[img,img]})}));
  const d=await r.json();assert(r.status===200&&d.output.questions.length===2&&d.output.questions[0].marks===4&&d.output.questions[1].marks===3&&d.output.questions[1].response_mode==='one_word');assert(!d.provider&&!d.model);
 }));
+
+Deno.test('Test schema avoids bounded-array expansion at 30 questions',()=>{const schema=JSON.stringify(testSchema());assert(!schema.includes('maxItems')&&!schema.includes('minItems'));assert(schema.includes('answer_key')&&schema.includes('generation_report'));});
+Deno.test('Provider 400 errors classify schema and image failures without echoing private upstream text',()=>isolated(async()=>{Deno.env.set('GEMINI_API_KEY','test-only');globalThis.fetch=async()=>response({error:{message:'PRIVATE_PROMPT constraint has too many states'}},400);try{await generate('gemini','fixture',true);throw Error('Expected error');}catch(e){assert(e instanceof ProviderError&&e.code==='SCHEMA_COMPLEXITY'&&!e.message.includes('PRIVATE_PROMPT'));}}));

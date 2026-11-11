@@ -97,7 +97,7 @@ export async function generate(provider: Provider, prompt: string, structured=fa
  if (provider==='gemini') {
   response = await providerFetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(c.model)+':generateContent',{
    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.apiKey},
-   body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:prompt},...imageParts]}],generationConfig:{maxOutputTokens:structured?6000:2200,...(structured?{responseMimeType:'application/json'}:{}),...(schema?{responseJsonSchema:schema}:{})}}),
+   body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:prompt},...imageParts]}],generationConfig:{maxOutputTokens:structured?16000:2200,...(structured?{responseMimeType:'application/json'}:{}),...(schema?{responseJsonSchema:schema}:{})}}),
   });
  } else if (provider==='openai') {
   response=await providerFetch('https://api.openai.com/v1/responses',{
@@ -107,10 +107,10 @@ export async function generate(provider: Provider, prompt: string, structured=fa
  } else {
   response=await providerFetch('https://api.groq.com/openai/v1/chat/completions',{
    method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.apiKey},
-   body:JSON.stringify({model:c.model,messages:[{role:'system',content:system},{role:'user',content:prompt}],max_completion_tokens:structured?6000:2200,...(structured?{response_format:{type:'json_object'}}:{})}),
+   body:JSON.stringify({model:c.model,messages:[{role:'system',content:system},{role:'user',content:prompt}],max_completion_tokens:structured?16000:2200,...(structured?{response_format:{type:'json_object'}}:{})}),
   });
  }
- if (!response.ok) { await response.body?.cancel(); throw new ProviderError(response.status===429?'PROVIDER_RATE_LIMIT':response.status===401||response.status===403?'PROVIDER_AUTH':'PROVIDER_ERROR','AI provider rejected the request ('+response.status+'). Check model access, quota and server-side credentials.'); }
+ if (!response.ok) { let code='';if(response.status===400){const body=await response.text();code=/schema|constraint|states|branching/i.test(body)?'SCHEMA_COMPLEXITY':/image|inlineData|decode/i.test(body)?'INVALID_IMAGE':'';}else await response.body?.cancel();if(code)throw new ProviderError(code,code==='SCHEMA_COMPLEXITY'?'Question structure is too complex. Reduce the number of questions and regenerate.':'One syllabus image could not be read. Try a clear JPG image.'); throw new ProviderError(response.status===429?'PROVIDER_RATE_LIMIT':response.status===401||response.status===403?'PROVIDER_AUTH':'PROVIDER_ERROR','AI provider rejected the request ('+response.status+'). Check model access, quota and server-side credentials.'); }
  let data;
  try { data=await response.json(); } catch { throw new ProviderError('INVALID_RESPONSE','Provider returned an unreadable response'); }
  const text = provider==='gemini' ? (data.candidates?.[0]?.content?.parts||[]).filter((p:{thought?:boolean})=>!p.thought).map((p:{text?:string})=>p.text||'').join('')

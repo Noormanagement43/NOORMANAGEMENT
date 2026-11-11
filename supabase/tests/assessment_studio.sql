@@ -1,0 +1,36 @@
+begin;
+set local statement_timeout='10s';
+do $test$
+declare t public.institution_memberships;s public.institution_memberships;g uuid;other_school uuid;quiz uuid;a uuid;r uuid;job jsonb;denied boolean;
+begin
+ select * into strict t from public.institution_memberships where role='teacher' and status='active' limit 1;
+ select * into strict s from public.institution_memberships where institution_id=t.institution_id and role='student' and status='active' limit 1;
+ insert into public.academic_groups(institution_id,name,group_type) values(t.institution_id,'Rollback cross-class test','class') returning id into g;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ if not private.noor_can_publish_learning(t.institution_id,g) then raise exception 'Teacher cannot publish to a second class in own school';end if;
+ denied=false;begin perform public.noor_publish_test(gen_random_uuid(),g,'Denied','English',current_date,'[]','[]','{}','{}');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Cross-school publication allowed';end if;
+ quiz=public.noor_publish_test(t.institution_id,g,'Monthly objective','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"mcq","prompt":"Opposite of hot?","options":["cold","tall"],"marks":5,"visuals":["none","none"]}]','[{"answer":"0","explanation":"Cold is the opposite of hot."}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5,"duration_minutes":20}','{"syllabus_coverage":"Opposites"}');
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);
+ denied=false;begin perform public.noor_submit_quiz(quiz,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Unenrolled student submitted';end if;
+ insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,s.id,'student');
+ a=public.noor_submit_quiz(quiz,'["0"]');
+ if not exists(select 1 from public.noor_quiz_attempts where id=a and final_marks=5 and reviewed_at is not null and grading_status='completed') then raise exception 'Objective result was not automatically finalized';end if;
+ if not exists(select 1 from public.noor_assessment_results where source_quiz_attempt_id=a and assessment_kind='monthly_test' and subject_name='English' and marks=5) then raise exception 'Monthly marks mapped incorrectly';end if;
+ denied=false;begin perform public.noor_submit_quiz(quiz,'["1"]');exception when others then denied=true;end;if not denied then raise exception 'Final answers changed';end if;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ quiz=public.noor_publish_test(t.institution_id,g,'Monthly written','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"short","response_mode":"one_word","prompt":"Opposite of hot?","options":[],"marks":3}]','[{"answer":"cold","rubric":"Accept cold."}]','{"kind":"exam","exam_key":"term1","question_count":1,"max_marks":3}','{}');
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);
+ a=public.noor_submit_quiz(quiz,'["cool"]');
+ if not exists(select 1 from private.noor_test_grading_jobs where attempt_id=a and status='queued') or exists(select 1 from public.noor_assessment_results where source_quiz_attempt_id=a) then raise exception 'Written answer was not queued safely';end if;
+ if has_function_privilege('authenticated','public.noor_claim_test_job(uuid,uuid)','execute') or has_function_privilege('authenticated','public.noor_finish_auto_test(uuid,jsonb,text)','execute') then raise exception 'Private answer key / grading RPC exposed to browser';end if;
+ job=private.noor_claim_test_job(s.user_id,a);if job->>'attempt_id'<>a::text or job->'answer_key' is null then raise exception 'Worker could not claim saved answer';end if;
+ if private.noor_claim_test_job(s.user_id,a) is not null then raise exception 'Job claimed twice while leased';end if;
+ denied=false;begin perform private.noor_finish_auto_test(a,'[{"marks":4,"reason":"Invalid"}]','');exception when others then denied=true;end;if not denied then raise exception 'Excessive automatic marks accepted';end if;
+ r=private.noor_finish_auto_test(a,'[{"marks":1,"reason":"Use the expected opposite: cold."}]','Practise opposites.');
+ if private.noor_finish_auto_test(a,'[{"marks":3,"reason":"Retry"}]','')<>r or(select count(*) from public.noor_assessment_results where source_quiz_attempt_id=a)<>1 then raise exception 'Automatic marks duplicated';end if;
+ if not exists(select 1 from public.noor_quiz_attempts where id=a and final_marks=1 and grading_details->0->>'reason'='Use the expected opposite: cold.') then raise exception 'Correction feedback missing';end if;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ insert into public.noor_test_rules(institution_id,academic_group_id,exam_key,max_marks,question_count,formats) values(t.institution_id,g,'monthly',10,2,'["mcq"]');
+ denied=false;begin perform public.noor_publish_test(t.institution_id,g,'Wrong counts','English',current_date,'[{"type":"mcq","prompt":"Q","options":["A","B"],"marks":5}]','[{"answer":"0"}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5}','{}');exception when others then denied=true;end;if not denied then raise exception 'Principal test rules bypassed';end if;
+end $test$;
+rollback;

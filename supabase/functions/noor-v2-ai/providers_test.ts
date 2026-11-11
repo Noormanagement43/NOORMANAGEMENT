@@ -119,3 +119,21 @@ Deno.test('Groq metadata uses its model catalogue and distinguishes model absenc
  globalThis.fetch=async()=>response({data:[{id:'another-model'}]});
  const absent=await probe('groq');assert(absent.authentication_successful===true&&absent.verified===false&&absent.code==='MODEL_UNAVAILABLE');
 }));
+
+Deno.test('School test draft respects principal marks, formats and multi-image syllabus input',()=>isolated(async()=>{
+ Deno.env.set('SUPABASE_URL','https://ayrryemawwplguaauxij.supabase.co');Deno.env.set('SUPABASE_ANON_KEY','test-public');Deno.env.set('GEMINI_API_KEY','test-only');
+ const institution='42000000-0000-4000-8000-000000000001',group='43000000-0000-4000-8000-000000000001';
+ globalThis.fetch=async(input,init)=>{const url=String(input);
+  if(url.includes('/auth/v1/user'))return response({id:'teacher'});
+  if(url.includes('/institution_memberships?'))return response([{role:'teacher',status:'active'}]);
+  if(url.includes('/institutions?'))return response([{name:'School',status:'active'}]);
+  if(url.includes('/rpc/noor_take_ai_budget'))return response(true);
+  if(url.includes('/academic_groups?'))return response({id:group,parent_group_id:null,name:'Class 1'});
+  if(url.includes('/noor_test_rules?'))return response([{academic_group_id:group,question_count:2,max_marks:7,formats:['mcq','one_word'],difficulty:'challenging'}]);
+  if(url.includes('googleapis.com')){const b=JSON.parse(String(init?.body));assert(b.contents[0].parts.filter((x:{inlineData?:unknown})=>x.inlineData).length===2);return response({candidates:[{content:{parts:[{text:JSON.stringify({title:'English',questions:[{type:'mcq',prompt:'Opposite of hot?',options:['cold','tall'],visuals:['none','none']},{type:'short',prompt:'A person who grows crops?',options:[],visuals:[]}],answer_key:[{answer:'0',rubric:'Exact',explanation:'Cold is the opposite of hot.'},{answer:'farmer',rubric:'Accept farmer',explanation:'A farmer grows crops.'}],generation_report:{syllabus_coverage:'Opposites and occupations',difficulty_rationale:'Age-appropriate reasoning',items_to_verify:[]}})}]}}]});}
+  throw Error('Unexpected call '+url);
+ };
+ const img='data:image/png;base64,aGVsbG8=';
+ const r=await handle(new Request('https://example.invalid',{method:'POST',headers:{authorization:'Bearer test.user.token','content-type':'application/json'},body:JSON.stringify({action:'test',institution_id:institution,academic_group_id:group,question_count:20,max_marks:100,exam_key:'weekly',images:[img,img]})}));
+ const d=await r.json();assert(r.status===200&&d.output.questions.length===2&&d.output.questions[0].marks===4&&d.output.questions[1].marks===3&&d.output.questions[1].response_mode==='one_word');assert(!d.provider&&!d.model);
+}));

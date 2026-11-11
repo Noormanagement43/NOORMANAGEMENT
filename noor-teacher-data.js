@@ -14,6 +14,11 @@ async function assignments(c){
  Object.assign(A().profile,{class_id:list[0]?.class_id||null,section_id:list[0]?.section_id||null,class_label:list[0]?.class_label||''});
  return list;
 }
+async function teachingGroups(c){
+ const groups=await window.NOOR_SCHOOL_STRUCTURE.fetchGroups(c.db,c.school.id);
+ if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed.');
+ return groups.filter(g=>g.is_active&&['class','section'].includes(g.group_type)).map(g=>{const parent=groups.find(p=>p.id===g.parent_group_id);return{group_id:g.id,class_id:parent?.id||g.id,section_id:parent?g.id:null,class_name:parent?.name||g.name,section_name:parent?g.name:'All sections',parent_group_id:g.parent_group_id||null,class_label:parent?parent.name+' · '+g.name:g.name+' · All sections'};});
+}
 async function load(){
  const c=await context(),auth=await c.db.auth.getUser();if(auth.error)throw auth.error;
  const contact=auth.data.user.user_metadata?.noor_contact||{};
@@ -117,5 +122,5 @@ async function classQuestions(host){
 }
 function supports(id){return current()&&['teaching','paper-generator','weekly-plan','teacher-classroom','today-note'].includes(id);}
 async function open(id){if(id==='today-note'){const host=document.getElementById('view-'+id);await window.NOOR_CLASSROOM_CONNECT.todayNote(host);if(!host||!window.NOOR_LEARNING_STUDIO?.tasks)return;const wrap=document.createElement('details');wrap.className='np-tasks-toggle';wrap.innerHTML='<summary>Tasks &amp; Deadlines <span>Manage class tasks</span></summary><div data-tasks-slot></div>';host.append(wrap);wrap.addEventListener('toggle',async()=>{if(!wrap.open||wrap.dataset.loaded)return;wrap.dataset.loaded='yes';const slot=wrap.querySelector('[data-tasks-slot]');try{await window.NOOR_LEARNING_STUDIO.tasks(slot);}catch(e){slot.textContent='Tasks could not load: '+e.message;wrap.dataset.loaded='';}});return;}if(id==='teacher-classroom'){const host=document.getElementById('view-'+id);await window.NOOR_CLASS_PERFORMANCE.mount(host);try{await classQuestions(host);}catch(e){const note=document.createElement('p');note.textContent='Student questions could not load: '+e.message;host.append(note);}return;}return learning(id);}
-window.NOOR_TEACHER_DATA=Object.freeze({current,context,assignments,load,saveProfile,checkIn,syncHeader,attendance,attendanceTable,attendanceRecords,rosterPhotos,supports,open,offset});
+window.NOOR_TEACHER_DATA=Object.freeze({current,context,assignments,teachingGroups,load,saveProfile,checkIn,syncHeader,attendance,attendanceTable,attendanceRecords,rosterPhotos,supports,open,offset});
 })();

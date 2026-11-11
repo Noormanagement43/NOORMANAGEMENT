@@ -25,5 +25,5 @@ test('Teacher attendance cell tap changes the radio and reuses original save pip
 });
 test('cached assets point at the updated Brevo and attendance implementations',()=>{
  const s=file('index.html');
- for(const part of ['noor-communications.js?v=20261109-multichannel-v3','noor-teacher-data.js?v=20261109-role-profile-1','noor-communications-mobile.css?v=20261109-mobile-communications-1'])assert.ok(s.includes(part));
+ for(const part of ['noor-communications.js?v=20261109-multichannel-v3','noor-teacher-data.js?v=20261111-assessment-studio-1','noor-communications-mobile.css?v=20261109-mobile-communications-1'])assert.ok(s.includes(part));
 });

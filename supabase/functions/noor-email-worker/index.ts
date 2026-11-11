@@ -41,7 +41,7 @@ export async function handle(req:Request):Promise<Response>{
  };
  for(const [campaignId,items] of campaigns){
   try{
-   const c=await db.from('noor_school_campaigns').select('audience,channels').eq('id',campaignId).eq('institution_id',items[0].institution_id).single();
+   const c=await db.from('noor_school_campaigns').select('audience,channels,created_by').eq('id',campaignId).eq('institution_id',items[0].institution_id).single();
    if(c.error||!c.data||!c.data.channels.includes('email'))throw Error('Invalid campaign');
    const approved:Array<{item:QueueItem,email:string}>=[];
    for(const item of items){
@@ -52,6 +52,16 @@ export async function handle(req:Request):Promise<Response>{
    if(!approved.length){await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId});continue;}
    const top=items[0];
    if(!top.sender_email||!mail.test(top.sender_email))throw Error('Sender unavailable');
+   // Queue claims use service_role, so recheck current authority immediately
+   // before contacting Brevo, even when dispatch was authorized earlier.
+   const school=await db.from('institutions').select('status').eq('id',top.institution_id).maybeSingle();
+   const sender=await db.from('institution_memberships').select('role,status').eq('institution_id',top.institution_id).eq('user_id',c.data.created_by).maybeSingle();
+   if(school.error||sender.error)throw Error('Current authorization unavailable');
+   if(school.data?.status!=='active'||sender.data?.status!=='active'||!['principal','school_admin','university_admin','academic_admin'].includes(sender.data?.role)){
+    for(const x of approved){await state(x.item,'skipped',undefined,'SCHOOL_OR_SENDER_INACTIVE');failed++;}
+    await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId});
+    continue;
+   }
    const payload:Record<string,unknown>={
     sender:{email:top.sender_email,name:top.sender_name||'NOOR School Office'},
     subject:top.title,

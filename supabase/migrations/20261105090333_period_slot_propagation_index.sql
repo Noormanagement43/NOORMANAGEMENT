@@ -1,0 +1,1 @@
+CREATE INDEX noor_period_institution_number ON public.teacher_timetable_periods(institution_id,period_number);

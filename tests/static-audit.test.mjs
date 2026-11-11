@@ -9,7 +9,7 @@ const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const authPage = await readFile(new URL('../auth.html', import.meta.url), 'utf8');
 const principalPage = await readFile(new URL('../principal.html', import.meta.url), 'utf8');
 const configJs = await readFile(new URL('../config.js', import.meta.url), 'utf8');
-const registrationMigration = await readFile(new URL('../supabase/migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
+const registrationMigration = await readFile(new URL('../supabase/archive/legacy-migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
 
 test('authentication system contains all required role portals and registration tabs', () => {
   // Tabs: Login, Student sign-up, Create a school, Join school staff

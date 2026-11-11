@@ -33,7 +33,7 @@ test('principal/manager phone content uses single column and restores real botto
 });
 
 test('legacy database migration owns periods, checks school tenant, but never grants another teacher access',async()=>{
- const sql=await read('supabase/migrations/20261028161500_teacher_self_service_periods_legacy.sql');
+ const sql=await read('supabase/archive/legacy-migrations/20261028161500_teacher_self_service_periods_legacy.sql');
  assert.match(sql,/Wrong NOOR database: legacy school_id timetable tables are missing/);
  for(const needle of ["NEW.teacher_id IS DISTINCT FROM OLD.teacher_id","NEW.school_id IS DISTINCT FROM OLD.school_id","NEW.class_id","NEW.section_id","school_memberships","sch.verification_status='verified'","NEW.approval_status:='approved'","teacher_id=(SELECT auth.uid())","private.noor_active_school_access","CREATE POLICY noor_teacher_self_timetable_insert","CREATE POLICY noor_teacher_self_timetable_update"])assert.ok(sql.includes(needle), 'Missing tenant or identity safety check '+needle);
  assert.doesNotMatch(sql,/CREATE POLICY[^;]+?USING \(true\)/i);

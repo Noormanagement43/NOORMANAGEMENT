@@ -1,0 +1,1 @@
+create index if not exists noor_email_queue_recipient_user_idx on public.noor_email_queue(recipient_user_id); create index if not exists noor_school_campaigns_created_by_idx on public.noor_school_campaigns(created_by); create index if not exists noor_memberships_email_audience_idx on public.institution_memberships(institution_id,status,role,user_id);

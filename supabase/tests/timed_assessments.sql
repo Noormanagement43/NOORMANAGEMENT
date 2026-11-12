@@ -8,7 +8,7 @@ begin
  insert into public.academic_groups(institution_id,name,group_type) values(t.institution_id,'Rollback timer class','class') returning id into g;
  insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,s.id,'student');
  perform set_config('request.jwt.claim.sub',t.user_id::text,true);
- q=public.noor_publish_test(t.institution_id,g,'Clock test','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"mcq","prompt":"Opposite of hot?","scene":"reading","options":["cold","tall"],"marks":5}]','[{"answer":"0"}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5,"duration_minutes":5}','{}');
+ q=public.noor_publish_test(t.institution_id,g,'Clock test','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"mcq","prompt":"Opposite of hot?","scene":"reading","options":["cold","tall"],"marks":5}]','[{"answer":"0"}]','{"kind":"exam","exam_key":"term1","question_count":1,"max_marks":5,"duration_minutes":5}','{}');
  if (select questions->0->>'scene' from public.noor_weekly_quizzes where id=q)<>'reading' then raise exception 'Approved question illustration was dropped';end if;
  denied=false;begin perform public.noor_test_clock(q);exception when others then denied=true;end;if not denied then raise exception 'Teacher started a student clock';end if;
  perform set_config('request.jwt.claim.sub',s.user_id::text,true);

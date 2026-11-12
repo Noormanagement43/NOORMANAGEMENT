@@ -217,6 +217,10 @@
     {
       "file": "20261111113032_principal_only_school_logo.sql",
       "sha256": "ebc57d4d3a96d636228dc4660fe3547f969cc486ae89267589aa9c3deeaf7209"
+    },
+    {
+      "file": "20261112092329_resumable_coursework_tests.sql",
+      "sha256": "754ba75f16999b68a98f25823bbeb7601bcb84154e78c6f2b5fb2f9addb77ad5"
     }
   ]
 }

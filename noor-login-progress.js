@@ -1,0 +1,8 @@
+/* Estimated loading progress. Completion is tied to the workspace opening. */
+(()=>{'use strict';let timer=null,value=0,root=null;const $=id=>document.getElementById(id);
+ function paint(n,text){value=Math.max(value,n);if(!root)return;root.querySelector('strong').textContent=value+'%';root.querySelector('progress').value=value;root.querySelector('[data-stage]').textContent=text||'Signing you in…';}
+ function stop(){clearInterval(timer);timer=null;}
+ function start(){stop();root?.remove();value=1;root=document.createElement('div');root.className='noor-login-progress';root.setAttribute('role','status');root.setAttribute('aria-live','polite');root.innerHTML='<div><h2>Opening your workspace</h2><strong>1%</strong><progress max="100" value="1" aria-label="Estimated sign-in progress"></progress><p data-stage>Checking your account…</p><small>Estimated progress · Please keep this page open.</small></div>';document.body.append(root);paint(1,'Checking your account…');timer=setInterval(()=>{if(value<95)paint(value+1,value<35?'Checking your account…':value<70?'Loading your school workspace…':'Getting your dashboard ready…');else root.querySelector('[data-stage]').textContent='Still loading. Please wait…';},350);}
+ function finish(){stop();if(!root)return;const opened=$('workspace')&&!$('workspace').classList.contains('hidden');const done=root;root=null;if(opened){done.querySelector('strong').textContent='100%';done.querySelector('progress').value=100;done.querySelector('[data-stage]').textContent='Your workspace is ready.';setTimeout(()=>done.remove(),250);}else done.remove();}
+ window.NOOR_LOGIN_PROGRESS=Object.freeze({start,finish,stage:(n,t)=>paint(Math.min(95,n),t)});
+})();

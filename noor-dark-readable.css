@@ -1,0 +1,24 @@
+/* Pair dark surfaces and foregrounds, including fixed-colour analytics components. */
+html[data-noor-mode="dark"]{color-scheme:dark;--ink:#edf3fa;--muted:#bcc9d8;--paper:#202b39;--panel:#202b39;--text:#edf3fa;--canvas:#141d29;--line:#46566b;--rose-soft:#354052;--rose-line:#61728a;--green-soft:#203f37;--gold-soft:#443921;--red-soft:#492f39}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp .auth-card,dialog,.modal){color:var(--ink)!important;background-color:var(--canvas)!important}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp,dialog,.modal) :is(.panel,.stat,.detail,.class-item,.tablewrap,.nt-card,.sp-card,.np-card,.pd-card,.nc-card,.nst-list,.nst-stat,.nla,.nla-person,.nla-achiever,.nla-ranking,.nt-profile,.sp-ref-hero,.pd-profile,.noor-theme-card,.noor-profile-groups,.np-hub,.np-studio,.nq-card){background:var(--paper)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp .auth-card,dialog,.modal) :is(h1,h2,h3,h4,label,legend,p,small,b,strong,span,td,th,li){color:inherit!important;-webkit-text-fill-color:currentColor!important}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp .auth-card,dialog,.modal) :is(.muted,.small-note,.nst-help,.nst-empty,.nst-lesson,.crumb,.sp-kicker){color:var(--muted)!important}
+html[data-noor-mode="dark"] :is(#workspace#workspace,#authApp .auth-card,dialog,.modal) :is(input,select,textarea){background:#172230!important;color:#f1f5fb!important;-webkit-text-fill-color:#f1f5fb!important;border-color:#64758c!important}
+html[data-noor-mode="dark"] :is(input,textarea)::placeholder{color:#b8c5d6!important;opacity:1}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp .auth-card,dialog,.modal) :is(button,.btn,.pill,.sectionchip,.nst-subject){background:#35465e!important;color:#f5f8ff!important;-webkit-text-fill-color:#f5f8ff!important;border-color:#71839b!important}
+html[data-noor-mode="dark"] :is(#workspace#workspace .content,#authApp .auth-card,dialog,.modal) :is(button,.btn):disabled{opacity:.65}
+html[data-noor-mode="dark"] #workspace#workspace .content :is(th,thead,.table th){background:#334256!important;color:#f3f7ff!important}
+html[data-noor-mode="dark"] #workspace#workspace .content :is(td,tr){border-color:var(--line)!important}
+html[data-noor-mode="dark"] #workspace#workspace .content :is(.nla-signal,.nla-signal.focus,.nla-signal.attendance){background:#493b28!important;color:#ffdfab!important}
+html[data-noor-mode="dark"] #workspace#workspace .content .nla-signal.star{background:#224638!important;color:#c0f4d8!important}
+html[data-noor-mode="dark"] #workspace#workspace .content .nla-photo.nla-initial{background:#514057!important;color:#fff0f8!important}
+html[data-noor-mode="dark"] #workspace#workspace .content .noor-header-quote{background:#293446!important;color:#edf3fa!important}
+html[data-noor-mode="dark"] #workspace#workspace .content a{color:#a9d8ff!important}
+.nla{background:var(--paper,#fff);color:var(--ink,#302730)}
+.nla-ranking{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;min-width:0}
+.nla-ranking h2{font-size:17px}.nla-ranking p{font-size:12px;color:var(--muted)}
+.nla-ranking ol{padding-left:24px;margin:0}.nla-ranking li{padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}.nla-ranking li>div{display:inline-block;width:calc(100% - 72px);vertical-align:top}.nla-ranking li small{display:block;font-size:12px;margin-top:5px;overflow-wrap:anywhere}.nla-ranking li>strong{display:inline-block;width:65px;text-align:right;vertical-align:top}.nla>h2{margin-top:22px}
+.noor-login-progress{position:fixed;inset:0;z-index:20000;background:#1c1328b8;display:grid;place-items:center;padding:20px;backdrop-filter:blur(5px)}
+.noor-login-progress>div{width:min(380px,100%);box-sizing:border-box;background:var(--paper,#fff);color:var(--ink,#302730);padding:28px;border:1px solid var(--line);border-radius:20px;text-align:center}
+.noor-login-progress h2{font-size:21px}.noor-login-progress strong{display:block;font-size:42px;margin:18px}.noor-login-progress progress{display:block;width:100%;height:12px;accent-color:var(--berry,#78213b)}.noor-login-progress p{font-size:14px}.noor-login-progress small{font-size:12px;color:var(--muted,#67586a)}

@@ -1,6 +1,6 @@
 {
   "project_ref": "ayrryemawwplguaauxij",
-  "source": "Applied destination database migration history, read 2026-11-11",
+  "source": "Applied destination database migration history; yearly profile/access migrations verified 2026-11-13",
   "migrations": [
     {
       "file": "20261022115103_noor_project_foundation.sql",
@@ -237,6 +237,18 @@
     {
       "file": "20261113083008_creator_feature_guard_completion.sql",
       "sha256": "2362fc5131b7801834b36e919ee4025579ea47e0a6320bd4ca7265a746955bb3"
+    },
+    {
+      "file": "20261113130337_yearly_profile_updates_and_member_access.sql",
+      "sha256": "487ccff75a2daae773bf6d23071ca6aee74a0d533317299c5bd375b369ab7a34"
+    },
+    {
+      "file": "20261113130725_yearly_selection_history_guard.sql",
+      "sha256": "303ac34303f708344f007e4e1b8dd4e3cc7017d5dc7a0603afa981e27b1334fa"
+    },
+    {
+      "file": "20261113131132_private_yearly_rpc_wrappers.sql",
+      "sha256": "03ec4e9104fe27fd9c56159b5da1d3b43f751d064039c1863438b9b76e81aa67"
     }
   ]
 }

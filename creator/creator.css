@@ -10,3 +10,23 @@
 @media print{body>*{visibility:hidden}dialog.nc-modal,dialog.nc-modal *{visibility:visible}dialog.nc-modal{position:absolute;inset:0;margin:0;width:100%;max-width:none;border:0;box-shadow:none}dialog .nc-form-actions,dialog .nc-modal-status{display:none!important}}
 
 @media(max-width:760px){.nc-user>div{display:none}}
+
+/* Keep authentication inside the visible column, including touch browsers using desktop mode. */
+.nc-auth{grid-template-columns:minmax(0,1fr);width:100%;min-width:0;padding:clamp(16px,4vw,36px)}
+.nc-login-card{min-width:0;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+.nc-login-form,.nc-login-brand,.nc-form label,.nc-password{min-width:0}
+.nc-login-form input{max-width:100%;font-size:16px}
+.nc-error{overflow-wrap:anywhere}
+@media(max-width:760px),(hover:none) and (pointer:coarse){
+ .nc-auth{align-items:start;padding:18px 16px;min-height:100svh}
+ .nc-login-card{display:block;max-width:440px;margin:0 auto}
+ .nc-login-brand{min-height:0;padding:23px 20px}
+ .nc-login-brand .nc-brand{display:block}
+ .nc-login-brand .nc-brand strong{font-size:30px}
+ .nc-login-brand .nc-brand .book{height:27px}
+ .nc-login-brand p{font-size:16px;margin-top:12px}
+ .nc-login-brand>svg{display:none}
+ .nc-login-form{padding:27px 23px}
+ .nc-login-form h1{font-size:25px}
+ .nc-login-form>p{font-size:13px;margin:10px 0 23px}
+}

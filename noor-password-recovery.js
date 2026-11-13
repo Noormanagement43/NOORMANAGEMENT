@@ -44,6 +44,9 @@
  const $=id=>document.getElementById(id),message=(text,type='info')=>{const el=$('recoveryMessage');el.textContent=text;el.className='notice '+type;el.hidden=false;};
  const config=root.NOOR_CONFIG||{};
  if(config.SUPABASE_URL!=='https://ayrryemawwplguaauxij.supabase.co'||!config.SUPABASE_PUBLISHABLE_KEY||!root.supabase?.createClient){message('Secure connection unavailable. Please try again later.','error');return;}
+ let creatorReturn=new URLSearchParams(root.location.search).get('portal')==='creator';
+ try{creatorReturn=creatorReturn||root.sessionStorage?.getItem('noor.recovery.portal')==='creator';if(creatorReturn){const saved=root.sessionStorage?.getItem('noor.recovery.email')||'';if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(saved))$('recoveryEmail').value=saved;root.sessionStorage?.removeItem('noor.recovery.email');}}catch{}
+ if(creatorReturn){const back=root.document.querySelector('.back');if(back){back.href='./creator.html';back.textContent='Back to Creator sign in';}}
  const linkParams=new URLSearchParams(root.location.hash.slice(1));
  const recoveryLink=linkParams.get('type')==='recovery';
  const db=root.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:true,storageKey:'noor.password-recovery'}});
@@ -56,7 +59,7 @@
  $('codeForm').addEventListener('submit',event=>{event.preventDefault();run($('verifyRecovery'),async()=>{await flow.verify($('recoveryCode').value);$('recoveryCode').value='';showPassword();});});
  $('resendRecovery').addEventListener('click',()=>run($('resendRecovery'),async()=>{await flow.send(flow.email);message('If this email is registered, a new recovery email will arrive. Only the latest code should be used.');}));
  $('changeEmail').addEventListener('click',()=>{$('codeStep').hidden=true;$('emailStep').hidden=false;$('recoveryCode').value='';$('recoveryEmail').focus();});
- $('passwordForm').addEventListener('submit',event=>{event.preventDefault();run($('saveRecoveryPassword'),async()=>{const result=await flow.save($('newPassword').value,$('confirmNewPassword').value);$('passwordForm').reset();$('passwordStep').hidden=true;$('completeStep').hidden=false;message(result.signedOut?'Password updated. Sign in with your new password.':'Password updated. Return to sign in; other-session sign-out could not be confirmed.','success');});});
+ $('passwordForm').addEventListener('submit',event=>{event.preventDefault();run($('saveRecoveryPassword'),async()=>{const result=await flow.save($('newPassword').value,$('confirmNewPassword').value);$('passwordForm').reset();try{root.sessionStorage?.removeItem('noor.recovery.portal');}catch{}$('passwordStep').hidden=true;$('completeStep').hidden=false;message(result.signedOut?'Password updated. Sign in with your new password.':'Password updated. Return to sign in; other-session sign-out could not be confirmed.','success');});});
  const tokenHash=linkParams.get('token_hash');
  if(recoveryLink&&tokenHash){
   root.history.replaceState(null,'',root.location.pathname);

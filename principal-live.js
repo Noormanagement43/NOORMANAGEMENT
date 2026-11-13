@@ -89,6 +89,7 @@ function setup(){
           <blockquote id="pd-insight"></blockquote>
           <span id="pd-quote-author">LEARN · TEACH · GROW</span>
         </section>
+        ${card('Action Required','pd-actions','attendance','Review →')}
         ${card('Today’s Notices','pd-notices','notices','View all →')}
         ${card('Upcoming Meetings','pd-meetings','meetings','View all →')}
         ${card('School Calendar','pd-events','school-calendar','Open →')}
@@ -120,6 +121,8 @@ function setup(){
       if(b.dataset.route==='__more')document.getElementById('sidebar')?.classList.toggle('open');
       else a().openView?.(b.dataset.route);
     }
+    const periodButton=ev.target.closest('[data-pd-period]');
+    if(periodButton){window.NOOR_SHARED_TIMETABLE.openDay({periodId:periodButton.dataset.pdPeriod});return;}
     const viewStaff=ev.target.closest('[data-view-teacher]');
     if(viewStaff)showStaffProfile(viewStaff.dataset.viewTeacher);
     const viewStu=ev.target.closest('[data-view-student]');
@@ -673,18 +676,18 @@ async function refresh(){
 
     // Pastel KPI Metrics
     q('#pd-kpis').innerHTML=metric('Students Present Today',attError?'—':`${today.marked?today.present:'—'} <em>/ ${today.total}</em>`,today.marked?`${today.marked} marked · ${today.total-today.marked} unmarked`:'Attendance not submitted','#8e4359',!attError&&today.marked?percent(today.present,today.total):null)+
-      metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${rows('staff').length?staffPresent:'—'} <em>/ ${teachers.length}</em>`,canonical?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
+      metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${rows('staff').length?staffPresent:'—'} <em>/ ${teachers.length}</em>`,res.staff.unavailable?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
       metric('Overall Attendance',attError||!total?'—':percent(present,total)+'%','Last 7 days · submitted marks','#3d795b',null)+
       metric(canonical?'Scheduled Classes Now':'Active Classes Now',res.periods.error||res.runs.error?'—':active,canonical?'Scheduled time · not a staff check-in':'Teacher started · within scheduled time','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
     const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
     const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
-    q('#pd-greeting').textContent=`Hello, ${leadershipLabel} ☀ · ${new Date().toLocaleDateString('en-GB',{timeZone:d.tz,weekday:'short',day:'numeric',month:'short',year:'numeric'})}`;
+    q('#pd-greeting').innerHTML=window.NOOR_DASHBOARD_EXPERIENCE.greeting(p.full_name||leadershipLabel);
     
     q('#pd-profile').innerHTML=`<div class="pd-photo" aria-label="Profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</div>
       <div class="pd-profile-info">
-        <div class="pd-profile-heading"><h2>${e(p.full_name||leadershipLabel)}</h2>
+        <div class="pd-profile-heading">${window.NOOR_DASHBOARD_EXPERIENCE.brand()}${window.NOOR_DASHBOARD_EXPERIENCE.dateLine()}<h2>${e(p.full_name||leadershipLabel)}</h2>
         <b>${e(leadershipLabel)} · School Leadership</b></div>
         <p>▥ ${e(school?.name||'School')}</p>
         <p>⌖ ${e(p.city_or_area||a().user?.user_metadata?.noor_contact?.location||school?.address||'Not added')}</p>
@@ -706,7 +709,7 @@ async function refresh(){
       const run=runs.get(p.id),status=run?.status==='ongoing'?'In progress':p.progress_status==='ongoing'?'In progress':'Scheduled now';
       return `<tr>
         <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
-        <td>${e(p.subject_name)}</td>
+        <td><button type="button" class="pd-link noor-period-detail" data-pd-period="${e(p.id)}">${e(p.subject_name)} →</button><small class="noor-period-topic">${e([p.lesson,p.topic].filter(Boolean).join(' · ')||'Lesson / topic not added yet')}</small></td>
         <td>${e(classes.find(c=>c.id===p.class_id)?.name||p.class_label)}</td>
         <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
         <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
@@ -726,6 +729,11 @@ async function refresh(){
 
     const errors=Object.entries(res).filter(([,v])=>v.error&&!v.unavailable).map(([k])=>k);
     q('#pd-errors').innerHTML=(errors.length?`<p class="pd-alert">Unable to load: ${e(errors.join(', '))}. Missing data has not been estimated.</p>`:'')+(res.staff.unavailable?'<p class="pd-muted">Staff check-ins are not configured yet. Scheduled periods do not confirm teacher attendance.</p>':'');
+    const attention=[];
+    if(!attError&&today.total>today.marked)attention.push({title:(today.total-today.marked)+' students awaiting attendance',route:'attendance',sub:'Today’s marks have not been recorded.'});
+    if(!res.staff.error){const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+' teachers marked absent',route:'staff-management',sub:'Review today’s staff availability.'});}
+    if(!res.tasks.error){const pending=rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status));if(pending.length)attention.push({title:pending.length+' pending school tasks',route:'school-tasks',sub:'Open tasks and review deadlines.'});}
+    q('#pd-actions').innerHTML=attention.length?attention.map(x=>`<button type="button" class="pd-item" data-route="${x.route}"><strong>${e(x.title)}</strong><small>${e(x.sub)}</small></button>`).join(''):empty(attError?'Attendance status unavailable. Please retry.':'No pending actions in the loaded records.');
     q('#pd-status').textContent='Last updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:d.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+d.tz;
   }catch(err){
     if(q('#pd-errors'))q('#pd-errors').innerHTML=`<p class="pd-alert">${e(err.message||'Unable to refresh records.')}</p>`;

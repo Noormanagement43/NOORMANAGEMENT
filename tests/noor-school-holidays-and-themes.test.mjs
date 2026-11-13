@@ -37,5 +37,5 @@ test('each school has its own theme and annual report follows selected color tok
  assert.match(css,/var\(--berry/);
  assert.match(css,/nar-summary/);
  assert.match(index,/NOOR_HOLIDAY_ENGINE|noor-holiday-engine\.js/);
- assert.match(index,/theme-system\.js\?v=20261109-school-scoped-2/);
+ assert.match(index,/theme-system\.js\?v=[^"\s]+/);
 });

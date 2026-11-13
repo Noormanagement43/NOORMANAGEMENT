@@ -112,7 +112,7 @@ async function render(){
  const details={...(extra.data||{}),employee_code:extra.data?.employee_code||membership.data?.employee_id||'',joined_on:extra.data?.joined_on||membership.data?.joined_at?.slice(0,10)||''},allPeriods=periods.data||[],allRuns=runs.data||[],approved=allPeriods.filter(x=>x.weekday===selectedWeekday&&x.approval_status==='approved'),runByPeriod=new Map(allRuns.map(x=>[x.period_id,x])),complete=approved.filter(x=>runByPeriod.get(x.id)?.status==='done').length;
  const validNotices=(notices.data||[]).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  const events=(calendar.data||[]).filter(x=>!x.teacher_id||x.teacher_id===uid).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
- const now=new Date().toTimeString().slice(0,5);
+ const now=window.NOOR_DASHBOARD_EXPERIENCE.clock(app.school?.timezone).time;
  const todayPeriods=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='approved');
  const currentPeriod=todayPeriods.find(x=>runByPeriod.get(x.id)?.status==='ongoing')||todayPeriods.find(x=>fmt(x.start_time)<=now&&fmt(x.end_time)>now);
  const name=app.profile.full_name||'Teacher',initials=name.split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase();
@@ -123,17 +123,18 @@ async function render(){
  const activities=logActivity(allRuns,approved,checkin.data,validNotices);
  const assignedTasks=tasks.filter(x=>taskStatus.get(x.id)!=='completed'&&taskStatus.get(x.id)!=='done');
  wrapper.innerHTML='<div class="noor-t4">'+
- '<div class="nt-head"><div><h1>'+esc(app.school?.name||app.profile.school_name_submitted||'School')+' · Teacher Dashboard</h1><p class="nt-greeting">Hello, '+esc(name)+'</p><time class="nt-dashboard-date" datetime="'+esc(window.NOOR_SHARED_TIMETABLE?.schoolDay(app.school?.timezone)||today())+'">'+esc(new Date().toLocaleDateString('en-IN',{timeZone:app.school?.timezone||'Asia/Kolkata',weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</time></div></div>'+
- '<section class="nt-class-summary" id="ntClassSummary" aria-label="Today’s class attendance" aria-live="polite"><p>Loading attendance…</p></section>'+
+ '<div class="nt-head"><div><h1>'+esc(app.school?.name||app.profile.school_name_submitted||'School')+' · Teacher Dashboard</h1><p class="nt-greeting">'+window.NOOR_DASHBOARD_EXPERIENCE.greeting(name)+'</p><time class="nt-dashboard-date" datetime="'+esc(window.NOOR_SHARED_TIMETABLE?.schoolDay(app.school?.timezone)||today())+'">'+esc(new Date().toLocaleDateString('en-IN',{timeZone:app.school?.timezone||'Asia/Kolkata',weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</time></div></div>'+
  '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div></div>'+
- '<div><div class="nt-person-head"><h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span></div></div>'+
+ '<div><div class="nt-person-head">'+window.NOOR_DASHBOARD_EXPERIENCE.brand()+window.NOOR_DASHBOARD_EXPERIENCE.dateLine()+'<h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span></div></div>'+
  '<div class="nt-profile-grid">'+det('School:',app.school?.name||app.profile.school_name_submitted,'⌂')+
  det('Location:',app.profile.city_or_area||app.user?.user_metadata?.noor_contact?.location||details.address,'⌖')+
  det('Email:',app.profile.email||app.user.email,'✉')+det('Phone:',app.profile.mobile_number,'☎')+
  det('Date of birth:',formatDate(details.date_of_birth||app.profile.date_of_birth),'♧')+
  det('Class teacher:',app.profile.requested_class_name||app.profile.class_label||'Not assigned','▤')+
- det('Section:',app.profile.requested_section_name||'Not assigned','▦')+'</div>'+
+ det('Section:',app.profile.requested_section_name||'Not assigned','▦')+det('Education:',details.qualification||app.profile.education)+'</div>'+
  '</div>'+(window.NOOR_DAILY_QUOTES?.header('teacher')||'')+'</section>'+
+ window.NOOR_DASHBOARD_EXPERIENCE.teacherFocus(todayPeriods,runByPeriod)+
+ '<section class="nt-class-summary" id="ntClassSummary" aria-label="Today’s class attendance" aria-live="polite"><p>Loading attendance…</p></section>'+
  '<div class="nt-columns"><div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>My Period Schedule</h2><time class="nt-schedule-day">'+esc(new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:app.school?.timezone||'Asia/Kolkata'}))+'</time></div><button class="nt-btn" data-link="schedules">Manage periods</button></div>'+
  '<div class="nt-timeline">'+periodSlotsHTML(approved,runByPeriod,result.slots||[])+'</div>'+
  '<div class="nt-review-requests">'+
@@ -166,8 +167,8 @@ async function render(){
  if(timetable)workspaceGrid.append(timetable);workspaceGrid.append(rail);
  if(statusCard)rail.append(statusCard);
  if(quickCard)rail.append(quickCard);
- profileNode?.insertAdjacentElement('afterend',workspaceGrid);
- const classSummary=dash?.querySelector('#ntClassSummary');if(classSummary)workspaceGrid.insertAdjacentElement('afterend',classSummary);
+ const classSummary=dash?.querySelector('#ntClassSummary');
+ (classSummary||dash?.querySelector('.noor-current-card')||profileNode)?.insertAdjacentElement('afterend',workspaceGrid);
  const oldColumns=dash?.querySelector('.nt-columns');if(oldColumns){for(const col of [...oldColumns.children])if(!col.children.length)col.remove();oldColumns.classList.add('nt-secondary-grid');}
  current.assignedTasks=assignedTasks;
  wrapper.onclick=onClick; // Replace handler on each render; avoid duplicate clicks/period submissions.

@@ -4,12 +4,12 @@
   const THEMES = [
     {id:"simple-clean",name:"Simple & Clean",desc:"Plain white, soft teal, clear lines and minimal decoration.",primary:"#247b7b",accent:"#d9efed",canvas:"#f4f7f8",card:"#ffffff",ink:"#243b43"},
     {id:"rose-gold",name:"Original Burgundy",desc:"Deep burgundy, ivory cards and warm champagne accents.",primary:"#6B0F1A",accent:"#D6B174",canvas:"#FBF3EE",card:"#fffdfb",ink:"#34232a"},
-    {id:"pastel-aurora",name:"Soft Rose",desc:"Clean white with a restrained dusty rose accent.",primary:"#88556a",accent:"#f2e4ea",canvas:"#faf7f8",card:"#ffffff",ink:"#352e37"},
+    {id:"pastel-aurora",name:"Pearl Rose",desc:"Clean white with a restrained dusty rose accent.",primary:"#97536f",accent:"#f6e7ee",canvas:"#fbf8f9",card:"#ffffff",ink:"#352e37"},
     {id:"linen-pearl",name:"Warm Ivory",desc:"Warm white, sandstone details and quiet charcoal text.",primary:"#77634c",accent:"#eee6db",canvas:"#f8f7f3",card:"#ffffff",ink:"#35322e"},
-    {id:"porcelain-blue",name:"Porcelain Blue",desc:"White cards, ink blue actions and soft blue highlights.",primary:"#3d638c",accent:"#e3edf7",canvas:"#f5f8fb",card:"#ffffff",ink:"#253647"},
+    {id:"porcelain-blue",name:"Sky Pearl",desc:"White cards, ink blue actions and soft blue highlights.",primary:"#4268ad",accent:"#e8f0fc",canvas:"#f3f7fc",card:"#ffffff",ink:"#253647"},
     {id:"rose-whisper",name:"Muted Lavender",desc:"Near-white surfaces with a subtle lavender accent.",primary:"#6d6085",accent:"#eae6f1",canvas:"#f8f7fa",card:"#ffffff",ink:"#342f40"},
     {id:"ocean-blue",name:"Slate & White",desc:"Crisp white and slate with clear blue-grey controls.",primary:"#4c6578",accent:"#e4ebf0",canvas:"#f5f7f9",card:"#ffffff",ink:"#263744"},
-    {id:"sage-garden",name:"Soft Sage",desc:"White cards with a calm sage green accent.",primary:"#48715d",accent:"#e4eee7",canvas:"#f6f8f5",card:"#ffffff",ink:"#2c3c32"}
+    {id:"sage-garden",name:"Sage Ivory",desc:"White cards with a calm sage green accent.",primary:"#3f6b59",accent:"#e5eddf",canvas:"#f8f8f3",card:"#ffffff",ink:"#2c3c32"}
   ];
 
  const DEFAULT={theme_key:"pastel-aurora",color_mode:"light",font_scale:"normal",reduced_motion:false};

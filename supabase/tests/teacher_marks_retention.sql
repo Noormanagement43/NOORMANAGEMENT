@@ -1,0 +1,67 @@
+-- Run after teacher_marks_and_monthly_retention. Everything is rolled back.
+-- Storage fixtures below are metadata only; actual blob deletion is tested in retention-worker.test.mjs.
+begin;
+set local statement_timeout='20s';
+do $test$
+declare t public.institution_memberships;s public.institution_memberships;t2 public.institution_memberships;
+ g uuid;other_g uuid;q uuid;attempt uuid;receipt uuid;answer jsonb;denied boolean;local_day date;
+ photo_path text;fresh_path text;avatar_path text;note uuid;file_id uuid;photo_jobs jsonb;
+begin
+ select * into strict t from public.institution_memberships where role='teacher' and status='active' limit 1;
+ select * into strict s from public.institution_memberships where institution_id=t.institution_id and role='student' and status='active' limit 1;
+ select * into t2 from public.institution_memberships where institution_id=t.institution_id and role='teacher' and status='active' and user_id<>t.user_id limit 1;
+ select (now() at time zone timezone)::date into local_day from public.institutions where id=t.institution_id;
+ insert into public.academic_groups(institution_id,name,group_type,homeroom_teacher_membership_id) values(t.institution_id,'Rollback marks class','class',t.id) returning id into g;
+ insert into public.academic_groups(institution_id,name,group_type) values(t.institution_id,'Rollback unrelated class','class') returning id into other_g;
+ insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,s.id,'student');
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ answer=public.noor_save_subject_marks(t.institution_id,g,'English','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',24)));
+ if (answer->>'count')::int<>1 then raise exception 'Monthly marks did not save';end if;
+ perform public.noor_save_subject_marks(t.institution_id,g,' english ','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',27)));
+ if (select count(*) from public.noor_assessment_results where student_membership_id=s.id and academic_group_id=g and manual_entry_key is not null)<>1 then raise exception 'Re-saving duplicated marks';end if;
+ answer=public.noor_subject_marks_roster(t.institution_id,g,'English','monthly_test',local_day);
+ if not exists(select 1 from jsonb_array_elements(answer) x where x->>'student'=s.id::text and (x->>'marks')::numeric=27 and (x->>'max_marks')::numeric=35 and (x->>'editable')::boolean) then raise exception 'Saved class roster missing marks';end if;
+ perform public.noor_save_subject_marks(t.institution_id,g,'Maths','term3',local_day,100,jsonb_build_array(jsonb_build_object('student',s.id,'marks',88)));
+ if (select count(distinct subject_name) from public.noor_assessment_results where academic_group_id=g and student_membership_id=s.id)<>2 then raise exception 'Subjects did not combine in the report ledger';end if;
+ denied=false;begin perform public.noor_save_subject_marks(t.institution_id,g,'English','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',36)));exception when others then denied=true;end;if not denied then raise exception 'Out-of-range marks accepted';end if;
+ denied=false;begin perform public.noor_save_subject_marks(t.institution_id,other_g,'English','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',20)));exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Unassigned class allowed';end if;
+ if t2.id is not null then
+  insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,t2.id,'teacher');
+  perform set_config('request.jwt.claim.sub',t2.user_id::text,true);
+  denied=false;begin perform public.noor_save_subject_marks(t.institution_id,g,'English','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',10)));exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Another teacher overwrote marks';end if;
+  perform public.noor_save_subject_marks(t.institution_id,g,'Science','monthly_test',local_day,35,jsonb_build_array(jsonb_build_object('student',s.id,'marks',31)));
+ end if;
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);
+ denied=false;begin perform public.noor_save_subject_marks(t.institution_id,g,'Maths','term3',local_day,100,jsonb_build_array(jsonb_build_object('student',s.id,'marks',100)));exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Student wrote marks';end if;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ q=public.noor_publish_test(t.institution_id,g,'Rollback objective','English',local_day,'[{"type":"mcq","prompt":"Opposite of hot?","options":["cold","tall"],"marks":5}]','[{"answer":"0"}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5,"duration_minutes":20}','{}');
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);perform private.noor_test_clock(q);attempt=private.noor_submit_quiz(q,'["0"]');
+ select id into strict receipt from public.noor_assessment_results where source_quiz_attempt_id=attempt;
+ denied=false;begin perform public.noor_delete_test(q);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Student deleted a test';end if;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);answer=public.noor_delete_test(q);
+ if (answer->>'deleted')::boolean is not true or exists(select 1 from public.noor_weekly_quizzes where id=q) or exists(select 1 from public.noor_quiz_attempts where id=attempt) then raise exception 'Test payload not purged';end if;
+ if not exists(select 1 from public.noor_assessment_results where id=receipt and source_quiz_attempt_id=attempt and marks=5) then raise exception 'Deleting a test changed permanent marks';end if;
+ q=public.noor_publish_test(t.institution_id,g,'Rollback written','English',local_day,'[{"type":"short","response_mode":"one_word","prompt":"Opposite of hot?","options":[],"marks":3}]','[{"answer":"cold","rubric":"Accept cold."}]','{"kind":"exam","exam_key":"term1","question_count":1,"max_marks":3}','{}');
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);perform private.noor_test_clock(q);attempt=private.noor_submit_quiz(q,'["cool"]');
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);answer=public.noor_delete_test(q);
+ if (answer->>'pending_review')::boolean is not true or not exists(select 1 from public.noor_quiz_attempts where id=attempt) then raise exception 'Ungraded submission destroyed';end if;
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);
+ if exists(select 1 from public.noor_paper_list() x where x->>'id'=q::text) then raise exception 'Retired test still listed to students';end if;
+ denied=false;begin perform private.noor_paper_member(q);exception when others then denied=true;end;if not denied then raise exception 'Retired test reopened';end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ photo_path=t.user_id::text||'/daily-homework-'||gen_random_uuid()::text||'.jpg';fresh_path=t.user_id::text||'/daily-homework-'||gen_random_uuid()::text||'.png';avatar_path=t.user_id::text||'/avatar-'||gen_random_uuid()::text||'.jpg';
+ insert into storage.objects(bucket_id,name,created_at) values('noor-learning-files',photo_path,now()-interval '31 days'),('noor-learning-files',fresh_path,now()),('noor-learning-files',avatar_path,now()-interval '31 days');
+ insert into public.noor_learning_items(institution_id,academic_group_id,created_by,kind,status,homework_date,title,subject_name,body,attachment_path) values(t.institution_id,g,t.user_id,'smart_note','published',local_day-31,'Rollback homework','English','Keep these written instructions',photo_path) returning id into note;
+ perform public.noor_retention_prepare();
+ select id into strict file_id from private.noor_retention_files where path=photo_path;
+ if exists(select 1 from private.noor_retention_files where path in(fresh_path,avatar_path)) then raise exception 'Fresh or profile image queued for deletion';end if;
+ perform public.noor_retention_ack(array[file_id],false);
+ if not exists(select 1 from public.noor_learning_items where id=note and attachment_path=photo_path) then raise exception 'Failure removed image reference';end if;
+ if not exists(select 1 from private.noor_retention_files where id=file_id and retry_at>now()) then raise exception 'Failed deletion not scheduled to retry';end if;
+ perform public.noor_retention_ack(array[file_id],true);
+ if not exists(select 1 from public.noor_learning_items where id=note and attachment_path is null and attachment_removed_at is not null and body='Keep these written instructions') then raise exception 'Photo cleanup did not preserve written note';end if;
+ if not exists(select 1 from public.noor_assessment_results where id=receipt and marks=5) then raise exception 'Retention changed saved marks';end if;
+ if has_function_privilege('authenticated','public.noor_retention_prepare()','execute') or has_function_privilege('anon','public.noor_retention_ack(uuid[],boolean)','execute') or has_function_privilege('authenticated','public.noor_validate_retention_worker(text)','execute') then raise exception 'Retention service API exposed to client';end if;
+end $test$;
+select 'teacher_marks_retention_passed' as verified;
+rollback;

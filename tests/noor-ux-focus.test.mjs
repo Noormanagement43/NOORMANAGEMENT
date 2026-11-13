@@ -23,7 +23,7 @@ test('teacher first viewport places timetable and active quick actions after the
   const actions=code.slice(code.indexOf('const tiles')-200); // source tiles are built as HTML, not a JS constant
   void actions;
   const section=code.slice(code.indexOf('nt-3d-quick-grid nt-refined-actions'),code.indexOf('nt-jinni-card'));
-  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,4);
+  assert.equal((section.match(/class="nt-3d-quick-btn"/g)||[]).length,5);
   assert.match(section,/Take Attendance/);
   assert.match(section,/Assignments &amp; Smart Notes/);
   assert.match(section,/Smart Notes/);

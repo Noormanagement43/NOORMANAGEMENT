@@ -31,3 +31,44 @@ Database migrations were applied to ayrryemawwplguaauxij. The creator email work
 - Comprehensive owner-mutation test in `supabase/tests/creator_control_plane.sql` is prepared but not executed: the initial Auth fixture setup confirmation expired. Run in a suitable isolated test workflow or after arranging explicit fixture authorization; no test Auth users were created.
 - Actual password-based owner login/MFA, end-to-end principal message delivery and external email receipt remain unverified. The account is now authorized; the frontend still needs publication approval. No real messages/payments/pauses were made.
 - Existing security advisor warnings for pg_net schema and leaked-password protection are not introduced by this change.
+
+
+## Automatic feature registration
+
+`noor-feature-registry.js` is the shared declaration source for feature metadata,
+canonical keys, navigation aliases and mixed launchers. Both the school app and
+Creator entry point load it before their consumers. After verified Creator
+sign-in, `noor_creator_register_features` syncs these declarations before loading
+Creator state. The existing catalog-driven UI then renders their switches without
+another UI edit. New defaults start ON to preserve the previously available
+behavior. Repeated syncs preserve saved defaults, institute overrides, and pause
+settings. Existing catalog entries are never deleted. Global changes preserve
+school-specific overrides by default; replacing them remains an explicit option.
+
+The registration wrapper uses security invoker; its private implementation checks
+the existing configured, verified Creator identity and MFA requirement before
+writing metadata. Anonymous and ordinary school identities cannot register or
+change controls. No direct table grants, RLS policies or tenant lookup rules change.
+
+When adding a feature:
+
+1. Add its key, label, category, description and route aliases to the shared registry.
+2. Enforce that same key in its server RPC/table policies and backend operations.
+   Registration only creates controls; it cannot infer or generate authorization
+   for arbitrary new backend code. Use `NOOR_PLATFORM_ACCESS.requireFeature(key)`
+   for non-navigation launchers as an additional client guard.
+3. Add behavior tests for its OFF path. Navigation coverage tests fail if a new
+   destination in the main nav has no mapping or documented shell exemption.
+
+Mixed Assignments/Smart Notes launchers remain available while either child is ON;
+the disabled child's route is still blocked. Workspace home, account settings,
+security audit and Help & Suggestions are documented shells that remain reachable.
+Individual profile writes still honor `profile_edit`; school settings writes retain
+their database guards. Support availability while an institute is paused is preserved.
+
+Apply `20261113135206_creator_feature_registry.sql` before publishing the matching
+frontend. Until that migration exists, Creator sign-in reports the RPC failure
+instead of pretending registry sync succeeded. Existing frontend deployments do
+not depend on this new RPC. `supabase/tests/feature_registry.sql` runs registration,
+identity-denial, idempotency and setting-preservation checks in a rolled-back
+transaction; it does not create Auth users or send messages.

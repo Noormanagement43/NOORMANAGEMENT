@@ -29,3 +29,17 @@ test('vertical scrolling, table controls, non-edge swipes and desktop swipes do 
  const x=setup();x.swipe(20,100,90,220);assert.equal(x.menu['aria-expanded'],'false');x.swipe(90,100,200,105);assert.equal(x.menu['aria-expanded'],'false');x.swipe(20,100,130,105,{closest:()=>({})});assert.equal(x.menu['aria-expanded'],'false');x.phone.matches=false;x.swipe(20,100,130,105);assert.equal(x.menu['aria-expanded'],'false');
 });
 test('resizing to desktop restores content and makes sidebar accessible',()=>{const x=setup();x.swipe(20,100,130,105);x.phone.matches=false;x.phone.change();assert.equal(x.main.inert,false);assert.equal(x.sidebar.inert,false);assert.equal(x.created[0].hidden,true);});
+
+test('teacher handset styles cannot place navigation underneath the dimming backdrop',()=>{
+ const teacher=fs.readFileSync(new URL('../teacher-reference.css',import.meta.url),'utf8');
+ const drawer=fs.readFileSync(new URL('../noor-mobile-drawer.css',import.meta.url),'utf8');
+ // A former teacher-only z-index:100!important beat the shared drawer's 300,
+ // leaving the 299 backdrop over every navigation button on touch phones.
+ assert.doesNotMatch(teacher,/#workspace\.noor-teacher-handset\s+\.sidebar(?:\.open)?\s*\{/);
+ assert.doesNotMatch(teacher,/#workspace\.noor-teacher-handset\s+\.(?:app-shell|main|mobilemenu)\s*\{/);
+ const sidebar=drawer.match(/#workspace \.sidebar\{([^}]+)\}/)?.[1]||'';
+ const backdrop=drawer.match(/#workspace \.noor-nav-backdrop\{([^}]+)\}/)?.[1]||'';
+ const layer=rules=>Number(rules.match(/z-index:(\d+)/)?.[1]);
+ assert(layer(sidebar)>layer(backdrop),'Navigation must be painted above its backdrop');
+ assert.match(drawer,/#workspace \.sidebar\.open\{[^}]*pointer-events:auto/);
+});

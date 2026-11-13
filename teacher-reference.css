@@ -1,4 +1,5 @@
-/* NOOR teacher workspace · approved burgundy reference design.
+/* Sidebar positioning and backdrop layers belong to noor-mobile-drawer.css.
+   NOOR teacher workspace · approved burgundy reference design.
    All rules scoped to the authenticated teacher dashboard. */
 #workspace.noor-teacher-activated{
  --nt-wine:#491426;--nt-wine-dark:#2c0e1b;--nt-rose:#9b496b;--nt-pink:#faeaf0;
@@ -177,11 +178,6 @@
 #workspace.noor-teacher-activated #view-teaching #ocrStatus{display:block!important;min-height:0}
 
 /* Android browsers may request a desktop-sized viewport. Keep teacher pages handset-friendly. */
-#workspace.noor-teacher-handset .app-shell{display:block!important;grid-template-columns:none!important}
-#workspace.noor-teacher-handset .sidebar{position:fixed!important;left:-265px!important;top:0!important;width:245px!important;height:100vh!important;z-index:100!important;border-radius:0!important}
-#workspace.noor-teacher-handset .sidebar.open{left:0!important}
-#workspace.noor-teacher-handset .main{width:100%!important;margin:0!important}
-#workspace.noor-teacher-handset .mobilemenu{display:inline-grid!important;place-items:center!important}
 #workspace.noor-teacher-handset .content{padding:14px!important;max-width:100vw!important}
 #workspace.noor-teacher-handset .noor-t4 .nt-columns{grid-template-columns:1fr!important}
 #workspace.noor-teacher-handset .noor-t4 .nt-profile{grid-template-columns:90px minmax(0,1fr)!important}

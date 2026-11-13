@@ -37,6 +37,8 @@ export async function handle(req:Request):Promise<Response>{
  if(action==='status'){const c=config(provider);let managerStatus;try{const manager=config('groq');managerStatus={provider:'groq',configured:manager.configured,model:manager.model,secret_name:manager.secretName,free_tier_quota_required:true}}catch{managerStatus={provider:'groq',configured:false,code:'AMBIGUOUS_SECRET'}}return send(200,{service:'noor-v2-ai',configured:c.configured,provider,model:c.model,secret_name:c.secretName,manager:managerStatus,credentials_verified:false,actions:supported})}
  const institution=safe(input.institution_id||input.school_id,60);
  if(!/^[0-9a-f-]{36}$/i.test(institution))return send(400,{error:'Choose your institution before using AI'});
+ const access=await db.rpc('noor_feature_access',{p_institution:institution});
+ if(access.error||access.data?.paused||access.data?.features?.ai_assistant===false)return send(403,{error:'AI access is disabled by NOOR Management'});
  const mr=await db.from('institution_memberships').select('role,status').eq('institution_id',institution).eq('user_id',verified.data.user.id).eq('status','active').maybeSingle();
  if(mr.error)return send(503,{error:'Membership lookup failed'});
  if(!mr.data)return send(403,{error:'Active institution membership required'});

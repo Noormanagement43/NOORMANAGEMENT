@@ -20,6 +20,7 @@ Deno.test('Online quiz uses server Gemini routing, rejects invalid keys and neve
   if(url.includes('/auth/v1/user'))return response({id:'41000000-0000-4000-8000-000000000001'});
   if(url.includes('/institution_memberships?'))return response([{role,status:'active'}]);
   if(url.includes('/institutions?'))return response([{name:'Test School',status:'active'}]);
+  if(url.includes('/rpc/noor_feature_access'))return response({paused:false,features:{ai_assistant:true}});
   if(url.includes('/rpc/noor_take_ai_budget'))return response(true);
   if(url.includes('googleapis.com')){calls++;const sent=JSON.parse(String(init?.body));assert(sent.generationConfig.responseMimeType==='application/json');return response({candidates:[{content:{parts:[{text:JSON.stringify({title:'Maths quiz',questions:[{type:'mcq',prompt:'2+2?',options:['3','4'],marks:2}],answer_key:[{answer:invalid?'9':'1'}]})}]}}]});}
   throw Error('Unexpected call or attempted record write: '+url);
@@ -35,6 +36,7 @@ Deno.test('Short-answer checking reads saved tenant submission and requires teac
   if(url.includes('/auth/v1/user'))return response({id:'41000000-0000-4000-8000-000000000001'});
   if(url.includes('/institution_memberships?'))return response([{role:'teacher',status:'active'}]);
   if(url.includes('/institutions?'))return response([{name:'Test School',status:'active'}]);
+  if(url.includes('/rpc/noor_feature_access'))return response({paused:false,features:{ai_assistant:true}});
   if(url.includes('/rpc/noor_take_ai_budget'))return response(true);
   if(url.includes('/noor_quiz_attempts?')){assert(url.includes('institution_id=eq.'+institution));return response({quiz_id:'q',answers:['0','Combining quantities']});}
   if(url.includes('/rpc/noor_quiz_review_data'))return allowed?response({answer_key:[{answer:'0'},{answer:'Combining quantities'}]}):response({message:'Denied'},403);
@@ -72,6 +74,7 @@ Deno.test('HTTP AI route denies other tenants, student managers and exhausted bu
   if(url.includes('/auth/v1/user'))return response({id:'41000000-0000-4000-8000-000000000001',email:'test@example.invalid',aud:'authenticated',role:'authenticated'});
   if(url.includes('/institution_memberships?')){assert(url.includes('institution_id=eq.'+institution)&&url.includes('status=eq.active'));return response(member?[{role,status:'active'}]:[])}
   if(url.includes('/institutions?'))return response([{name:'Test School',status:'active'}]);
+  if(url.includes('/rpc/noor_feature_access'))return response({paused:false,features:{ai_assistant:true}});
   if(url.includes('/rpc/noor_take_ai_budget'))return response(budget);
   if(url.includes('googleapis.com')){providerCalls++;return response({candidates:[{content:{parts:[{text:'Verified mock response'}]}}]})}
   throw Error('Unexpected outbound call '+url);
@@ -127,6 +130,7 @@ Deno.test('School test draft respects principal marks, formats and multi-image s
   if(url.includes('/auth/v1/user'))return response({id:'teacher'});
   if(url.includes('/institution_memberships?'))return response([{role:'teacher',status:'active'}]);
   if(url.includes('/institutions?'))return response([{name:'School',status:'active'}]);
+  if(url.includes('/rpc/noor_feature_access'))return response({paused:false,features:{ai_assistant:true}});
   if(url.includes('/rpc/noor_take_ai_budget'))return response(true);
   if(url.includes('/academic_groups?'))return response({id:group,parent_group_id:null,name:'Class 1'});
   if(url.includes('/noor_test_rules?'))return response([{academic_group_id:group,question_count:2,max_marks:7,formats:['mcq','one_word'],difficulty:'challenging'}]);
@@ -140,3 +144,11 @@ Deno.test('School test draft respects principal marks, formats and multi-image s
 
 Deno.test('Test schema avoids bounded-array expansion at 30 questions',()=>{const schema=JSON.stringify(testSchema());assert(!schema.includes('maxItems')&&!schema.includes('minItems'));assert(schema.includes('answer_key')&&schema.includes('generation_report'));});
 Deno.test('Provider 400 errors classify schema and image failures without echoing private upstream text',()=>isolated(async()=>{Deno.env.set('GEMINI_API_KEY','test-only');globalThis.fetch=async()=>response({error:{message:'PRIVATE_PROMPT constraint has too many states'}},400);try{await generate('gemini','fixture',true);throw Error('Expected error');}catch(e){assert(e instanceof ProviderError&&e.code==='SCHEMA_COMPLEXITY'&&!e.message.includes('PRIVATE_PROMPT'));}}));
+
+Deno.test('creator-disabled AI stops before provider calls or quota use',()=>isolated(async()=>{
+ Deno.env.set('SUPABASE_URL','https://ayrryemawwplguaauxij.supabase.co');Deno.env.set('SUPABASE_ANON_KEY','test-public');
+ let external=0;
+ globalThis.fetch=async(input)=>{const url=String(input);if(url.includes('/auth/v1/user'))return response({id:'fixture'});if(url.includes('/rpc/noor_feature_access'))return response({paused:false,features:{ai_assistant:false}});external++;throw Error('Unexpected outbound call');};
+ const r=await handle(new Request('https://example.invalid',{method:'POST',headers:{authorization:'Bearer test.user.token','content-type':'application/json'},body:JSON.stringify({action:'chat_assist',institution_id:'42000000-0000-4000-8000-000000000001',message:'Fixture'})}));
+ assert(r.status===403&&external===0);
+}));

@@ -10,7 +10,7 @@ async function profile(db,id){try{
  const assigned=(mr.data||[])[0],m=available[0],p={...pr.data,email:auth.data.user.email,role:m?role(m.role):'student',status:m?'active':assigned?'inactive':'pending',school_id:m?.institution_id||null,institution_id:m?.institution_id||null,membership_id:m?.id||null,membership_role:m?.role||null};
  const metadata=auth.data.user.user_metadata||{},contact=metadata.noor_contact||{};p.mobile_number=typeof contact.phone==='string'?contact.phone:(metadata.mobile_number||metadata.noor_onboarding?.office_phone||'');p.parent_name=contact.parent_name??metadata.parent_name??'';p.parent_phone=contact.parent_phone??metadata.mobile_number??'';p.roll_number=metadata.roll_number||'';p.residential_address=contact.address||'';p.city_or_area=typeof contact.location==='string'?contact.location:'';p.date_of_birth=typeof contact.date_of_birth==='string'?contact.date_of_birth:'';
  const platform=await db.from('platform_roles').select('role').eq('user_id',id);if(platform.error)throw platform.error;
- if((platform.data||[]).some(x=>['platform_owner','platform_admin'].includes(x.role))){p.role='creator';p.status='active';}
+ if((platform.data||[]).some(x=>x.role==='platform_owner')){const creator=await db.rpc('noor_creator_identity');if(creator.error)throw creator.error;if(creator.data===true){p.role='creator';p.status='active';}}
  if(m&&['student','teacher'].includes(p.role)){
  const enrolled=await db.from('academic_group_memberships').select('group_id').eq('membership_id',m.id).eq('institution_id',m.institution_id).eq('status','active').in('group_role',p.role==='teacher'?['teacher','faculty']:['student']);
  if(enrolled.error)throw enrolled.error;

@@ -225,6 +225,18 @@
     {
       "file": "20261113080221_single_sitting_papers.sql",
       "sha256": "70820f28b3d723eba3e4b4a518c679927ab975feaed79ffc09968ce747a64efb"
+    },
+    {
+      "file": "20261113080505_creator_control_plane.sql",
+      "sha256": "6e89ad62ea4411e1a5de6e5ffc2dbf1974e5fad39ba5740883b665ee045b0e97"
+    },
+    {
+      "file": "20261113082358_creator_delivery_and_guards.sql",
+      "sha256": "4d822b499e4c02603e889fe88d0f7918dbd99b318281fccc4663719e7050ac51"
+    },
+    {
+      "file": "20261113083008_creator_feature_guard_completion.sql",
+      "sha256": "2362fc5131b7801834b36e919ee4025579ea47e0a6320bd4ca7265a746955bb3"
     }
   ]
 }

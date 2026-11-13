@@ -55,6 +55,13 @@ export async function handle(req:Request):Promise<Response>{
    // Queue claims use service_role, so recheck current authority immediately
    // before contacting Brevo, even when dispatch was authorized earlier.
    const school=await db.from('institutions').select('status').eq('id',top.institution_id).maybeSingle();
+   const billing=await db.from('noor_institute_billing').select('paused').eq('institution_id',top.institution_id).maybeSingle();
+   const featureOverride=await db.from('noor_feature_overrides').select('enabled').eq('institution_id',top.institution_id).eq('feature_key','email').maybeSingle();
+   const featureDefault=await db.from('noor_feature_defaults').select('enabled').eq('feature_key','email').single();
+   if(billing.error||featureOverride.error||featureDefault.error||billing.data?.paused||(featureOverride.data?.enabled??featureDefault.data?.enabled)===false){
+    for(const x of approved){await state(x.item,'skipped',undefined,'FEATURE_DISABLED');failed++;}
+    await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId});continue;
+   }
    const sender=await db.from('institution_memberships').select('role,status').eq('institution_id',top.institution_id).eq('user_id',c.data.created_by).maybeSingle();
    if(school.error||sender.error)throw Error('Current authorization unavailable');
    if(school.data?.status!=='active'||sender.data?.status!=='active'||!['principal','school_admin','university_admin','academic_admin'].includes(sender.data?.role)){

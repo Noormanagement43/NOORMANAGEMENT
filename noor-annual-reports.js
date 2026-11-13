@@ -12,6 +12,7 @@ const examKeys=cfg=>[...['weekly','monthly','term1','term2','term3'].filter(k=>O
 const finalKey=cfg=>Object.hasOwn(cfg.exam_labels,'term3')?'term3':examKeys(cfg).at(-1);
 const active=c=>A().user?.id===c.user&&A().schoolId===c.school;
 async function access(group){
+ await window.NOOR_PLATFORM_ACCESS?.requireFeature?.("annual_cards");
  const a=A(),user=a.user?.id,school=a.schoolId;if(!user||!school||!id(group))throw Error('Select a class or section.');
  const auth=await a.db.auth.getUser();if(auth.error||auth.data?.user?.id!==user)throw Error('Sign in again.');
  const r=await a.db.from('institution_memberships').select('id,role').eq('institution_id',school).eq('user_id',user).eq('status','active').single();
@@ -101,6 +102,7 @@ function excel(d,type){const attendance=type==='attendance',cols=attendance?['Mo
  return '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="head"><Font ss:Bold="1"/><Interior ss:Color="#FFE0A0" ss:Pattern="Solid"/></Style><Style ss:ID="label"><Font ss:Bold="1"/></Style><Style ss:ID="body"/></Styles><Worksheet ss:Name="'+(attendance?'Attendance':'Marks')+'"><Table>'+row([d.c.schoolInfo.name||'School',d.s.name||'Student','Academic Year',d.year.label],true)+row(cols,true)+data.map(x=>row(x)).join('')+'</Table></Worksheet></Workbook>';
 }
 function exportReport(d,type,format){
+ if(window.NOOR_PLATFORM_ACCESS&&!window.NOOR_PLATFORM_ACCESS.allowed("annual_cards"))throw Error("Annual cards are disabled by NOOR Management.");
  if(!active(d.c))throw Error('Account changed. Sign in again.');
  const style=typeof getComputedStyle==='function'?getComputedStyle(document.documentElement):null;
  const getColor=(key,fallback)=>{const c=(style?.getPropertyValue(key)||'').trim();return /^#[0-9a-f]{3,8}$/i.test(c)?c:fallback;};

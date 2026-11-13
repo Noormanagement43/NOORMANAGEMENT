@@ -1,6 +1,6 @@
 import {handle} from './index.ts';
 function assert(v:unknown,msg='Assertion failed'):asserts v{if(!v)throw Error(msg)}
-for(const scenario of ['active','school-paused','sender-paused','sender-revoked','sender-demoted','lookup-error']){
+for(const scenario of ['active','school-paused','sender-paused','sender-revoked','sender-demoted','lookup-error','feature-disabled','billing-paused']){
  Deno.test('queued delivery rechecks current school and sender: '+scenario,async()=>{
   const names=['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','BREVO_API_KEY'];
   const original=names.map(x=>Deno.env.get(x)),oldFetch=globalThis.fetch;
@@ -15,6 +15,9 @@ for(const scenario of ['active','school-paused','sender-paused','sender-revoked'
     if(url.pathname.endsWith('/rpc/noor_claim_mail_batch'))return Response.json([{queue_id:1,campaign_id:'campaign',institution_id:'school',recipient_user_id:'11111111-1111-4111-8111-111111111111',title:'Test',body:'Test',kind:'notice',starts_at:null,sender_email:'office@example.invalid',sender_name:'Office',reply_to_email:null,attempts:1}]);
     if(url.pathname.endsWith('/rpc/noor_refresh_campaign_counts'))return Response.json(null);
     if(url.pathname.endsWith('/noor_school_campaigns')){assert(url.searchParams.get('institution_id')==='eq.school');return Response.json({created_by:'sender',audience:['student'],channels:['email']});}
+    if(url.pathname.endsWith('/noor_institute_billing'))return Response.json([{paused:scenario==='billing-paused'}]);
+    if(url.pathname.endsWith('/noor_feature_overrides'))return Response.json([]);
+    if(url.pathname.endsWith('/noor_feature_defaults'))return Response.json({enabled:scenario!=='feature-disabled'});
     if(url.pathname.endsWith('/institutions')){assert(url.searchParams.get('id')==='eq.school');return Response.json([{status:scenario==='school-paused'?'suspended':'active'}]);}
     if(url.pathname.endsWith('/institution_memberships')){
      assert(url.searchParams.get('institution_id')==='eq.school');

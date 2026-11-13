@@ -29,7 +29,7 @@ test('teacher first viewport places timetable and active quick actions after the
   assert.match(section,/Smart Notes/);
   assert.match(section,/Weekly Planner/);
   assert.match(section,/Today Notes/);
-  assert.match(code,/profileNode\?\.insertAdjacentElement\('afterend',workspaceGrid\)/);
+  assert.match(code,/classSummary\|\|dash\?\.querySelector\('\.noor-current-card'\)\|\|profileNode/);
   assert.match(code,/workspaceGrid\.append\(timetable\)/);
   assert.match(code,/rail\.append\(quickCard\)/);
   assert.doesNotMatch(code,/dash.append\(advance\)|dash.append\(toolkit\)/);

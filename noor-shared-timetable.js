@@ -5,6 +5,7 @@ const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturda
 const current=()=>window.NOOR_CONFIG?.SUPABASE_URL==='https://ayrryemawwplguaauxij.supabase.co';
 let channel=null,channelKey='',dialog=null;
 async function context(){
+ await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('timetable');
  const a=A(),id=a.user?.id;if(!id||!a.db)throw Error('Sign in to open the timetable.');
  const auth=await a.db.auth.getUser();if(auth.error||auth.data?.user?.id!==id)throw Error('Your account changed. Sign in again.');
  let query=a.db.from('institution_memberships').select('id,user_id,institution_id,role,status,joined_at').eq('user_id',id).eq('status','active');
@@ -90,6 +91,31 @@ async function openEditor(p=null,defaults={}){
  d.querySelector('form').onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('[type=submit]'),feedback=d.querySelector('[data-tt-feedback]');b.disabled=true;try{if(A().user?.id!==r.userId||(A().profile?.institution_id||A().schoolId)!==r.school.id)throw Error('Your account changed.');await save(Object.fromEntries(new FormData(e.target)),p);A().toast?.('Weekly period saved.','success');await open();}catch(error){feedback.textContent=error.message;}finally{b.disabled=false;}};
  }catch(e){if(d.isConnected)d.querySelector('[data-tt-body]').textContent=e.message;}
 }
+/* Read-only, school-local day view. Re-authenticate and rely on the existing RLS. */
+async function openDay(options={}){
+ subscribe();const d=shell(options.periodId?'Period details':'Today’s full timetable');d.dataset.mode='day';
+ d._dayOptions={periodId:options.periodId||null};
+ try{
+  const r=await read();if(!d.isConnected)return;
+  const day=days.indexOf(new Intl.DateTimeFormat('en-GB',{timeZone:r.school.timezone||'Asia/Kolkata',weekday:'long'}).format(new Date()));
+  let listed=r.data.filter(p=>Number(p.weekday)===day);
+  const teacher=['teacher','faculty'].includes(r.membership.role),student=['student','university_student'].includes(r.membership.role);
+  if(teacher)listed=listed.filter(p=>p.teacher_membership_id===r.membership.id);
+  if(student){const me=A().profile;listed=listed.filter(p=>p.institution_id===r.school.id&&[me.class_id,me.section_id].filter(Boolean).includes(p.academic_group_id));}
+  if(options.periodId)listed=listed.filter(p=>p.id===options.periodId);
+  listed.sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time))||a.period_number-b.period_number);
+  const names=await r.db.rpc('noor_period_teacher_names',{p_institution:r.school.id});
+  if(names.error)throw names.error;
+  if(!d.isConnected||A().user?.id!==r.userId||(A().profile?.institution_id||A().schoolId)!==r.school.id)return;
+  d.querySelector('[data-tt-body]').innerHTML='<div class="noor-day-heading"><strong>'+esc(r.school.name)+'</strong><p>'+esc(new Date().toLocaleDateString('en-IN',{timeZone:r.school.timezone||'Asia/Kolkata',weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</p><small>'+esc(r.school.timezone||'Asia/Kolkata')+' · Published teaching plan</small></div>'+
+   (listed.length?listed.map(p=>{
+    const teacherName=(names.data||[]).find(n=>n.period_id===p.id)?.teacher_name||'Teacher';
+    const status=p.completed||p.progress_status==='completed'?'Completed':p.progress_status==='ongoing'?'In progress':state(p,r.school.timezone);
+    return '<article class="noor-day-period"><header><span class="noor-day-number">Period '+esc(p.period_number)+'</span><span class="noor-tt-status">'+esc(status==='Finished'?'Awaiting teacher update':status)+'</span></header><h3>'+esc(p.subject_name)+'</h3><p class="noor-day-time">'+esc(p.start_time.slice(0,5)+'–'+p.end_time.slice(0,5))+' · '+esc(p.class_label)+'</p><dl><div><dt>Teacher</dt><dd>'+esc(teacherName)+'</dd></div><div><dt>Lesson / chapter</dt><dd>'+esc(p.lesson||'Not added by teacher yet')+'</dd></div><div><dt>Topic</dt><dd>'+esc(p.topic||'Not added by teacher yet')+'</dd></div>'+(p.room_label?'<div><dt>Room</dt><dd>'+esc(p.room_label)+'</dd></div>':'')+'</dl>'+(teacher?'<button type="button" data-day-edit="'+esc(p.id)+'">Update lesson / topic</button>':'')+'</article>';
+   }).join(''):'<p class="noor-day-empty">No published periods available for this selection today.</p>');
+  d.querySelectorAll('[data-day-edit]').forEach(b=>b.onclick=()=>openDaily(listed.find(p=>p.id===b.dataset.dayEdit)));
+ }catch(e){if(d.isConnected)d.querySelector('[data-tt-body]').textContent=e.message;}
+}
 function schoolDay(tz='Asia/Kolkata'){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),v=k=>parts.find(p=>p.type===k)?.value;return v('year')+'-'+v('month')+'-'+v('day');}
 async function saveSlot(values){const c=await context();if(!['principal','school_admin','university_admin','academic_admin'].includes(c.membership.role))throw Error('Only school leadership can set timings.');const period_number=Number(values.period_number),start_time=String(values.start_time||'').slice(0,5),end_time=String(values.end_time||'').slice(0,5);if(!Number.isInteger(period_number)||period_number<1||period_number>20||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start_time)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end_time)||start_time>=end_time)throw Error('Enter a valid period number and time range.');const r=await c.db.from('institution_period_slots').upsert({institution_id:c.school.id,period_number,start_time,end_time},{onConflict:'institution_id,period_number'}).select('period_number').single();if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:timetable-saved'));return r.data;}
 async function openSlots(options={}){const d=shell(options.extra?'Create Extra Period / Study Hours':'School period timings');try{const r=await read();if(!['principal','school_admin','university_admin','academic_admin'].includes(r.membership.role))throw Error('School leadership required.');d.querySelector('[data-tt-body]').innerHTML='<p>Set each period once. These are suggested school timings. Teachers can edit their own period times; changing a default does not overwrite saved teacher schedules.</p>'+r.slots.map(x=>'<p>Period '+x.period_number+': '+esc(x.start_time.slice(0,5)+'–'+x.end_time.slice(0,5))+'</p>').join('')+'<form class="noor-tt-form"><label>Period number<input name="period_number" type="number" min="1" max="20" required value="'+(options.extra?Math.max(8,...r.slots.map(x=>Number(x.period_number)))+1:'')+'"></label><label>Start<input name="start_time" type="time" required></label><label>End<input name="end_time" type="time" required></label><p data-tt-feedback role="status"></p><button type="submit">Save timing</button></form>';d.querySelector('form').onsubmit=async e=>{e.preventDefault();try{if(A().user?.id!==r.userId)throw Error('Account changed.');await saveSlot(Object.fromEntries(new FormData(e.target)));await openSlots();}catch(ex){d.querySelector('[data-tt-feedback]').textContent=ex.message;}};}catch(e){d.querySelector('[data-tt-body]').textContent=e.message;}}
@@ -98,9 +124,9 @@ async function openDaily(period){const d=shell('Daily lesson & topic');try{const
 async function setProgress(period,status){const c=await context();if(!['ongoing','completed'].includes(status)||period.teacher_membership_id!==c.membership.id||period.institution_id!==c.school.id||!['teacher','faculty'].includes(c.membership.role))throw Error('Only your own period progress can be changed.');const date=schoolDay(c.school.timezone),old=await c.db.from('noor_daily_period_lessons').select('lesson,topic').eq('institution_id',c.school.id).eq('period_id',period.id).eq('lesson_date',date).maybeSingle();if(old.error)throw old.error;if(A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Account changed.');const r=await c.db.from('noor_daily_period_lessons').upsert({institution_id:c.school.id,period_id:period.id,lesson_date:date,lesson:old.data?.lesson||'',topic:old.data?.topic||'',completed:status==='completed',progress_status:status},{onConflict:'period_id,lesson_date'}).select('period_id').single();if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:timetable-saved'));return r.data;}
 async function removePeriod(period){const c=await context();if(!['teacher','faculty'].includes(c.membership.role)||period.teacher_membership_id!==c.membership.id||period.institution_id!==c.school.id)throw Error('Only your own periods can be removed.');const r=await c.db.from('teacher_timetable_periods').delete().eq('id',period.id).eq('institution_id',c.school.id).eq('teacher_membership_id',c.membership.id).select('id').single();if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:timetable-saved'));return r.data;}
 let refreshTimer=null;
-function changed(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{window.dispatchEvent(new CustomEvent('noor:timetable-saved'));if(dialog?.dataset.mode==='list')open();},120);}
+function changed(){if(dialog?.dataset.mode==='day'){openDay(dialog._dayOptions||{});}clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{window.dispatchEvent(new CustomEvent('noor:timetable-saved'));if(dialog?.dataset.mode==='list')open();},120);}
 function subscribe(){const a=A(),key=a.user?.id+':'+a.schoolId;if(!current()||!a.db||!a.user?.id||!a.schoolId)return;if(channelKey===key)return;if(channel)a.db.removeChannel(channel);channelKey=key;channel=a.db.channel('noor-destination-timetable-'+key);for(const table of ['teacher_timetable_periods','institution_period_slots','noor_daily_period_lessons'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a.schoolId},changed);channel.subscribe();}
 
 const weekday=()=>days.indexOf(new Intl.DateTimeFormat('en-GB',{timeZone:A().school?.timezone||'Asia/Kolkata',weekday:'long'}).format(new Date()));
-window.NOOR_SHARED_TIMETABLE=Object.freeze({expandPeriods,uniquePeriods,schoolDay,weekday,current,context,load,save,saveSlot,saveLesson,setProgress,removePeriod,open,openDaily,openEditor,openSlots,subscribe,status:state});
+window.NOOR_SHARED_TIMETABLE=Object.freeze({expandPeriods,uniquePeriods,schoolDay,weekday,current,context,load,save,saveSlot,saveLesson,setProgress,removePeriod,open,openDay,openDaily,openEditor,openSlots,subscribe,status:state});
 })();

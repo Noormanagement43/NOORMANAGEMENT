@@ -1,0 +1,156 @@
+/* Approved light dashboard references. Stable theme keys preserve saved preferences. */
+html[data-noor-mode="light"][data-noor-theme="porcelain-blue"]{--berry:#4268ad;--berry2:#31538e;--rose:#4268ad;--rose-soft:#e8f0fc;--rose-line:#ccdbee;--canvas:#f3f7fc;--ui-canvas:#f3f7fc;--ink:#1c2d48;--muted:#52647b;--line:#dce5f0;--ui-kpi1:#4268ad;--ui-kpi2:#3a837b}
+html[data-noor-mode="light"][data-noor-theme="sage-garden"]{--berry:#3f6b59;--berry2:#315544;--rose:#3f6b59;--rose-soft:#e5eddf;--rose-line:#ccdaca;--canvas:#f8f8f3;--ui-canvas:#f8f8f3;--ink:#25392e;--muted:#536859;--line:#dfe6db;--ui-kpi1:#3f6b59;--ui-kpi2:#788d60}
+html[data-noor-mode="light"][data-noor-theme="pastel-aurora"]{--berry:#97536f;--berry2:#80405b;--rose:#97536f;--rose-soft:#f6e7ee;--rose-line:#e6ccd7;--canvas:#fbf8f9;--ui-canvas:#fbf8f9;--ink:#332734;--muted:#705b68;--line:#ebdfe5;--ui-kpi1:#97536f;--ui-kpi2:#6a8970}
+html[data-noor-theme]{--noor-text:16px;--noor-note:14px}
+html[data-noor-font="small"]{--noor-text:15px;--noor-note:14px}
+html[data-noor-font="large"]{--noor-text:18px;--noor-note:16px}
+#workspace :is(.noor-t4,.sp-reference-dashboard,#noor-principal){font-family:Inter,system-ui,sans-serif!important;font-size:var(--noor-text);color:var(--ink)!important;line-height:1.55}
+#workspace :is(.noor-t4,.sp-reference-dashboard,#noor-principal) :is(h1,h2,h3,h4){font-family:Inter,system-ui,sans-serif!important;color:var(--ink)!important;letter-spacing:-.025em}
+#workspace :is(.nt-card,.sp-card,.pd-card){border-radius:16px!important;border:1px solid var(--line)!important;background:var(--paper)!important;color:var(--ink)!important;box-shadow:0 3px 14px #162c4610!important;padding:20px!important}
+#workspace :is(.nt-card,.sp-card,.pd-card) h2{font-size:22px!important;line-height:1.3!important}
+#workspace :is(.nt-card-head,.sp-card-head,.pd-card>header){gap:12px;flex-wrap:wrap}
+#workspace :is(.nt-btn,.pd-btn,.pd-link,.sp-action,.noor-primary-action,.noor-secondary-action){font-family:inherit!important;font-size:var(--noor-text)!important;font-weight:600!important;min-height:48px!important;border-radius:11px!important;white-space:normal;cursor:pointer}
+#workspace :is(.nt-muted,.sp-muted,.pd-muted,.nt-detail-label,.noor-identity-time){font-size:var(--noor-note)!important;color:var(--muted)!important;line-height:1.55}
+#workspace :is(.nt-period-badge,.sp-ref-period-badge,.pd-tag){font-size:var(--noor-note)!important;font-weight:600!important}
+#workspace :is(.nt-subject b,.sp-ref-period-name strong,.pd-item strong){font-size:var(--noor-text)!important;color:var(--ink)!important}
+#workspace :is(.nt-subject small,.nt-period-num small,.nt-period-topic,.sp-ref-period-name small,.sp-ref-list-row small,.pd-item small){font-size:var(--noor-note)!important;color:var(--muted)!important}
+#workspace :is(.nt-period,.sp-ref-period,.pd-item){border-color:var(--line)!important}
+#workspace :is(.nt-period.ongoing,.sp-ref-period.np-ongoing,.sp-ref-period.np-scheduled){background:var(--rose-soft)!important;border-color:var(--rose-line)!important}
+#workspace .noor-t4 .nt-head h1,#workspace #noor-principal .pd-head h1{font-size:24px!important}
+#workspace .nt-greeting,#workspace #pd-greeting{font-size:20px!important;font-weight:600;color:var(--ink)!important}
+/* White-labelled identity cards remain full, readable, and beside the portrait. */
+#workspace #view-overview .noor-t4 .nt-profile,#workspace #noor-principal .pd-profile,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero{background:linear-gradient(110deg,var(--paper) 60%,var(--rose-soft))!important;grid-template-columns:176px minmax(0,1fr) minmax(190px,.5fr)!important;gap:22px!important;padding:22px!important;border-color:var(--line)!important;border-radius:16px!important}
+#workspace #view-overview .noor-t4 .nt-profile::before,#workspace #view-overview .noor-t4 .nt-profile::after{content:none!important}
+#workspace #view-overview .noor-t4 .nt-photo-column,#workspace #view-overview .noor-t4 .nt-profile .nt-photo,#workspace #noor-principal .pd-profile .pd-photo,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{width:176px!important;min-width:176px!important;max-width:176px!important;height:198px!important;min-height:198px!important;max-height:198px!important;aspect-ratio:8/9!important;border-radius:14px!important;background:var(--rose-soft)!important;color:var(--berry)!important;display:grid!important;place-items:center;overflow:hidden}
+#workspace :is(.nt-profile .nt-photo,.pd-profile .pd-photo,.sp-ref-hero .sp-avatar) img{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;object-fit:cover!important;display:block}
+#workspace .noor-identity-school{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:var(--berry)!important;font-size:var(--noor-note)!important;overflow-wrap:anywhere}
+#workspace .noor-identity-school :is(img,.noor-school-initial){width:30px;height:30px;object-fit:contain;border-radius:7px;flex-shrink:0;display:grid;place-items:center;background:var(--paper);border:1px solid var(--line)}
+#workspace .noor-identity-time{display:block;margin-bottom:8px}
+#workspace .sp-welcome-date,#workspace .nt-dashboard-date{display:none!important}
+#workspace :is(.nt-profile h2,.pd-profile-info h2,.sp-ref-identity-head h1){font-size:24px!important;line-height:1.3!important;margin:4px 0 10px!important;color:var(--ink)!important}
+#workspace :is(.nt-profile-grid,.sp-ref-detail-grid){margin-top:16px!important;gap:12px 18px!important}
+#workspace :is(.nt-detail-value,.sp-ref-detail-grid>span){font-size:var(--noor-note)!important;color:var(--ink)!important;line-height:1.55!important;overflow-wrap:anywhere}
+#workspace .nt-detail{padding:0!important;background:none!important;border:0!important;display:grid;gap:3px}
+#workspace #noor-principal .pd-profile-info p{font:400 var(--noor-note)/1.6 Inter,system-ui,sans-serif!important;color:var(--ink)!important}
+#workspace .noor-header-quote{background:var(--rose-soft)!important;border-color:var(--line)!important;padding:18px!important}
+#workspace .noor-header-quote blockquote{font-size:18px!important}
+/* One visual focus, with contextual actions. */
+#workspace .noor-current-card{display:flex;justify-content:space-between;align-items:center;gap:24px;margin:18px 0;padding:24px;border:1px solid var(--rose-line);border-radius:16px;background:linear-gradient(115deg,var(--rose-soft),var(--paper));box-shadow:0 4px 18px #1e36500a;color:var(--ink)}
+#workspace .noor-section-label{font-size:var(--noor-note);font-weight:700;color:var(--berry);display:block;margin-bottom:8px}
+#workspace .noor-current-card h2{font-size:28px!important;margin:0 0 8px!important;line-height:1.25!important}
+#workspace .noor-current-card p{font-size:var(--noor-text);margin:5px 0;color:var(--muted);overflow-wrap:anywhere}
+#workspace .noor-current-topic{max-width:65ch}
+#workspace .noor-current-actions{display:flex;flex-direction:column;gap:10px;min-width:200px;flex-shrink:0}
+#workspace .noor-primary-action{background:var(--action-fill)!important;color:var(--action-ink)!important;border:1px solid var(--action-fill);padding:12px 18px;box-shadow:0 3px 8px #18325218}
+#workspace .noor-secondary-action{background:var(--paper)!important;color:var(--berry)!important;border:1px solid var(--rose-line);padding:12px 18px}
+#workspace :is(button,a,input,select,textarea):focus-visible,.noor-timetable-dialog :is(button,input,select,textarea):focus-visible{outline:3px solid var(--berry);outline-offset:3px}
+#workspace .noor-t4 .nt-3d-quick-btn,#workspace .sp-ref-action{background:var(--rose-soft)!important;color:var(--ink)!important;box-shadow:none!important;border:1px solid var(--line)!important;border-radius:12px!important;transform:none!important;min-height:80px!important}
+#workspace :is(.nt-quick-text b,.sp-ref-action strong){color:var(--ink)!important;font-size:var(--noor-text)!important}
+#workspace .nt-quick-icon,#workspace .sp-ref-action-icon{color:var(--berry)!important;background:var(--paper)!important;box-shadow:none!important}
+#workspace .noor-t4 .nt-columns{grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr)!important;gap:20px!important}
+#workspace .nt-class-summary{background:var(--paper)!important;border-color:var(--line)!important;color:var(--ink)!important}
+#workspace .nt-class-summary :is(p,small,b,strong,span){color:inherit}
+/* Preserve existing operational modules, refreshed to match the selected theme. */
+#workspace #noor-principal .pd-live-health-banner{display:none!important}
+#workspace #noor-principal .pd-layout{grid-template-columns:minmax(0,1fr) 260px!important;gap:20px!important}
+#workspace #noor-principal .pd-top{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:20px}
+#workspace #noor-principal .pd-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
+#workspace #noor-principal .pd-kpi{padding:16px!important;background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:14px!important;color:var(--ink)!important}
+#workspace #noor-principal .pd-kpi small{font-size:var(--noor-note)!important;color:var(--muted)!important}
+#workspace #noor-principal .pd-kpi strong{font-size:30px!important;color:var(--berry)!important}
+#workspace #noor-principal .pd-kpi em{font-size:18px!important;color:var(--muted)!important}
+#workspace #noor-principal .pd-kpi p{font-size:var(--noor-note)!important}
+#workspace #noor-principal .pd-rail .pd-insight{display:none!important}
+#workspace #noor-principal .pd-profile b{color:var(--berry)!important;font-family:inherit!important}
+#workspace #noor-principal .pd-table-wrap :is(th,td){font-size:var(--noor-note)!important;padding:14px 10px!important;color:var(--ink)!important;background:var(--paper)!important}
+#workspace .noor-period-topic{display:block;max-width:260px;font-size:var(--noor-note);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+#workspace .noor-period-detail{color:var(--berry)!important;text-align:left}
+#workspace .sp-ref-grid-top{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#workspace .sp-ref-grid-top>.sp-card:last-child{grid-column:1/-1!important}
+#workspace .sp-ref-grid-top .sp-ref-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#workspace .sp-ref-subject-fill{background:var(--berry)!important}
+#workspace .sp-ref-hero .sp-ref-role{flex-wrap:wrap}
+/* Shared full-day and period-detail dialogs. No write controls for readers. */
+.noor-timetable-dialog{width:min(860px,calc(100vw - 32px));max-height:88dvh;overflow:auto;padding:24px;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;box-sizing:border-box}
+.noor-timetable-dialog::backdrop{background:#17253b70;backdrop-filter:blur(3px)}
+.noor-timetable-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.noor-timetable-dialog>header h2{font-size:24px;margin:0;line-height:1.25}
+.noor-timetable-dialog button{min-height:48px;border:1px solid var(--line);border-radius:10px;padding:10px 16px;background:var(--rose-soft);color:var(--ink);font:600 16px/1.4 Inter,system-ui,sans-serif;cursor:pointer}
+.noor-day-heading{padding:16px;background:var(--rose-soft);border-radius:12px;margin-bottom:18px}
+.noor-day-heading p{margin:4px 0}.noor-day-heading small{color:var(--muted);font-size:14px}
+.noor-day-period{padding:20px;border:1px solid var(--line);border-radius:14px;margin:12px 0;background:var(--paper);overflow-wrap:anywhere}
+.noor-day-period>header{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.noor-day-number{font-weight:700;color:var(--berry)}
+.noor-day-period h3{font-size:22px;margin:10px 0 4px}.noor-day-time{margin:0;color:var(--muted)}
+.noor-day-period dl{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}.noor-day-period dt{font-size:14px;color:var(--muted)}.noor-day-period dd{margin:4px 0 0}
+.noor-day-empty{padding:24px;text-align:center;color:var(--muted)}
+@media(max-width:1350px){
+ #workspace #noor-principal .pd-layout{grid-template-columns:minmax(0,1fr)!important}
+ #workspace #noor-principal .pd-rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+ #workspace #view-overview .noor-t4 .nt-profile,#workspace #noor-principal .pd-profile,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:176px minmax(0,1fr)!important}
+ #workspace .noor-header-quote{grid-column:1/-1!important}
+}
+@media(max-width:900px){
+ #workspace .noor-t4 .nt-columns{grid-template-columns:minmax(0,1fr)!important}
+ #workspace .noor-current-card{align-items:flex-start;flex-direction:column}
+ #workspace .noor-current-actions{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap}
+ #workspace .noor-current-actions button{flex:1 1 180px}
+ #workspace #noor-principal .pd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+ #workspace :is(.nt-card,.sp-card,.pd-card){padding:16px!important}
+ #workspace #view-overview .noor-t4 .nt-profile,#workspace #noor-principal .pd-profile,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:128px minmax(0,1fr)!important;padding:16px!important;gap:16px!important}
+ #workspace #view-overview .noor-t4 .nt-photo-column,#workspace #view-overview .noor-t4 .nt-profile .nt-photo,#workspace #noor-principal .pd-profile .pd-photo,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{width:128px!important;min-width:128px!important;max-width:128px!important;height:144px!important;min-height:144px!important;max-height:144px!important}
+ #workspace #noor-principal .pd-profile-info{display:contents!important}
+ #workspace #noor-principal .pd-profile-info>p{grid-column:1/-1}
+ #workspace #noor-principal .pd-profile-heading{grid-column:2!important;grid-row:1!important;min-width:0}
+ #workspace :is(.nt-profile h2,.pd-profile-info h2,.sp-ref-identity-head h1){font-size:21px!important}
+ #workspace :is(.nt-card,.sp-card,.pd-card) h2{font-size:20px!important}
+ #workspace .noor-identity-school{align-items:flex-start;flex-wrap:wrap}
+ #workspace .nt-profile .nt-profile-grid,#workspace .sp-ref-detail-grid{grid-column:1/-1!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #workspace #noor-principal .pd-rail,#workspace .sp-ref-grid-top{grid-template-columns:minmax(0,1fr)!important}
+ #workspace .noor-current-card{padding:18px;gap:14px}
+ #workspace .noor-current-card h2{font-size:24px!important}
+ #workspace .sp-ref-grid-top .sp-ref-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #workspace .sp-ref-period{grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important;padding:16px!important}
+ #workspace .sp-ref-period-time{grid-column:1/-1!important}
+ #workspace .sp-ref-period-icon{display:none!important}
+ #workspace .sp-ref-period-name{min-width:0}
+ .noor-timetable-dialog{padding:16px}.noor-day-period dl{grid-template-columns:1fr}
+}
+@media(max-width:380px){
+ #workspace #view-overview .noor-t4 .nt-profile,#workspace #noor-principal .pd-profile,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero{grid-template-columns:104px minmax(0,1fr)!important;gap:12px!important}
+ #workspace #view-overview .noor-t4 .nt-photo-column,#workspace #view-overview .noor-t4 .nt-profile .nt-photo,#workspace #noor-principal .pd-profile .pd-photo,#workspace #view-overview .sp-reference-dashboard .sp-ref-hero .sp-avatar{width:104px!important;min-width:104px!important;max-width:104px!important;height:117px!important;min-height:117px!important;max-height:117px!important}
+ #workspace .nt-profile .nt-profile-grid,#workspace .sp-ref-detail-grid{grid-template-columns:1fr!important}
+}
+
+/* Match legacy selector specificity without changing routes or drawer behaviour. */
+#workspace #view-overview .nt-reference-workspace{grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr)!important;gap:20px!important}
+#workspace #view-overview .nt-reference-workspace .nt-card-head .nt-btn{font-size:var(--noor-text)!important;min-height:48px!important;white-space:normal!important}
+#workspace #view-overview .nt-reference-rail .nt-status-box b{font-size:var(--noor-text)!important}
+#workspace #view-overview .nt-reference-rail .nt-status-box small{font-size:var(--noor-note)!important}
+#workspace #view-overview :is(.nt-profile .nt-person-head h2,.sp-ref-identity-head h1){font-family:Inter,system-ui,sans-serif!important;color:var(--ink)!important}
+html[data-noor-mode="light"] #workspace .main{background:var(--canvas)!important}
+#workspace #mainNav button{font-size:var(--noor-text)!important;min-height:48px!important;padding:12px!important}
+html[data-noor-mode="light"]:is([data-noor-theme="porcelain-blue"],[data-noor-theme="sage-garden"],[data-noor-theme="pastel-aurora"]) #workspace #mainNav button.active{background:var(--rose-soft)!important;color:var(--berry2)!important;border-color:var(--rose-line)!important}
+@media(max-width:1000px){#workspace #view-overview .nt-reference-workspace{grid-template-columns:minmax(0,1fr)!important}}
+@media(max-width:760px){#workspace #view-overview .nt-reference-rail{grid-template-columns:minmax(0,1fr)!important}}
+
+html[data-noor-theme] #workspace .content .noor-current-card .noor-primary-action{background:var(--action-fill)!important;color:var(--action-ink)!important;-webkit-text-fill-color:var(--action-ink)!important;border-color:var(--action-fill)!important}
+html[data-noor-theme] #workspace .content .noor-current-card .noor-secondary-action{background:var(--paper)!important;color:var(--berry)!important;-webkit-text-fill-color:var(--berry)!important;border-color:var(--rose-line)!important}
+#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) :is(.nt-card-head h2,.sp-card-head h2){font:700 22px/1.3 Inter,system-ui,sans-serif!important;color:var(--ink)!important}
+#workspace #view-overview .noor-current-card h2{font:700 28px/1.25 Inter,system-ui,sans-serif!important}
+#workspace #view-overview .noor-t4 .nt-profile .noor-identity-school,#workspace #view-overview .noor-t4 .nt-profile .noor-identity-time{display:flex!important;width:100%;justify-content:flex-start;float:none!important}
+#workspace #view-overview .noor-t4 .nt-person-head{display:block!important}
+@media(max-width:760px){#workspace #view-overview :is(.noor-t4,.sp-reference-dashboard) :is(.nt-card-head h2,.sp-card-head h2){font-size:20px!important}#workspace #view-overview .noor-current-card h2{font-size:24px!important}}
+#workspace #view-overview .sp-ref-identity-head h1 [data-noor-greeting]{font:inherit!important;color:inherit!important;display:inline!important;letter-spacing:inherit!important;-webkit-text-fill-color:currentColor!important}
+@media(max-width:760px){
+ #workspace #view-overview .noor-header-quote,#workspace #noor-principal .pd-profile .noor-header-quote{padding:12px!important;min-height:0!important}
+ #workspace #view-overview .noor-header-quote blockquote,#workspace #noor-principal .pd-profile .noor-header-quote blockquote{font-size:15px!important;line-height:1.5!important;margin:4px 0!important}
+ #workspace .noor-header-quote cite{font-size:12px!important}
+ #workspace .noor-header-quote .noor-quote-label{display:none!important}
+}
+#workspace #view-principal-studio #noor-principal .pd-profile .pd-photo{width:176px!important;min-width:176px!important;max-width:176px!important;height:198px!important;min-height:198px!important;max-height:198px!important;font-family:Inter,system-ui,sans-serif!important}
+#workspace #view-principal-studio #noor-principal .pd-profile :is(b,.noor-identity-school,.noor-identity-school strong){color:var(--berry)!important;-webkit-text-fill-color:var(--berry)!important;font-family:Inter,system-ui,sans-serif!important}
+@media(max-width:760px){#workspace #view-principal-studio #noor-principal .pd-profile .pd-photo{width:128px!important;min-width:128px!important;max-width:128px!important;height:144px!important;min-height:144px!important;max-height:144px!important}}
+@media(max-width:380px){#workspace #view-principal-studio #noor-principal .pd-profile .pd-photo{width:104px!important;min-width:104px!important;max-width:104px!important;height:117px!important;min-height:117px!important;max-height:117px!important}}

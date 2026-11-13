@@ -72,3 +72,7 @@ instead of pretending registry sync succeeded. Existing frontend deployments do
 not depend on this new RPC. `supabase/tests/feature_registry.sql` runs registration,
 identity-denial, idempotency and setting-preservation checks in a rolled-back
 transaction; it does not create Auth users or send messages.
+
+The light-dashboard full-day timetable and period drilldown launchers also pass
+through the shared timetable context feature check, so Timetable OFF produces an
+explicit unavailable message before fetching school timetable records.

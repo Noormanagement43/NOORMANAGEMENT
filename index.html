@@ -62,13 +62,14 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
 <link rel="stylesheet" href="./student-portal.css?v=20261020-student-lc4">
 <link rel="stylesheet" href="./command-centre.css?v=20261019-principal-v2">
 <link rel="stylesheet" href="./sounds/sound.css?v=20261016"><link rel="stylesheet" href="./theme-system.css?v=20261018">
-<script src="./config.js"></script><script src="./noor-profile-groups.js?v=20261113-year-access-1"></script><script src="./noor-profile-editor.js?v=20261113-year-access-1"></script><script src="./noor-account-context.js?v=20261113-creator-1"></script><script src="./noor-feature-registry.js?v=20261113-registry-1"></script><script src="./noor-platform-access.js?v=20261113-registry-1"></script><script src="./noor-shared-timetable.js?v=20261111-save-2"></script><script src="./noor-school-branding.js?v=20261111-profile-theme-4"></script>
+<script src="./config.js"></script><script src="./noor-profile-groups.js?v=20261113-year-access-1"></script><script src="./noor-profile-editor.js?v=20261113-year-access-1"></script><script src="./noor-account-context.js?v=20261113-creator-1"></script><script src="./noor-feature-registry.js?v=20261113-registry-1"></script><script src="./noor-platform-access.js?v=20261113-registry-1"></script><script src="./noor-shared-timetable.js?v=20261114-feature-guard-1"></script><script src="./noor-school-branding.js?v=20261111-profile-theme-4"></script>
 <link rel="stylesheet" href="./noor-school-structure.css?v=20261106-compact-3">
 <script src="./noor-class-visuals.js?v=20261109-clean-labels-1"></script>
 <script src="./noor-school-structure.js?v=20261111-analytics-1-20261106-teacher-flow-2"></script>
 <script src="./noor-student-enrolment.js?v=20261106-join-1"></script>
 <script src="./noor-institution-access.js?v=20261111-name-only-2"></script>
 <script src="./noor-signup-groups.js?v=20261106-join-1"></script><script src="./noor-canonical-onboarding.js?v=20261113-year-access-1"></script>
+<script src="./noor-dashboard-experience.js?v=20261114-light-dashboard-1"></script>
 <script src="./daily-quotes.js?v=20261109-role-profile-1"></script>
 <script src="./noor-subject-icons.js?v=20261028-1"></script>
 <script src="./noor-avatar-isolation.js?v=20261028-1"></script>
@@ -81,7 +82,7 @@ html[data-noor-font="manrope"] body,html[data-noor-font="manrope"] button,html[d
 <script src="./sounds/sound-assets-05.js?v=20261016"></script>
 <script src="./sounds/sound-map.js?v=20261016"></script>
 <script src="./sounds/sound-manager.js?v=20261016"></script>
-<script src="./sounds/sound-settings.js?v=20261016"></script><script src="./theme-system.js?v=20261109-school-scoped-2"></script>
+<script src="./sounds/sound-settings.js?v=20261016"></script><script src="./theme-system.js?v=20261114-light-dashboard-1"></script>
 <link rel="stylesheet" href="./teacher-reference.css?v=20261113-drawer-fix-20261109-period-attendance-v3">
 <link rel="stylesheet" href="./noor-polish.css?v=20261020">
 <link rel="stylesheet" href="./noor-teacher-upgrade.css?v=20261020-rectangle-v3">
@@ -1039,7 +1040,7 @@ window.NOOR_CANONICAL_ONBOARDING?.prepare();
 <script src="./academic.js?v=20261104-provider-1"></script>
 <script src="./academic-extras.js"></script>
 <script src="./command-centre.js?v=20261106-principal-compact-3"></script>
-<script src="./principal-studio.js?v=20261028-manager-mobile"></script><link rel="stylesheet" href="./noor-reference-enhancements.css?v=20261105-profile-1"><script src="./noor-dashboard-charts.js?v=20261105-reference-1"></script><script src="./noor-class-performance.js?v=20261109-annual-reports-1"></script><script src="./noor-holiday-engine.js?v=20261109-regional-2026-1"></script><script src="./noor-annual-reports.js?v=20261113-year-access-1"></script><link rel="stylesheet" href="./noor-staff-panel.css?v=20261106-staff-reference-2"><script src="./noor-staff-panel.js?v=20261113-mobile-staff-1"></script><script src="./noor-principal-workspace.js?v=20261106-staff-reference-2"></script><script src="./noor-principal-data.js?v=20261106-product-1"></script><script src="./principal-live.js?v=20261111-current-periods-1"></script>
+<script src="./principal-studio.js?v=20261028-manager-mobile"></script><link rel="stylesheet" href="./noor-reference-enhancements.css?v=20261105-profile-1"><script src="./noor-dashboard-charts.js?v=20261105-reference-1"></script><script src="./noor-class-performance.js?v=20261109-annual-reports-1"></script><script src="./noor-holiday-engine.js?v=20261109-regional-2026-1"></script><script src="./noor-annual-reports.js?v=20261113-year-access-1"></script><link rel="stylesheet" href="./noor-staff-panel.css?v=20261106-staff-reference-2"><script src="./noor-staff-panel.js?v=20261113-mobile-staff-1"></script><script src="./noor-principal-workspace.js?v=20261106-staff-reference-2"></script><script src="./noor-principal-data.js?v=20261106-product-1"></script><script src="./principal-live.js?v=20261114-light-dashboard-1"></script>
 <script src="./noor-year-records.js?v=20261113-year-access-1"></script><script src="./noor-member-access.js?v=20261113-year-access-1"></script>
 <!-- Always-visible fallback: the sound buttons remain visible even if app scripts fail. -->
 <style>
@@ -1104,11 +1105,11 @@ window.NOOR_CANONICAL_ONBOARDING?.prepare();
 <script src="./noor-school-calendar.js?v=20261106-product-1"></script>
 <link rel="stylesheet" href="./noor-attendance-register.css?v=20261106-attendance-table-1">
 <script src="./noor-teacher-data.js?v=20261111-profile-theme-4"></script>
-<script src="./teacher-reference.js?v=20261111-profile-theme-4"></script>
+<script src="./teacher-reference.js?v=20261114-light-dashboard-1"></script>
 <script src="./teacher-profile-editor.js?v=20261104-dark-profile-1"></script>
 <script src="./noor-classroom-connect.js?v=20261111-assessment-studio-1"></script>
 <script src="./noor-teacher-attendance-view.js?v=20261109-period-attendance-v3"></script>
-<script src="./student-portal.js?v=yearly-20261113-20261111-profile-theme-4"></script>
+<script src="./student-portal.js?v=20261114-light-dashboard-1"></script>
 <script src="./teacher-classroom.js?v=20261020-student-lc4"></script>
 <script src="./guide-avatar.js?v=20261111-profile-theme-4"></script>
 <script src="./noor-dashboard-navigation.js?v=20261027-reference-1"></script>
@@ -1131,6 +1132,7 @@ window.NOOR_CANONICAL_ONBOARDING?.prepare();
 <link rel="stylesheet" href="./noor-dark-readable.css?v=20261113-1">
 <script src="./noor-login-progress.js?v=20261113-1"></script>
 <link rel="stylesheet" href="./noor-analytics-reference.css?v=20261113-2">
+<link rel="stylesheet" href="./noor-light-dashboards.css?v=20261114-light-dashboard-1">
 <link rel="stylesheet" href="./noor-help.css?v=20261113-help-1">
 <script src="./noor-help.js?v=20261113-help-1"></script>
 </body>

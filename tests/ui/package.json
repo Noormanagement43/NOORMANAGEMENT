@@ -1,0 +1,1 @@
+{"name":"noor-ui-checks","private":true,"scripts":{"test":"node --test *.test.mjs"},"devDependencies":{"jsdom":"31.0.1"}}

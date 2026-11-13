@@ -127,6 +127,7 @@ async function open(s,group){
  }catch(err){if(dlg.isConnected)dlg.querySelector('[data-report]').textContent='Report unavailable: '+err.message;}
 }
 async function markEntry(d){
+ if(d.c.teacher&&window.NOOR_MARKS_ENTRY)return window.NOOR_MARKS_ENTRY.open({groupId:d.c.group.id,studentId:d.s.membership_id});
  const c=d.c;if(!active(c)||(!c.principal&&!c.teacher))throw Error('Class teacher or principal access required.');
  document.getElementById('nar-marks-editor')?.remove();
  const dlg=document.createElement('dialog');dlg.id='nar-marks-editor';dlg.className='nar-config-dialog';

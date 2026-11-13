@@ -1,3 +1,4 @@
+-- Internal grading regression; student entrypoints are covered by single_sitting_papers.sql.
 begin;
 set local statement_timeout='10s';
 do $test$
@@ -11,18 +12,18 @@ begin
  denied=false;begin perform public.noor_publish_test(gen_random_uuid(),g,'Denied','English',current_date,'[]','[]','{}','{}');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Cross-school publication allowed';end if;
  quiz=public.noor_publish_test(t.institution_id,g,'Monthly objective','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"mcq","prompt":"Opposite of hot?","options":["cold","tall"],"marks":5,"visuals":["none","none"]}]','[{"answer":"0","explanation":"Cold is the opposite of hot."}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5,"duration_minutes":20}','{"syllabus_coverage":"Opposites"}');
  perform set_config('request.jwt.claim.sub',s.user_id::text,true);
- denied=false;begin perform public.noor_submit_quiz(quiz,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Unenrolled student submitted';end if;
+ denied=false;begin perform private.noor_submit_quiz(quiz,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Unenrolled student submitted';end if;
  insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,s.id,'student');
- perform public.noor_test_clock(quiz);
- a=public.noor_submit_quiz(quiz,'["0"]');
+ perform private.noor_test_clock(quiz);
+ a=private.noor_submit_quiz(quiz,'["0"]');
  if not exists(select 1 from public.noor_quiz_attempts where id=a and final_marks=5 and reviewed_at is not null and grading_status='completed') then raise exception 'Objective result was not automatically finalized';end if;
  if not exists(select 1 from public.noor_assessment_results where source_quiz_attempt_id=a and assessment_kind='monthly_test' and subject_name='English' and marks=5) then raise exception 'Monthly marks mapped incorrectly';end if;
- denied=false;begin perform public.noor_submit_quiz(quiz,'["1"]');exception when others then denied=true;end;if not denied then raise exception 'Final answers changed';end if;
+ denied=false;begin perform private.noor_submit_quiz(quiz,'["1"]');exception when others then denied=true;end;if not denied then raise exception 'Final answers changed';end if;
  perform set_config('request.jwt.claim.sub',t.user_id::text,true);
  quiz=public.noor_publish_test(t.institution_id,g,'Monthly written','English',(select (now() at time zone timezone)::date from public.institutions where id=t.institution_id),'[{"type":"short","response_mode":"one_word","prompt":"Opposite of hot?","options":[],"marks":3}]','[{"answer":"cold","rubric":"Accept cold."}]','{"kind":"exam","exam_key":"term1","question_count":1,"max_marks":3}','{}');
  perform set_config('request.jwt.claim.sub',s.user_id::text,true);
- perform public.noor_test_clock(quiz);
- a=public.noor_submit_quiz(quiz,'["cool"]');
+ perform private.noor_test_clock(quiz);
+ a=private.noor_submit_quiz(quiz,'["cool"]');
  if not exists(select 1 from private.noor_test_grading_jobs where attempt_id=a and status='queued') or exists(select 1 from public.noor_assessment_results where source_quiz_attempt_id=a) then raise exception 'Written answer was not queued safely';end if;
  if has_function_privilege('authenticated','public.noor_claim_test_job(uuid,uuid)','execute') or has_function_privilege('authenticated','public.noor_finish_auto_test(uuid,jsonb,text)','execute') then raise exception 'Private answer key / grading RPC exposed to browser';end if;
  job=private.noor_claim_test_job(s.user_id,a);if job->>'attempt_id'<>a::text or job->'answer_key' is null then raise exception 'Worker could not claim saved answer';end if;

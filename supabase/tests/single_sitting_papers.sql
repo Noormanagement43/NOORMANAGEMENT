@@ -1,0 +1,43 @@
+begin;
+set local statement_timeout='20s';
+do $test$
+declare t public.institution_memberships;s public.institution_memberships;g uuid;q uuid;q2 uuid;a uuid;again uuid;token uuid=gen_random_uuid();wrong uuid=gen_random_uuid();c jsonb;listed jsonb;denied boolean;local_day date;
+begin
+ select * into strict t from public.institution_memberships where role='teacher' and status='active' limit 1;
+ select * into strict s from public.institution_memberships where institution_id=t.institution_id and role='student' and status='active' limit 1;
+ select (now() at time zone timezone)::date into local_day from public.institutions where id=t.institution_id;
+ insert into public.academic_groups(institution_id,name,group_type) values(t.institution_id,'Rollback single sitting','class') returning id into g;
+ insert into public.academic_group_memberships(institution_id,group_id,membership_id,group_role) values(t.institution_id,g,s.id,'student');
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ q=public.noor_publish_test(t.institution_id,g,'Single sitting test','English',local_day,'[{"type":"mcq","prompt":"Opposite of hot?","options":["cold","tall"],"marks":5}]','[{"answer":"0"}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5}','{}');
+ q2=public.noor_publish_test(t.institution_id,g,'Abandon test','Maths',local_day,'[{"type":"mcq","prompt":"Two plus two?","options":["four","five"],"marks":5}]','[{"answer":"0"}]','{"kind":"monthly","exam_key":"monthly","question_count":1,"max_marks":5}','{}');
+ denied=false;begin perform public.noor_paper_start(q,token);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Teacher started a student paper';end if;
+ perform set_config('request.jwt.claim.sub',s.user_id::text,true);
+ set local role authenticated;
+ select x into strict listed from public.noor_paper_list() x where x->>'id'=q::text;
+ if listed ? 'questions' or listed ? 'answers' or listed ? 'answer_key' then raise exception 'Preview exposed before Start Paper';end if;
+ if exists(select 1 from public.noor_weekly_quizzes where id=q) then raise exception 'Student bypassed paper start by direct table read';end if;
+ denied=false;begin perform public.noor_test_clock(q);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Legacy draft endpoint bypasses attempt lock';end if;
+ denied=false;begin perform public.noor_submit_quiz(q,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Legacy submit endpoint bypasses attempt lock';end if;
+ c=public.noor_paper_start(q,token);if c->'questions'->0->>'prompt'<>'Opposite of hot?' then raise exception 'Start Paper did not reveal the paper';end if;
+ if c ? 'answer_key' then raise exception 'Answer key exposed';end if;
+ c=public.noor_paper_start(q,token); -- Same in-memory request may retry without creating another attempt.
+ denied=false;begin perform public.noor_paper_start(q,wrong);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Reload or second tab reopened paper';end if;
+ denied=false;begin perform public.noor_paper_save(q,wrong,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Wrong attempt saved answers';end if;
+ c=public.noor_paper_save(q,token,'["0"]');if c->'answers'<>'["0"]'::jsonb then raise exception 'Active attempt could not save';end if;
+ a=public.noor_paper_submit(q,token,'["0"]');again=public.noor_paper_submit(q,token,'["1"]');if a<>again then raise exception 'Submission retry created another attempt';end if;
+ c=public.noor_paper_start(q,wrong);if not(c->>'submitted')::boolean or c ? 'questions' then raise exception 'Submitted paper reopened';end if;
+ if not exists(select 1 from public.noor_quiz_attempts where id=a and answers='["0"]' and final_marks=5) then raise exception 'Final answers changed or marks were not saved';end if;
+ c=public.noor_paper_start(q2,token);perform public.noor_paper_abandon(q2,token);
+ denied=false;begin perform public.noor_paper_start(q2,token);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Abandoned token reopened paper';end if;
+ denied=false;begin perform public.noor_paper_start(q2,wrong);exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Abandoned paper restarted';end if;
+ denied=false;begin perform public.noor_paper_submit(q2,token,'["0"]');exception when insufficient_privilege then denied=true;end;if not denied then raise exception 'Abandoned attempt submitted later';end if;
+ reset role;
+ perform set_config('request.jwt.claim.sub',t.user_id::text,true);
+ set local role authenticated;
+ if not exists(select 1 from public.noor_weekly_quizzes where id=q) then raise exception 'Teacher review lost paper access';end if;
+ reset role;
+ if has_function_privilege('anon','public.noor_paper_start(uuid,uuid)','execute') or has_table_privilege('authenticated','private.noor_test_sessions','select') then raise exception 'Paper sessions exposed';end if;
+end $test$;
+select 'Single-sitting start, private preview, save, final-submit idempotency, abandon lock, and teacher review verified' as verified;
+rollback;

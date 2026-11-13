@@ -1,4 +1,5 @@
 // NOOR: read-only Brevo email readiness probe. Never returns a key, address or contact data.
+import {configuredSender} from '../_shared/school-mail.ts';
 export type BrevoStatus = {
  api_key_present:boolean; account_authenticated:boolean; sender_configured:boolean;
  sender_registered:boolean; sender_verified:boolean; delivery_ready:boolean;
@@ -7,7 +8,7 @@ export type BrevoStatus = {
 const ENDPOINT = 'https://api.brevo.com/v3';
 export async function checkBrevoEmailReadiness(env:Record<string,string|undefined>, request:typeof fetch=fetch):Promise<BrevoStatus>{
  const apiKey=env.BREVO_API_KEY||env.brevo;
- const sender=String(env.EMAIL_FROM||'').trim().toLowerCase();
+ const sender=configuredSender(env);
  const result:BrevoStatus={
   api_key_present:!!apiKey,account_authenticated:false,sender_configured:!!sender,
   sender_registered:false,sender_verified:false,delivery_ready:false,

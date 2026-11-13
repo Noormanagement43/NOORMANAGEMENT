@@ -4,12 +4,15 @@ Deno.test('Brevo readiness never sends and missing secrets fail closed',async()=
  let calls=0;const r=await checkBrevoEmailReadiness({},async()=>{calls++;throw Error('should not fetch')});
  ok(calls===0);ok(!r.delivery_ready&&!r.api_key_present&&r.reason==='BREVO_API_KEY_MISSING'&&r.email_sent===false);
 });
-Deno.test('Brevo account may authenticate but delivery is blocked without configured sender',async()=>{
- const seen:string[]=[];const result=await checkBrevoEmailReadiness({brevo:'secret'},async(url,opts)=>{
-  seen.push(String(url));ok(opts?.method==='GET');ok((opts?.headers as Record<string,string>)['api-key']==='secret');return new Response(null,{status:200});
- });
- ok(result.account_authenticated&&result.reason==='EMAIL_FROM_MISSING'&&!result.delivery_ready&&!result.email_sent);
- ok(seen.length===1&&seen[0]==='https://api.brevo.com/v3/account');
+Deno.test('default NOOR sender is used only when Brevo verifies the same address',async()=>{
+ for(const active of [false,true]){
+  const seen:string[]=[];const result=await checkBrevoEmailReadiness({brevo:'secret'},async(url,opts)=>{
+   seen.push(String(url));ok(opts?.method==='GET');
+   return String(url).endsWith('/account')?new Response(null,{status:200}):Response.json({senders:[{email:'noormanagement43@gmail.com',active}]});
+  });
+  ok(result.account_authenticated&&result.delivery_ready===active&&!result.email_sent);
+  ok(seen.length===2);ok(!JSON.stringify(result).includes('gmail.com'));
+ }
 });
 Deno.test('verified sender detection does not return sender email or secrets',async()=>{
  const result=await checkBrevoEmailReadiness({brevo:'SECRET',EMAIL_FROM:'safe@example.invalid'},async(url)=>{

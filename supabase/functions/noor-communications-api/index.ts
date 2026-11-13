@@ -1,5 +1,6 @@
 /* NOOR multi-channel dispatch. Server-only credentials. */
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
+import {configuredSender} from '../_shared/school-mail.ts';
 const REF='ayrryemawwplguaauxij',ORIGIN='https://noormanagement43.github.io';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,7 +70,7 @@ export async function handle(req:Request):Promise<Response>{
   const brevo=Deno.env.get('BREVO_API_KEY')||Deno.env.get('brevo')||'';
   if(!brevo)return reply(503,{error:'BREVO_API_KEY_MISSING'});
   const principal=(auth.data.user.email||'').trim().toLowerCase();
-  const fallback=(Deno.env.get('EMAIL_FROM')||'').trim().toLowerCase();
+  const fallback=configuredSender(Deno.env.toObject());
   try{
    if(await senderVerified(principal,brevo)){
     email=principal;senderName='Principal · '+str(inst.data.name,80);

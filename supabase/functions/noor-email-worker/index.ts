@@ -1,5 +1,6 @@
 /* Internal scheduled NOOR Brevo email worker. No browser-accessible sending endpoint. */
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
+import {messageHtml} from '../_shared/school-mail.ts';
 const URL='https://ayrryemawwplguaauxij.supabase.co',mail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const recipientRoles=(roles:string[],role:string)=>
  (roles.includes('student')&&['student','university_student'].includes(role))||
@@ -72,6 +73,7 @@ export async function handle(req:Request):Promise<Response>{
    const payload:Record<string,unknown>={
     sender:{email:top.sender_email,name:top.sender_name||'NOOR School Office'},
     subject:top.title,
+    htmlContent:messageHtml(top.title,top.body,top.sender_name||'School Office',top.kind==='meeting'?top.starts_at:null),
     textContent:top.body+(top.kind==='meeting'&&top.starts_at?'\n\nMeeting date: '+new Date(top.starts_at).toISOString():''),
     messageVersions:approved.map(x=>({to:[{email:x.email}]})),
     tags:['noor-school','school-'+items[0].institution_id.slice(0,8)],

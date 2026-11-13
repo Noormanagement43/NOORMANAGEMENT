@@ -78,3 +78,36 @@
  #workspace #view-attendance .ta-status-option:after{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){#workspace .np-recipient-picks label>span,#workspace .np-delivery-choices label>span{transition:none}}
+
+/* Shared school inbox: the same readable cards on every role and screen. */
+.np-inbox{box-sizing:border-box;width:min(760px,calc(100vw - 24px));max-height:90dvh;padding:0;border:1px solid var(--line,#e8dce1);box-shadow:0 24px 80px #24121c40}
+.np-inbox>header{padding:24px;border-bottom:1px solid var(--line,#e8dce1);align-items:flex-start;background:var(--paper,#fffdfb)}
+.np-inbox>header small{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--berry,#6b2944)}
+.np-inbox>header h2{margin:7px 0;font-size:25px;line-height:1.2}
+.np-inbox>header p{margin:0;font-size:13px;line-height:1.5;color:var(--muted,#796873)}
+.np-inbox [data-inbox-content]{padding:20px 24px}
+.np-inbox-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.np-message-search{flex:1 1 200px;min-width:0}
+.np-message-search input{box-sizing:border-box;width:100%;min-height:44px;padding:10px 13px;border:1px solid var(--line,#e8dce1);border-radius:11px;background:var(--paper,#fffdfb);color:var(--ink,#30232b);font:inherit;font-size:14px}
+.np-inbox-tools .btn{font-size:12px;min-height:44px;white-space:normal}
+.np-inbox-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0 9px}
+.np-inbox-tabs button{min-height:40px;padding:8px 14px;border:1px solid var(--line,#e8dce1);border-radius:999px;background:var(--paper,#fffdfb);color:var(--muted,#796873);font:inherit;font-size:12px;cursor:pointer}
+.np-inbox-tabs button[aria-pressed=true]{background:var(--berry,#6b2944);color:#fff;border-color:var(--berry,#6b2944)}
+.np-inbox-status{font-size:12px;line-height:1.5;color:var(--muted,#796873);margin:10px 0 14px}
+.np-message-center .np-message{padding:20px;margin:0 0 12px;background:var(--paper,#fffdfb);border:1px solid var(--line,#e8dce1);border-radius:14px;box-sizing:border-box;overflow-wrap:anywhere}
+.np-message-center .np-message.unread{border-inline-start:4px solid var(--berry,#6b2944);background:color-mix(in srgb,var(--rose-soft,#f8eaf0) 50%,var(--paper,#fffdfb))}
+.np-message-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.np-kind{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:var(--berry,#6b2944);padding:5px 9px;background:var(--rose-soft,#f8eaf0);border-radius:7px}
+.np-kind .np-icon{width:15px;height:15px;flex-basis:15px}
+.np-message-meta time{font-size:11px;color:var(--muted,#796873);line-height:1.6}
+.np-message-center .np-message h3{font-size:17px;font-weight:750;line-height:1.45;margin:14px 0 9px;color:var(--ink,#30232b)}
+.np-message-center .np-message-body{font-size:14px;line-height:1.8;margin:0 0 14px;color:var(--ink,#30232b);word-break:normal}
+.np-meeting-time{font-size:12px;line-height:1.6;padding:9px 12px;border-radius:9px;background:var(--rose-soft,#f8eaf0);color:var(--berry,#6b2944);margin:10px 0}
+.np-message-center .np-message footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line,#e8dce1);padding-top:12px}
+.np-message footer>span{font-size:11px;font-weight:700;color:var(--muted,#796873)}
+.np-message footer .btn{min-height:40px;font-size:12px}
+.np-message-center .np-empty{padding:36px 18px;text-align:center;border:1px dashed var(--line,#e8dce1);border-radius:14px;color:var(--muted,#796873)}
+.np-empty b{font-size:16px;color:var(--ink,#30232b)}
+.np-empty p{font-size:13px;line-height:1.6}
+.np-message-center button:focus-visible,.np-message-search input:focus-visible{outline:3px solid var(--berry,#6b2944);outline-offset:3px}
+@media(max-width:600px){.np-inbox>header{padding:18px 16px}.np-inbox [data-inbox-content]{padding:16px}.np-inbox-tools .np-message-search{flex-basis:100%}.np-inbox-tools>.btn{flex:1}.np-message-center .np-message{padding:16px}.np-inbox-tabs{gap:5px}.np-inbox-tabs button{padding:7px 11px}.np-message-center .np-message-body{font-size:14px}.np-inbox>header h2{font-size:22px}}

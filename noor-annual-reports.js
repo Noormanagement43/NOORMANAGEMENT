@@ -37,8 +37,8 @@ async function load(c,s){
   c.db.from('academic_groups').select('id,parent_group_id,group_type').eq('institution_id',c.school).eq('is_active',true)]);
  for(const x of [yearRes,settingsRes,memberRes,groupsRes])if(x.error)throw x.error;
  const groupCfg=await groupSettings(c);if(groupCfg)settingsRes.data={...(settingsRes.data||{}),...groupCfg};
- const yr=Number(today.slice(0,4))-(Number(today.slice(5,7))<4?1:0);
- const year=yearRes.data?.[0]||{label:yr+'-'+String((yr+1)%100).padStart(2,'0'),start_date:yr+'-04-01',end_date:(yr+1)+'-03-31',provisional:true};
+ const yr=Number(today.slice(0,4))-(Number(today.slice(5,7))<6?1:0);
+ const year=yearRes.data?.[0]||{label:yr+'-'+String((yr+1)%100).padStart(2,'0'),start_date:yr+'-06-01',end_date:(yr+1)+'-05-31',provisional:true};
  const cfg={...defaults,...(settingsRes.data||{}),exam_labels:settingsRes.data?.exam_labels&&Object.keys(settingsRes.data.exam_labels).length?settingsRes.data.exam_labels:defaults.exam_labels,exam_aliases:{...defaults.exam_aliases,...(settingsRes.data?.exam_aliases||{})}};
  const to=year.end_date<today?year.end_date:today;
  if(to<year.start_date)throw Error('This academic year has not started yet.');

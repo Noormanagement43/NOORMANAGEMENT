@@ -194,7 +194,7 @@
     }
   }
 
-  function openAskAIDrawer() { showBubble(getGuidanceForView('overview')); }
+  function openAskAIDrawer() { if(window.NOOR_SECURE_AI?.open){const bubble=$('noorGuideBubble');if(bubble)bubble.style.display='none';window.speechSynthesis?.cancel();window.NOOR_SECURE_AI.open();}else showBubble('App help is loading. Please try again.'); }
 
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, c => ({
@@ -215,7 +215,8 @@
     widget.className = 'noor-guide-widget';
     widget.setAttribute('role', 'button');
     widget.setAttribute('tabindex', '0');
-    widget.setAttribute('aria-label', 'Open NOOR Guide');
+    widget.setAttribute('aria-label', 'Open NOOR app assistant');
+    widget.setAttribute('aria-haspopup', 'dialog');
 
     widget.innerHTML = `
       <div class="noor-guide-avatar-wrap" id="noorGuideAvatarWrap">
@@ -233,6 +234,10 @@
     widget.onclick = (e) => {
       e.stopPropagation();
       openAskAIDrawer();
+    };
+
+    widget.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAskAIDrawer(); }
     };
 
     // Remove old legacy elements if present in DOM

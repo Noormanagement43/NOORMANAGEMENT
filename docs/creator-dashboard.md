@@ -74,7 +74,7 @@ identity-denial, idempotency and setting-preservation checks in a rolled-back
 transaction; it does not create Auth users or send messages.
 
 The light-dashboard full-day timetable and period drilldown launchers also pass
-through the shared timetable context feature check, so Timetable OFF produces an
+through the shared timetable read feature check, so Timetable OFF produces an
 explicit unavailable message before fetching school timetable records.
 
 
@@ -95,3 +95,9 @@ all saved defaults/overrides. Transactional SQL verification used existing activ
 leadership and rolled back every change: Manager OFF blocks overview/marks/
 attendance, cross-school access stays denied, and ON reopens the workspace.
 No new accounts, attendance or marks were created by these checks.
+
+
+Shared authentication context is also used by assistant student searches and does
+not require Timetable to be enabled. Timetable reads and all exported timetable
+writers enforce `timetable` before accessing records. Direct assistant attendance
+retains both Attendance and Manager Workspace controls for leadership users.

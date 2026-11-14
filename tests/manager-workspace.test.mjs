@@ -35,3 +35,13 @@ test('Manager OFF blocks direct workspace context before any membership lookup',
  const x=setup();let reads=0;x.app.db.from=()=>{reads++;throw Error('Unexpected read');};x.window.NOOR_PLATFORM_ACCESS={async requireFeature(key){assert.equal(key,'manager_tools');throw Error('Manager workspace is disabled by NOOR');}};
  await assert.rejects(x.api.context(),/disabled by NOOR/);assert.equal(reads,0);
 });
+
+
+test('assistant direct attendance honors both Attendance and Manager availability before reading school data',async()=>{
+ for(const disabled of ['attendance','manager_tools']){
+  const x=setup(),checked=[];let reads=0;x.app.db.from=()=>{reads++;throw Error('Unexpected read');};
+  x.window.NOOR_PLATFORM_ACCESS={async requireFeature(key){checked.push(key);if(key===disabled)throw Error('Feature is OFF');}};
+  await assert.rejects(()=>x.api.openAttendance('group-a'),/Feature is OFF/);assert.equal(reads,0);
+  assert.deepEqual(checked,disabled==='attendance'?['attendance']:['attendance','manager_tools']);
+ }
+});

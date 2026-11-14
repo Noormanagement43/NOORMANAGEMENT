@@ -1,30 +1,63 @@
-/* Teacher register: small portraits and single-choice, one-tap attendance. */
-#view-attendance .ta-register-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-#view-attendance .ta-register-heading h2{margin:0;font-size:19px;color:var(--berry,#54243b)}
-#view-attendance [data-attendance-summary]{display:flex;gap:7px;flex-wrap:wrap}
-#view-attendance .ta-count{padding:6px 9px;border-radius:20px;background:var(--rose-soft,#f8eaf0);font-size:11px;font-weight:700;color:var(--ink,#2c2027)}
-#view-attendance .ta-count.present{color:#166346;background:#e6f6ed}#view-attendance .ta-count.absent{color:#a32946;background:#ffedf1}#view-attendance .ta-count.late{color:#895419;background:#fff3df}
-#view-attendance .ta-register-scroll{max-width:100%;overflow:auto;border:1px solid var(--line,#ead9df);border-radius:14px}
-#view-attendance .ta-register{border-collapse:separate;border-spacing:0;width:100%;min-width:520px;background:var(--paper,#fffdfb);color:var(--ink,#2c2027);font-size:12px}
-#view-attendance .ta-register caption{text-align:left;padding:10px 14px;color:var(--muted,#806f79);font-size:11px;background:var(--paper,#fffdfb)}
-#view-attendance .ta-register thead th{padding:12px 10px;border-top:1px solid var(--line,#ead9df);border-bottom:1px solid var(--line,#ead9df);background:var(--rose-soft,#f8eaf0);text-align:left;font-size:11px;white-space:nowrap}
-#view-attendance .ta-register tbody th,#view-attendance .ta-register tbody td{height:66px;padding:6px 10px;border-bottom:1px solid var(--line,#ead9df)}
-#view-attendance .ta-register tbody tr:last-child>*{border-bottom:0}#view-attendance .ta-register tbody tr:hover{background:var(--rose-soft,#fff5f8)}
-#view-attendance .ta-register .ta-status-heading,#view-attendance .ta-register .ta-status-cell{text-align:center;width:78px}
-#view-attendance .ta-roll-number{font-weight:700;white-space:nowrap}
-#view-attendance .ta-register-student{display:flex;align-items:center;gap:10px;text-align:left;min-width:150px}#view-attendance .ta-register-student b{font-weight:700;max-width:240px;overflow-wrap:anywhere}
-#view-attendance .ta-register-photo{width:36px;height:44px;border-radius:9px;overflow:hidden;background:var(--rose-soft,#f8eaf0);color:var(--berry,#54243b);display:grid;place-items:center;flex:none;border:1px solid var(--line,#ead9df)}
-#view-attendance .ta-register-photo img{width:100%;height:100%;object-fit:cover;display:block}
-#view-attendance .ta-status-option{--ta-accent:#26855f;display:inline-grid;place-items:center;position:relative;width:44px;height:44px;cursor:pointer;border-radius:10px}
-#view-attendance .ta-status-option.absent{--ta-accent:#d34c70}#view-attendance .ta-status-option.late{--ta-accent:#db912f}
-#view-attendance .ta-status-option input[type=radio]{appearance:none;-webkit-appearance:none;box-sizing:border-box;width:21px;height:21px;min-width:21px;padding:0;margin:0;border-radius:50%;border:2px solid #b8afbb;background:var(--paper,#fffdfb);cursor:pointer;position:relative;z-index:1;flex:none}
-#view-attendance .ta-status-option input[type=radio]:checked{border-color:var(--ta-accent);background:var(--ta-accent);box-shadow:inset 0 0 0 3px var(--paper,#fffdfb)}
-#view-attendance .ta-status-option input:checked+.ta-radio-hit{position:absolute;inset:2px;background:var(--ta-accent);opacity:.09;border-radius:10px}
-#view-attendance .ta-status-option input:focus-visible{outline:3px solid var(--gold,#d6b174);outline-offset:4px}#view-attendance .ta-status-option:has(input:disabled){opacity:.55;cursor:wait}
-#view-attendance .ta-panel{background:var(--paper,#fffdfb);color:var(--ink,#2c2027);border-color:var(--line,#ead9df)}
-@media(max-width:600px){#view-attendance .ta-register tbody th:nth-child(2),#view-attendance .ta-register thead th:nth-child(2){position:sticky;left:0;z-index:2;background:var(--paper,#fffdfb);box-shadow:3px 0 7px #54243b0a}#view-attendance .ta-register thead th:nth-child(2){background:var(--rose-soft,#f8eaf0)}#view-attendance .ta-register-student{min-width:132px;max-width:165px;gap:7px}#view-attendance .ta-register tbody th,#view-attendance .ta-register tbody td{padding:6px}#view-attendance .ta-count{font-size:10px}}
-.noor-t4 .nt-period-state{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:95px}
-.noor-t4 .nt-period-badge{font-size:11px;font-weight:800;padding:7px 10px;border-radius:9px;white-space:nowrap;background:var(--rose-soft,#f8eaf0);color:var(--rose,#8b4965)}
-.noor-t4 .nt-period-badge.complete{background:#e6f6ed;color:#166346}.noor-t4 .nt-period-badge.current{background:#ffe6f0;color:#ad3268}.noor-t4 .nt-period-badge.pending{background:#fff3df;color:#895419}
-.noor-t4 .nt-card-head:has(#ntPeriodDay){flex-wrap:wrap}
-@media(max-width:500px){.noor-t4 .nt-period-state{grid-column:2/4;flex-direction:row;align-items:center;justify-content:space-between}}
+/* Attendance: large portraits, neutral choices, colour only on selection.
+   Loaded last so older mobile radio styles cannot override this register. */
+#workspace #view-attendance .ta-page{max-width:1240px;color:var(--ink,#302c31)}
+#workspace #view-attendance .ta-header h1{color:var(--berry,#752d43)}
+#workspace #view-attendance .ta-panel{background:var(--paper,#fffdfb);color:var(--ink,#302c31);border:1px solid var(--line,#e8e2df);border-radius:18px;box-shadow:0 3px 16px #302c3105}
+#workspace #view-attendance .ta-register-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+#workspace #view-attendance .ta-register-heading h2{margin:0;font-size:21px;color:var(--ink,#302c31)}
+#workspace #view-attendance [data-attendance-summary]{display:flex;gap:8px;flex-wrap:wrap}
+#workspace #view-attendance .ta-count{padding:7px 10px;border-radius:9px;background:var(--canvas,#f7f5f3);color:var(--ink,#302c31);font-size:12px;font-weight:600}
+#workspace #view-attendance .ta-register-scroll{max-width:100%;overflow:auto;border:0;border-radius:0}
+#workspace #view-attendance .ta-register{border-collapse:separate;border-spacing:0 10px;width:100%;min-width:740px;background:transparent;color:var(--ink,#302c31);font-size:14px}
+#workspace #view-attendance .ta-register caption{text-align:left;padding:4px 0 10px;color:var(--muted,#716b70);font-size:12px;background:transparent}
+#workspace #view-attendance .ta-register thead th{padding:6px 10px;border:0;background:transparent;text-align:left;font-size:12px;color:var(--muted,#716b70)}
+#workspace #view-attendance .ta-register tbody :is(th,td){height:auto;padding:12px 8px;background:var(--paper,#fffdfb);border-top:1px solid var(--line,#e8e2df);border-bottom:1px solid var(--line,#e8e2df);vertical-align:middle}
+#workspace #view-attendance .ta-register tbody tr>:first-child{border-left:1px solid var(--line,#e8e2df);border-radius:14px 0 0 14px;color:var(--muted,#716b70)}
+#workspace #view-attendance .ta-register tbody tr>:last-child{border-right:1px solid var(--line,#e8e2df);border-radius:0 14px 14px 0}
+#workspace #view-attendance .ta-register tr[hidden]{display:none!important}
+#workspace #view-attendance .ta-register .ta-status-cell{width:96px;text-align:center}
+#workspace #view-attendance .ta-status-heading{text-align:center!important}
+#workspace #view-attendance .ta-roll-number{font-weight:600;white-space:nowrap}
+#workspace #view-attendance .ta-register-student{display:flex;align-items:center;gap:16px;min-width:180px;max-width:none;text-align:left}
+#workspace #view-attendance .ta-register-student b{font-size:16px;line-height:1.4;overflow-wrap:anywhere;font-weight:650;color:var(--ink,#302c31)}
+#workspace #view-attendance .ta-register-photo{width:80px;min-width:80px;height:90px;border-radius:12px;overflow:hidden;background:var(--canvas,#f3efec);color:var(--muted,#716b70);display:grid;place-items:center;flex:none;border:1px solid var(--line,#e8e2df);font-size:23px;font-weight:600}
+#workspace #view-attendance .ta-register-photo img{width:100%;height:100%;object-fit:cover;display:block}
+#workspace #view-attendance .ta-status-option{--ta-accent:#218553;--ta-selected-text:#fff;display:flex!important;flex-direction:row;align-items:center;justify-content:center;position:relative;gap:5px;width:100%!important;min-width:0;height:46px!important;min-height:46px!important;padding:0 9px;border:0!important;border-radius:50%!important;background:transparent!important;color:var(--ink,#403c40);box-shadow:none;cursor:pointer;box-sizing:border-box;touch-action:manipulation}
+#workspace #view-attendance .ta-status-option.absent{--ta-accent:#c4424f}
+#workspace #view-attendance .ta-status-option.late{--ta-accent:#f2bd43;--ta-selected-text:#382b10}
+#workspace #view-attendance .ta-status-option.leave{--ta-accent:#3477bd}
+#workspace #view-attendance .ta-status-option input[type=radio]{appearance:none;-webkit-appearance:none;position:absolute!important;inset:0!important;opacity:0!important;width:100%!important;height:100%!important;min-width:0;margin:0;padding:0;border:0;cursor:pointer;z-index:4!important}
+#workspace #view-attendance .ta-status-option .ta-radio-hit{position:static!important;inset:auto!important;display:grid!important;place-items:center;width:26px!important;height:26px!important;border:2px solid var(--muted,#8b8589)!important;border-radius:50%!important;background:transparent!important;opacity:1!important;pointer-events:none;box-sizing:border-box}
+#workspace #view-attendance .ta-mobile-status-head{display:none}
+#workspace #view-attendance .ta-status-option:after{content:none!important}
+#workspace #view-attendance .ta-status-option:has(input:checked){background:transparent!important;box-shadow:none}
+#workspace #view-attendance .ta-status-option input:checked+.ta-radio-hit{border-color:var(--ta-accent)!important;background:var(--ta-accent)!important;color:var(--ta-selected-text);box-shadow:none!important}
+#workspace #view-attendance .ta-status-option input:checked+.ta-radio-hit:before{content:'✓';font-size:14px;font-weight:700;color:inherit}
+#workspace #view-attendance .ta-status-option:has(input:focus-visible){outline:3px solid var(--gold,#bc985c);outline-offset:3px}
+#workspace #view-attendance .ta-status-option:has(input:disabled){opacity:.6;cursor:wait}
+#workspace #view-attendance .ta-savebar{position:sticky;bottom:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0 calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line,#e8e2df);background:var(--paper,#fffdfb)}
+#workspace #view-attendance [data-marked-progress]{font-size:15px;font-weight:700;color:var(--berry,#752d43)}
+#workspace #view-attendance .ta-savebar .ta-primary{position:static;width:auto;min-height:48px;padding:12px 24px;background:var(--berry,#752d43);color:#fff;border-radius:11px;font-size:14px}
+#workspace #view-attendance .ta-mobile-quickbar button{background:var(--paper,#fffdfb);color:var(--ink,#403c40);border-color:var(--line,#e8e2df)}
+@media(max-width:760px){
+ #workspace #view-attendance .ta-panel{padding:14px}
+ #workspace #view-attendance .ta-register-scroll{overflow:visible!important;width:100%}
+ #workspace #view-attendance .ta-register{display:block;min-width:0!important;width:100%;border-spacing:0}
+ #workspace #view-attendance .ta-register caption{display:block;padding:0 0 12px;white-space:normal}
+ #workspace #view-attendance .ta-register thead{position:absolute!important;clip-path:inset(50%);width:1px!important;height:1px!important;overflow:hidden!important}
+ #workspace #view-attendance .ta-register tbody{display:grid;gap:14px;width:100%}
+ #workspace #view-attendance .ta-register tbody tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px;border:1px solid var(--line,#e8e2df);border-radius:15px;background:var(--paper,#fffdfb);box-shadow:0 2px 9px #302c3104}
+ #workspace #view-attendance .ta-register tbody tr>td:first-child{display:none!important}
+ #workspace #view-attendance .ta-register tbody tr>th[scope=row]{position:static!important;grid-column:1/-1!important;grid-row:auto!important;width:auto;padding:0!important;border:0!important;background:transparent;box-shadow:none!important}
+ #workspace #view-attendance .ta-register tbody tr>td.ta-roll-number{grid-column:1/-1!important;grid-row:auto!important;border:0!important;padding:0!important;margin:0;text-align:left;font-size:12px;color:var(--muted,#716b70);background:transparent}
+ #workspace #view-attendance .ta-roll-number:before{content:'Roll No. ';font-size:12px}
+ #workspace #view-attendance .ta-register tbody tr>td.ta-status-cell{display:block;grid-row:auto!important;width:auto!important;height:auto!important;margin:0;padding:0!important;border:0!important;background:transparent;border-radius:0}
+ #workspace #view-attendance .ta-register-student{gap:14px;min-width:0}
+ #workspace #view-attendance .ta-register-student b{font-size:16px}
+ #workspace #view-attendance .ta-register-photo{width:64px;min-width:64px;height:72px;border-radius:10px}
+ #workspace #view-attendance .ta-status-option{height:48px!important;min-height:48px!important}
+ #workspace #view-attendance .ta-mobile-status-head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px 16px;text-align:center;font-size:12px;font-weight:650;color:var(--ink,#302c31);background:var(--paper,#fffdfb);border-bottom:1px solid var(--line,#e8e2df)}
+ #workspace #view-attendance .ta-savebar{bottom:calc(70px + env(safe-area-inset-bottom));padding-bottom:12px;gap:10px}
+ #workspace #view-attendance .ta-savebar .ta-primary{padding:12px 16px}
+ #workspace #view-attendance .ta-count{font-size:11px;padding:7px 8px}
+}

@@ -1,5 +1,7 @@
 /* Scoped to the assistant; existing school navigation is unchanged. */
 body.noor-ai-open{overflow:hidden}
+#noorAIModal.nh-dialog[open]{display:block!important}
+#noorAIModal.nh-dialog:not([open]){display:none!important}
 #noorAIModal{--nh-paper:var(--paper,#fffdfb);--nh-ink:var(--ink,#29262b);--nh-line:var(--line,#e8e2df);--nh-soft:var(--canvas,#f7f5f3);color:var(--nh-ink);background:var(--nh-paper);width:min(1120px,94vw);max-width:1120px;height:min(820px,90dvh);max-height:94dvh;padding:0;border:1px solid var(--nh-line);border-radius:22px;box-shadow:0 24px 100px #17101838;font:15px/1.6 Inter,system-ui,sans-serif;overflow:hidden}
 #noorAIModal::backdrop{background:#17131e65;backdrop-filter:blur(4px)}
 #noorAIModal *{box-sizing:border-box}#noorAIModal [hidden]{display:none!important}

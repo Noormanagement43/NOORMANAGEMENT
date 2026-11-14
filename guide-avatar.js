@@ -215,7 +215,8 @@
     widget.className = 'noor-guide-widget';
     widget.setAttribute('role', 'button');
     widget.setAttribute('tabindex', '0');
-    widget.setAttribute('aria-label', 'Open NOOR Guide');
+    widget.setAttribute('aria-label', 'Open NOOR app assistant');
+    widget.setAttribute('aria-haspopup', 'dialog');
 
     widget.innerHTML = `
       <div class="noor-guide-avatar-wrap" id="noorGuideAvatarWrap">
@@ -233,6 +234,10 @@
     widget.onclick = (e) => {
       e.stopPropagation();
       openAskAIDrawer();
+    };
+
+    widget.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAskAIDrawer(); }
     };
 
     // Remove old legacy elements if present in DOM

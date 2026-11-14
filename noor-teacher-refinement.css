@@ -33,8 +33,8 @@
 #workspace.noor-teacher-activated .nt-timeline .nt-period:before{background:var(--rose,#a76988);box-shadow:0 0 0 3px var(--paper,#fff)}
 #workspace.noor-teacher-activated #ntTeacherIntelligence .nti-title h2{font-family:'Playfair Display',Georgia,serif!important}
 #workspace.noor-teacher-activated .nt-advanced-details>summary{border-color:var(--line,#e8dadf)}
-/* No chatbot / floating assistant while the user has disabled Gemini and voice. */
-#noorAISafeLauncher,#noorAIModal,.noor-ai-v2-launcher,.noor-ai-v2-backdrop,#ntOpenJinni,#pd-ai-assistant,.noor-cartoon-mascot{display:none!important}
+/* Retired launchers stay hidden; the active app-help dialog controls its own visibility. */
+#noorAISafeLauncher,.noor-ai-v2-launcher,.noor-ai-v2-backdrop,#ntOpenJinni,#pd-ai-assistant,.noor-cartoon-mascot{display:none!important}
 @media(max-width:980px){
  #workspace.noor-teacher-activated .noor-t4 .nt-profile{grid-template-columns:clamp(145px,21%,185px) minmax(0,1fr)}
  #workspace.noor-teacher-activated .noor-t4 .nt-quote{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,.78fr) minmax(205px,1.22fr);gap:6px 16px;min-height:120px;align-items:start}

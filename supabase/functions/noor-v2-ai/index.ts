@@ -30,7 +30,7 @@ export async function handle(req:Request):Promise<Response>{
  const verified=await db.auth.getUser(token.slice(7)).catch(()=>null);if(!verified||verified.error||!verified.data.user)return send(401,{error:'Session invalid or expired'});
  let input:Record<string,unknown>;try{input=await body(req)}catch{return send(400,{error:'Use a JSON object with valid images, maximum 18 MB'})}
  const action=safe(input.action||'chat_assist',35);
- const supported=['status','probe','chat_assist','paper','quiz','test','grade_quiz','notes','extract_text','weekly_plan','format_report','insights','manager_plan'];
+ const supported=['status','probe','chat_assist','app_help','paper','quiz','test','grade_quiz','notes','extract_text','weekly_plan','format_report','insights','manager_plan'];
  if(!supported.includes(action))return send(400,{error:'Unsupported AI action'});
  try{
  const provider=primary();
@@ -46,7 +46,7 @@ export async function handle(req:Request):Promise<Response>{
  if(ir.error||!ir.data)return send(403,{error:'Institution is inactive or inaccessible'});
  if(action==='manager_plan'&&!leadership.has(mr.data.role))return send(403,{error:'Institution leadership required'});
  if(action==='probe'&&!staff.has(mr.data.role))return send(403,{error:'Teaching staff or leadership required'});
- if(!['chat_assist','probe'].includes(action)&&!staff.has(mr.data.role))return send(403,{error:'Authorised teaching staff required'});
+ if(!['chat_assist','app_help','probe'].includes(action)&&!staff.has(mr.data.role))return send(403,{error:'Authorised teaching staff required'});
  if(action!=='probe'){
   const units=action==='manager_plan'?2:1;
   const budget=await db.rpc('noor_take_ai_budget',{p_institution:institution,p_units:units});
@@ -54,6 +54,15 @@ export async function handle(req:Request):Promise<Response>{
   if(budget.data!==true)return send(429,{error:'AI request budget reached. Retry later or ask the platform owner to review your plan limits.'});
  }
  if(action==='probe'){const providers=await probeAll();return send(200,{brain:providers[provider],manager:providers.groq,providers,external_apps_connected:false,email_delivery_tested:false})}
+ if(action==='app_help'){
+  const topic=safe(input.help_topic,30);
+  const instructions:Record<string,string>={periods:'Find My Periods; teachers may use Edit Timetable. Principal views schedules under Staff.',marks:'Students use Progress. Teachers use My Class, select class and section, View results, Annual Report, Annual Marks Report, Add / Upload Marks. Enter marks manually and review before saving.',attendance:'Teachers choose class, section and date, tap one Present/Absent/Late/Leave circle per student, review and Save attendance. Students view My Attendance.',notes:'Students view Class Notes; teachers use Today’s Note to choose their class, add instructions or pictures, review and publish.',tests:'Teachers use Assignments & Smart Notes then Assignments, choose class and subject, review before publishing. Students use Assignments.',analytics:'Open Live Analytics and use the available class, subject and date filters.',notices:'Open Notices & Meetings. Only authorised staff can draft, choose recipients and channel, review and send.',calendar:'Open School Calendar and select a date.',students:'Teachers use My Class. School leadership uses Students. Students cannot inspect classmates’ private records.',staff:'Authorised school leadership can open Staff. Manager access is managed under Manager.',settings:'Open Settings to edit allowed profile or appearance fields and save. Only authorised leadership can change school branding.',support:'Open Help & Suggestions, describe the problem and submit to platform support.'};
+  if(!Object.hasOwn(instructions,topic))return send(400,{error:'Unknown app help topic'});
+  // Only fixed public app instructions and verified role go to Groq. Never send
+  // messages, names, institution names, records, chat history or client context.
+  const response=await generate('groq','Rewrite these fixed app-help instructions as at most four short numbered steps in English for role '+safe(mr.data.role,30)+'. Describe only features in the supplied instructions that this role may use. Do not claim to access records, open pages, change settings, save or send anything. Never add unsupported features. Instructions: '+instructions[topic]);
+  return send(200,{response,provider:'groq'});
+ }
  const images=Array.isArray(input.images)?input.images:[];
  if(images.some(x=>typeof x!=='string'))return send(400,{error:'Invalid syllabus image'});
  const photos=images as string[];

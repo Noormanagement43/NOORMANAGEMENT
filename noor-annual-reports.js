@@ -112,18 +112,18 @@ function exportReport(d,type,format){
  if(format==='word')return download(('<html><head><meta charset="utf-8"><style>body{font:13pt Calibri;color:#342824}.nar-paper{padding:15pt}.nar-head{margin:20pt 0}h1{font-size:23pt;color:#58734b}.nar-table{border-collapse:collapse;width:100%}.nar-table th,.nar-table td{padding:7pt;border:1pt solid #dfd1bd}.nar-table th{background:#ffe6b4}.nar-summary{background:#ffd16d;padding:12pt}.nar-brand img,.nar-student img{height:70pt}.nar-layout aside{background:#f7edd9;padding:12pt}</style></head><body>'+reportHTML(d,type)+'</body></html>').replaceAll('#58734b',themeColor).replaceAll('#ffe6b4',themeSoft).replaceAll('#ffd16d',themeSoft).replaceAll('#f7edd9',themeSoft).replaceAll('#dfd1bd',themeLine),basename+'.doc','application/msword;charset=utf-8');
  if(format==='pdf'){const w=window.open('','_blank');if(!w)throw Error('Enable popups to print the PDF.');const css=new URL('./noor-annual-reports.css?v=20261109-1',document.baseURI).href;w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+E(basename)+'</title><link rel="stylesheet" href="'+E(css)+'"></head><body class="nar-print">'+reportHTML(d,type)+'</body></html>');w.document.close();w.addEventListener('load',()=>w.print(),{once:true});return;}
 }
-async function open(s,group){
+async function open(s,group,initialType='attendance',openEditor=false){
  const c=await access(group);
  document.getElementById('noor-annual-report-dialog')?.remove();
  const dlg=document.createElement('dialog');dlg.id='noor-annual-report-dialog';dlg.className='nar-dialog';dlg.innerHTML='<header class="nar-modal-top"><b>Annual Student Reports</b><button type="button" data-close aria-label="Close">✕</button></header><div data-report role="status">Loading saved attendance and marks…</div>';
  document.body.append(dlg);dlg.querySelector('[data-close]').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();
- try{const d=await load(c,s);if(!active(c)||!dlg.isConnected)return;let type='attendance';const render=()=>{
+ try{const d=await load(c,s);if(!active(c)||!dlg.isConnected)return;let type=initialType==='marks'?'marks':'attendance';const render=()=>{
  const target=dlg.querySelector('[data-report]');
  target.innerHTML='<nav class="nar-tabs"><button data-type="attendance" aria-pressed="'+(type==='attendance')+'">Annual Attendance Report</button><button data-type="marks" aria-pressed="'+(type==='marks')+'">Annual Marks Report</button></nav>'+reportHTML(d,type)+
  '<div class="nar-actions"><strong>Open report:</strong><button data-export="pdf">PDF</button><button data-export="word">Word</button><button data-export="excel">Excel</button>'+(type==='marks'?'<button data-add-marks>Add / Upload Marks</button>':'')+(c.principal?'<button data-settings>Principal Settings</button>':'')+'</div><p class="nar-note">PDF opens browser print / Save as PDF. Word and Excel download editable files. Only recorded school data appears; holidays marked by school leadership are excluded.</p><p role="status" data-status></p>';
  target.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{type=b.dataset.type;render();});
  target.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{try{exportReport(d,type,b.dataset.export);target.querySelector('[data-status]').textContent=b.dataset.export==='pdf'?'Choose Save as PDF in print preview.':'File created.';}catch(e){target.querySelector('[data-status]').textContent=e.message;}});
- target.querySelector('[data-settings]')?.addEventListener('click',()=>editSettings(c));target.querySelector('[data-add-marks]')?.addEventListener('click',()=>markEntry(d));};render();
+ target.querySelector('[data-settings]')?.addEventListener('click',()=>editSettings(c));target.querySelector('[data-add-marks]')?.addEventListener('click',()=>markEntry(d));};render();if(openEditor&&active(c)&&dlg.isConnected)markEntry(d);
  }catch(err){if(dlg.isConnected)dlg.querySelector('[data-report]').textContent='Report unavailable: '+err.message;}
 }
 async function markEntry(d){
@@ -181,5 +181,5 @@ async function editSettings(c){
   status.textContent='Settings saved. Reopen report to reload updated labels.';b.disabled=false;
  }catch(error){status.textContent='Not saved: '+error.message;b.disabled=false;}};
 }
-window.NOOR_ANNUAL_REPORTS=Object.freeze({open,load,monthRows,reportHTML,principalSettings:async group=>{const c=await access(group);if(!c.principal)throw Error('Principal access required.');return editSettings(c);}});
+window.NOOR_ANNUAL_REPORTS=Object.freeze({open,load,monthRows,reportHTML,openMarks:(student,group)=>open(student,group,'marks',true),principalSettings:async group=>{const c=await access(group);if(!c.principal)throw Error('Principal access required.');return editSettings(c);}});
 })();

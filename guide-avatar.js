@@ -194,7 +194,7 @@
     }
   }
 
-  function openAskAIDrawer() { showBubble(getGuidanceForView('overview')); }
+  function openAskAIDrawer() { if(window.NOOR_SECURE_AI?.open){const bubble=$('noorGuideBubble');if(bubble)bubble.style.display='none';window.speechSynthesis?.cancel();window.NOOR_SECURE_AI.open();}else showBubble('App help is loading. Please try again.'); }
 
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, c => ({

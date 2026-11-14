@@ -5,13 +5,14 @@ const roles=['principal','school_admin','university_admin','academic_admin'];
 const same=c=>A().user?.id===c.user&&A().schoolId===c.school;
 let version=0,channel=null,channelKey='',poll=null,activityVersion=0;
 async function context(){
+ await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('manager_tools');
  const a=A(),user=a.user?.id,school=a.schoolId;if(!user||!school||!a.db)throw Error('Sign in to your school.');
  const auth=await a.db.auth.getUser();if(auth.error||auth.data?.user?.id!==user)throw Error('Sign in again.');
  const r=await a.db.from('institution_memberships').select('id,role').eq('institution_id',school).eq('user_id',user).eq('status','active').single();
  if(r.error||!roles.includes(r.data?.role))throw Error('Active school leadership required.');
  const c={db:a.db,user,school,member:r.data.id,role:r.data.role};if(!same(c))throw Error('Account changed.');return c;
 }
-async function rpc(c,name,args){if(!same(c))throw Error('Account changed.');const r=await c.db.rpc(name,args);if(r.error)throw r.error;if(!same(c))throw Error('Account changed.');return r.data;}
+async function rpc(c,name,args){await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('manager_tools');if(!same(c))throw Error('Account changed.');const r=await c.db.rpc(name,args);if(r.error)throw r.error;if(!same(c))throw Error('Account changed.');return r.data;}
 async function paged(build){const all=[];for(let i=0;;i+=500){const r=await build().range(i,i+499);if(r.error)throw r.error;all.push(...r.data||[]);if((r.data||[]).length<500)return all;}}
 function collectMarks(form,students){return students.filter(s=>form.elements['mark_'+s.id].value!=='').map(s=>{const marks=Number(form.elements['mark_'+s.id].value);if(!Number.isFinite(marks)||marks<0||marks>Number(form.elements.maximum.value))throw Error('Enter marks between zero and the maximum.');return{student_membership_id:s.id,marks,feedback:form.elements['feedback_'+s.id].value.trim()};});}
 function attendanceRecords(form,students){return students.map(s=>{const value=form.querySelector('input[name="att_'+s.id+'"]:checked')?.value;if(!['present','absent','late','leave'].includes(value))throw Error('Mark attendance for every student before saving.');return{student_membership_id:s.id,status:value};});}
@@ -65,7 +66,7 @@ async function entry(c,host,mode,groups,initialGroup=null){
  area.addEventListener('input',()=>{dirty=true;msg.textContent='Unsaved changes. Review and save.';});
  form.onsubmit=async event=>{event.preventDefault();if(saving||!same(c)||!loadedKey||loadedKey!==selection())return;saving=true;save.disabled=true;
  try{const records=mode==='marks'?collectMarks(form,students):attendanceRecords(form,students);if(!records.length)throw Error('Enter at least one student’s marks.');form.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);msg.textContent='Saving '+records.length+' students…';const args={p_institution:c.school,p_group:f.group.value,p_date:f.date.value,p_records:records};if(mode==='marks')Object.assign(args,{p_subject:f.subject.value.trim(),p_title:f.title.value.trim(),p_kind:f.kind.value,p_max:Number(f.maximum.value)});
- const saved=await rpc(c,mode==='marks'?'noor_manager_save_marks':'noor_save_class_register',args);if(Number(mode==='marks'?saved:saved?.count)!==records.length)throw Error('Save count mismatch. Reload to verify records.');dirty=false;msg.textContent='Saved '+records.length+' student'+(records.length===1?'':'s')+'. Principal activity history is synced.';window.dispatchEvent(new CustomEvent(mode==='marks'?'noor:marks-saved':'noor:attendance-saved'));window.NOOR_PRINCIPAL_LIVE?.refresh();const root=host.closest('.nm-root');if(root)activity(c,root);
+ const saved=await rpc(c,mode==='marks'?'noor_manager_save_marks':'noor_manager_save_attendance',args);if(Number(mode==='marks'?saved:saved?.count)!==records.length)throw Error('Save count mismatch. Reload to verify records.');dirty=false;msg.textContent='Saved '+records.length+' student'+(records.length===1?'':'s')+'. Principal activity history is synced.';window.dispatchEvent(new CustomEvent(mode==='marks'?'noor:marks-saved':'noor:attendance-saved'));window.NOOR_PRINCIPAL_LIVE?.refresh();const root=host.closest('.nm-root');if(root)activity(c,root);
  }catch(e){msg.textContent='Not saved: '+e.message;}finally{saving=false;form.querySelectorAll('input,select,button').forEach(el=>el.disabled=false);}};
  host._hasUnsaved=()=>dirty;
  if(initialGroup){const chosen=groups.find(g=>g.id===initialGroup);if(!chosen)throw Error('Class/section is unavailable.');f.class.value=chosen.parent_group_id||chosen.id;f.class.onchange();f.group.value=chosen.id;if(f.group.value!==chosen.id)throw Error('Choose an available section.');await host.querySelector('[data-load]').onclick();}

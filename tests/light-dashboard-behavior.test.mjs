@@ -32,19 +32,19 @@ test('identity names and school branding escape markup',()=>{
  assert.match(api.brand(),/School &lt;one&gt;/);
 });
 
-function timetable(role){
- const writes=[],user={id:'user'},school={id:'school',name:'Example School',status:'active',timezone:'Asia/Kolkata'};
+function timetable(role,enabled=true){
+ const writes=[],queries=[],user={id:'user'},school={id:'school',name:'Example School',status:'active',timezone:'Asia/Kolkata'};
  const day=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(new Intl.DateTimeFormat('en-GB',{timeZone:school.timezone,weekday:'long'}).format(new Date()));
  const member={id:'member',user_id:user.id,institution_id:school.id,role,status:'active'};
  const base={institution_id:school.id,weekday:day,period_number:1,start_time:'09:00',end_time:'10:00',academic_group_id:'own-class',teacher_membership_id:'member'};
  const tables={institution_memberships:[member],institutions:[school],teacher_timetable_periods:[{...base,id:'own',subject_name:'Own class subject'},{...base,id:'other-teacher',teacher_membership_id:'another',subject_name:'Same class, another teacher'},{...base,id:'other-class',teacher_membership_id:'another',academic_group_id:'other-class',subject_name:'Private other class'}],academic_groups:[{institution_id:school.id,id:'own-class',name:'Class 5',group_type:'class',is_active:true},{institution_id:school.id,id:'other-class',name:'Class 6',group_type:'class',is_active:true}],institution_period_slots:[],noor_daily_period_lessons:[]};
  const app={user,school,schoolId:school.id,profile:{institution_id:school.id,class_id:'own-class'}};
- app.db={auth:{getUser:async()=>({data:{user}})},from(table){let selected=tables[table]||[];const q={select(){return q},eq(k,v){selected=selected.filter(x=>x[k]===v);return q},order(){return q},single:async()=>({data:selected[0]}),then(resolve){return Promise.resolve({data:selected}).then(resolve)},insert(){writes.push(table);return q},update(){writes.push(table);return q},upsert(){writes.push(table);return q}};return q;},rpc:async()=>({data:[]}),channel(){return{on(){return this},subscribe(){}}}};
+ app.db={auth:{getUser:async()=>({data:{user}})},from(table){queries.push(table);let selected=tables[table]||[];const q={select(){return q},eq(k,v){selected=selected.filter(x=>x[k]===v);return q},order(){return q},single:async()=>({data:selected[0]}),then(resolve){return Promise.resolve({data:selected}).then(resolve)},insert(){writes.push(table);return q},update(){writes.push(table);return q},upsert(){writes.push(table);return q}};return q;},rpc:async()=>({data:[]}),channel(){return{on(){return this},subscribe(){}}}};
  let dialog;
  const document={createElement(){const body={innerHTML:'',textContent:''};const close={};dialog={dataset:{},isConnected:true,innerHTML:'',remove(){this.isConnected=false},setAttribute(){},addEventListener(){},showModal(){},querySelector(selector){return selector==='[data-tt-close]'?close:body},querySelectorAll(){return[]},body};return dialog;},body:{append(){}}};
- const window={NOOR_AI_APP:app,NOOR_CONFIG:{SUPABASE_URL:'https://ayrryemawwplguaauxij.supabase.co'},dispatchEvent(){}};
+ const window={NOOR_AI_APP:app,NOOR_PLATFORM_ACCESS:{async requireFeature(key){assert.equal(key,'timetable');if(!enabled)throw Error('This feature is disabled by NOOR Management.');}},NOOR_CONFIG:{SUPABASE_URL:'https://ayrryemawwplguaauxij.supabase.co'},dispatchEvent(){}};
  runInNewContext(readFileSync(new URL('../noor-shared-timetable.js',import.meta.url),'utf8'),{window,document,Intl,Date,CustomEvent:class{}});
- return{api:window.NOOR_SHARED_TIMETABLE,writes,html:()=>dialog.body.innerHTML};
+ return{api:window.NOOR_SHARED_TIMETABLE,writes,queries,message:()=>dialog.body.textContent,html:()=>dialog.body.innerHTML};
 }
 test('full-day reader shows only own teacher periods and never writes records',async()=>{
  const x=timetable('teacher');await x.api.openDay();
@@ -58,4 +58,8 @@ test('student day reader keeps class isolation and provides no editing controls'
 test('principal period detail selects the requested period without creating write controls',async()=>{
  const x=timetable('principal');await x.api.openDay({periodId:'other-teacher'});
  assert.match(x.html(),/Same class, another teacher/);assert.doesNotMatch(x.html(),/Own class subject|Private other class|data-day-edit/);assert.equal(x.writes.length,0);
+});
+
+test('direct full-day dashboard launcher respects Creator timetable OFF before reading school records',async()=>{
+ for(const role of ['teacher','principal','student']){const x=timetable(role,false);await x.api.openDay();assert.match(x.message(),/disabled by NOOR Management/);assert.equal(x.queries.length,0);assert.equal(x.writes.length,0);}
 });

@@ -89,6 +89,7 @@ function setup(){
           <blockquote id="pd-insight"></blockquote>
           <span id="pd-quote-author">LEARN · TEACH · GROW</span>
         </section>
+        ${card('Manager Activity','pd-manager-activity','manager','Open Manager →')}
         ${card('Action Required','pd-actions','attendance','Review →')}
         ${card('Today’s Notices','pd-notices','notices','View all →')}
         ${card('Upcoming Meetings','pd-meetings','meetings','View all →')}
@@ -729,6 +730,9 @@ async function refresh(){
 
     const errors=Object.entries(res).filter(([,v])=>v.error&&!v.unavailable).map(([k])=>k);
     q('#pd-errors').innerHTML=(errors.length?`<p class="pd-alert">Unable to load: ${e(errors.join(', '))}. Missing data has not been estimated.</p>`:'')+(res.staff.unavailable?'<p class="pd-muted">Staff check-ins are not configured yet. Scheduled periods do not confirm teacher attendance.</p>':'');
+    const managerChanges=await db.from('noor_manager_activity').select('id,actor_name,entity_table,action,created_at').eq('institution_id',sid).order('id',{ascending:false}).limit(3);
+    if(a().schoolId!==sid||a().user?.id!==uid||!permitted())return;
+    q('#pd-manager-activity').innerHTML=managerChanges.error?empty('Manager history could not load. Open Manager to retry.'):(managerChanges.data||[]).map(x=>`<button type="button" class="pd-item" data-route="manager"><strong>${e(x.actor_name)}</strong><p>${e(({attendance_records:'Attendance',noor_assessment_results:'Marks'}[x.entity_table]||'School record')+' · '+x.action.toLowerCase())}</p><small>${e(new Date(x.created_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'}))}</small></button>`).join('')||empty('No manager changes recorded yet.');
     const attention=[];
     if(!attError&&today.total>today.marked)attention.push({title:(today.total-today.marked)+' students awaiting attendance',route:'attendance',sub:'Today’s marks have not been recorded.'});
     if(!res.staff.error){const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+' teachers marked absent',route:'staff-management',sub:'Review today’s staff availability.'});}
@@ -749,7 +753,7 @@ function connect(){
   if(channel)a().db.removeChannel(channel);identity=key;
   const db=a().db;channel=db.channel('noor-principal-'+key);
   if(window.NOOR_PRINCIPAL_DATA?.current()){
-    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons','noor_staff_checkins'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
+    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons','noor_staff_checkins','noor_manager_activity'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
   }else{
   for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
   channel.on('postgres_changes',{event:'*',schema:'public',table:'sections'},refresh);

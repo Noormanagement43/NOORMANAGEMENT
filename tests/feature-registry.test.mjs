@@ -8,7 +8,7 @@ const R=setup();
 test('existing catalog keys and descriptions are preserved in the shared registry',()=>{
  const sql=read('supabase/migrations/20261113080505_creator_control_plane.sql').split('create table public.noor_feature_defaults')[0];
  const expected=[...sql.matchAll(/\('([^']+)','([^']+)','([^']+)','([^']+)'\)/g)].map(m=>({feature_key:m[1],label:m[2],category:m[3],description:m[4]}));
- assert.deepEqual(JSON.parse(JSON.stringify(R.catalog.map(({views,...f})=>f))),expected);
+ assert.deepEqual(JSON.parse(JSON.stringify(R.catalog.filter(f=>f.feature_key!=='manager_tools').map(({views,...f})=>f))),expected);
 });
 test('every actual navigation destination has a feature mapping or an explicit shell exemption',()=>{
  const html=read('index.html'),config=html.slice(html.indexOf('function navConfig('),html.indexOf('\n',html.indexOf('function navConfig(')));
@@ -49,4 +49,10 @@ test('both entry points load the registry before consumers; school overrides are
  for(const [file,consumer] of [['index.html','noor-platform-access.js'],['creator.html','creator/creator.js']]){const html=read(file);assert(html.indexOf('noor-feature-registry.js')<html.indexOf(consumer));}
  assert.match(read('creator/creator.js'),/replaceOverrides=false/);
  assert.match(read('creator/creator.js'),/await window.NOOR_FEATURE_REGISTRY.sync\(db\);view=/);
+});
+
+test('Manager workspace owns a distinct persisted feature key',()=>{
+ assert.equal(R.views.manager,'manager_tools');assert.equal(R.allowed('manager',{manager_tools:false}),false);
+ assert.equal(R.allowed('attendance',{manager_tools:false}),true);
+ assert.equal(R.catalog.find(f=>f.feature_key==='manager_tools').label,'Manager Workspace');
 });

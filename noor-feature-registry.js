@@ -222,6 +222,15 @@ const catalog=[
       "school-tasks",
       "syllabus-tracker"
     ]
+  },
+  {
+    "feature_key": "manager_tools",
+    "label": "Manager Workspace",
+    "category": "People",
+    "description": "Manager substitute attendance, manual marks and activity workspace",
+    "views": [
+      "manager"
+    ]
   }
 ];
 // Mixed launchers stay available while at least one child feature is enabled.

@@ -1,0 +1,13 @@
+# Manager classroom coverage and accountability
+
+Each manager retains an individual `school_admin` membership and login. Existing reusable Management joining codes already permit multiple managers; there is no new shared account or single-manager limit.
+
+The leadership sidebar includes **Manager**. Its attendance and manual marks tools select a school class and section, load existing records, and save to the same tables used by student reports, teacher analytics and principal views. Sections are required when a class has sections. Attendance requires every enrolled student; marks leave blank rows unchanged, accept zero, and preserve the original grader on corrections. Matching manual results update atomically; digital quiz-derived results are not overwritten. Existing maximum marks load with existing assessments.
+
+The register RPC now also permits active leadership within the same institution. The manager marks RPC checks authenticated membership, active school, feature availability, group ownership, enrolled students, dates, bounds and duplicates. Advisory locks serialize matching manual assessment batches. A failed batch rolls back all its records.
+
+Manager-authored changes to attendance, marks, learning materials, notices/calendar events, school tasks, groups, membership records, appearance/report settings and timetable rows produce append-only, server-authored history in `noor_manager_activity`. Entries include actor identity, timestamp, school, group/student context and before/after data. This history starts with installation; earlier actions are not reconstructed. Clients cannot insert, edit or delete audit entries. School principals can inspect all managers; managers can read only their own history. Realtime plus polling refresh activity, and older pagination remains available. Principal Dashboard also shows recent manager activity.
+
+Validation: 317 Node checks passed. A transactional database test exercised two managers saving/correcting one register and assessment; verified preserved grader, exact before/after values, principal visibility, append-only permissions, other-school isolation, student/teacher/suspended-manager denial, and rollback of a partially invalid marks batch. All database fixtures were rolled back. Browser-only fixtures verified attendance and mark-save wiring, change-detail rendering and 390px responsive form/table layout. Production account login was not used for browser testing.
+
+Migration filename matches the version applied to the database: `20261114132013_manager_class_access_and_activity.sql`. No historical marks, attendance or real accounts were rewritten.

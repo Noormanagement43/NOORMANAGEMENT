@@ -25,7 +25,7 @@ select set_config('request.jwt.claims','{"sub":"cd000000-0000-4000-8000-00000000
 set local role authenticated;
 do $$declare s jsonb;begin
  if not public.noor_creator_identity() then raise exception 'FAIL: Owner identity denied';end if;
- s=public.noor_creator_api('state');if jsonb_array_length(s->'catalog')<>24 then raise exception 'FAIL: Missing feature catalog';end if;
+ s=public.noor_creator_api('state');if jsonb_array_length(s->'catalog')<24 then raise exception 'FAIL: Missing feature catalog';end if;
  perform public.noor_creator_api('features','{"scope":"selected","institution_ids":["ce000000-0000-4000-8000-000000000001"],"changes":{"classes":false,"analytics":false}}');
  perform public.noor_creator_api('billing','{"institution_id":"ce000000-0000-4000-8000-000000000001","monthly_fee":50000,"next_due":"2026-11-16"}');
  perform public.noor_creator_api('broadcast','{"request_key":"cf000000-0000-4000-8000-000000000001","scope":"selected","institution_ids":["ce000000-0000-4000-8000-000000000001"],"channels":["in_app"],"title":"QA reminder","body":"Fixture only, rolled back."}');

@@ -76,3 +76,22 @@ transaction; it does not create Auth users or send messages.
 The light-dashboard full-day timetable and period drilldown launchers also pass
 through the shared timetable context feature check, so Timetable OFF produces an
 explicit unavailable message before fetching school timetable records.
+
+
+## Manager and institute setup coverage
+
+The registry now includes `manager_tools` (Manager Workspace). Its Creator switch
+is independent of account pause and of the existing Attendance/Marks switches.
+The manager overview and manual marks RPCs check this key server-side. The
+workspace attendance writer composes Manager availability with the existing
+attendance RPC's attendance, membership, enrolment and tenant guards. Turning
+Manager Workspace OFF does not revoke teacher attendance or delete audit history.
+The browser checks Manager availability before initial reads and each workspace
+RPC; new Period Setup opens/saves check `timetable` too.
+
+Apply `20261114141533_manager_feature_control.sql` after the existing manager
+migration and before publishing this frontend. Registration is additive and keeps
+all saved defaults/overrides. Transactional SQL verification used existing active
+leadership and rolled back every change: Manager OFF blocks overview/marks/
+attendance, cross-school access stays denied, and ON reopens the workspace.
+No new accounts, attendance or marks were created by these checks.

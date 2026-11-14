@@ -13,7 +13,7 @@ test('natural app requests lead to role-specific pages, never a user supplied ro
  assert.equal(api.routeFor('marks','student'),'student-progress');
  assert.equal(api.routeFor('marks','teacher'),'teacher-classroom');
  assert.equal(api.routeFor('marks','principal'),'class-performance');
- assert.equal(api.routeFor('staff','student'),null);
+ assert.equal(api.routeFor('attendance','principal'),'manager');assert.equal(api.resolveRequest('section 1 mango 7 roll number','principal'),'students');assert.equal(api.resolveRequest('section 1 mango attendence','principal'),'attendance');assert.equal(api.routeFor('staff','student'),null);
  assert.equal(api.routeFor('schools','teacher'),null);
  assert.equal(api.routeFor('javascript:alert(1)','principal'),null);
  assert.equal(api.resolveRequest('Write a poem about the moon','student'),null);

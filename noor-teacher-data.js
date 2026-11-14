@@ -64,11 +64,12 @@ function attendanceRecords(form,students){
  return students.map(s=>{const status=selected.get(s.membership_id);if(!attendanceStatuses.includes(status))throw Error('Mark Present, Absent, Late or Leave for every student.');return{student_membership_id:s.membership_id,status};});
 }
 async function rosterPhotos(db,students){return Promise.all(students.map(async s=>{let photo=/^https:\/\//.test(s.avatar_url||'')?s.avatar_url:null;if(s.avatar_url?.startsWith('noor-profile-photos/')){try{photo=await window.NOOR_AVATAR_SAFE?.signedUrl({client:db,storedReference:s.avatar_url,userId:s.membership_id});}catch{photo=null;}}return{...s,photo};}));}
-async function attendance(){
+async function attendance(initialGroup=null){
  const host=document.getElementById('view-attendance');if(!host)return;const version=++registerVersion;host.innerHTML=shell('Take Attendance','<p>Loading your class…</p>');
  try{const c=await context(),assigned=await assignments(c);if(version!==registerVersion)return;
  host.innerHTML=shell('Take Attendance','<div class="ta-panel"><div class="ta-fields"><label>My class / section<select data-group>'+assigned.map(x=>'<option value="'+E(x.group_id)+'">'+E(x.class_label)+'</option>').join('')+'</select></label><label>Date<input data-date type="date" value="'+day()+'" max="'+day()+'"></label></div></div><form class="ta-panel" data-register><div class="ta-register-heading"><h2>Student Attendance</h2><div data-attendance-summary aria-live="polite"></div></div><div class="ta-mobile-quickbar"><label><span class="sr-only">Find student</span><input type="search" data-find-student placeholder="Search student or roll number" aria-label="Search student"></label><button type="button" data-mark-everyone-present>Mark all Present</button></div><div data-roster></div><p role="status" data-status></p><div class="ta-savebar"><span data-marked-progress aria-live="polite">0 marked</span><button class="ta-primary" type="submit" disabled>Save attendance</button></div></form>');
  host.querySelector('[data-back]').onclick=()=>A().openView('overview');const form=host.querySelector('form'),group=host.querySelector('[data-group]'),date=host.querySelector('[data-date]'),roster=host.querySelector('[data-roster]'),msg=host.querySelector('[data-status]'),button=form.querySelector('[type=submit]');let students=[],request=0;
+ if(initialGroup){if(!assigned.some(x=>x.group_id===initialGroup))throw Error('Choose your assigned class or section.');group.value=initialGroup;}
  const search=host.querySelector('[data-find-student]'),quick=host.querySelector('[data-mark-everyone-present]');
  function filterStudents(){
   const q=search.value.trim().toLowerCase();

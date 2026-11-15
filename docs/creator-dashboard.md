@@ -101,3 +101,10 @@ Shared authentication context is also used by assistant student searches and doe
 not require Timetable to be enabled. Timetable reads and all exported timetable
 writers enforce `timetable` before accessing records. Direct assistant attendance
 retains both Attendance and Manager Workspace controls for leadership users.
+
+
+The separate principal Feature Controls page remains a settings shell in the
+shared registry, so disabling school modules cannot hide their re-enable controls.
+It consumes the database catalog and school preferences from main, underneath the
+Creator availability ceiling. Dynamic dashboard shortcuts (`data-feature-view`)
+use the same registry mappings as sidebar/mobile links, including mixed launchers.

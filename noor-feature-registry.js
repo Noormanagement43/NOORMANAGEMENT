@@ -236,7 +236,7 @@ const catalog=[
 // Mixed launchers stay available while at least one child feature is enabled.
 const groups=Object.freeze({'teacher-resources':Object.freeze(['smart_notes','assignments'])});
 // Workspace/security/support shells must remain reachable independently of feature switches.
-const shells=Object.freeze({overview:'Workspace home',settings:'Account and school settings shell',profile:'Account settings shell','help-support':'Contact platform support',schools:'Legacy creator shell',management:'Legacy management shell','command-centre':'Workspace home alias','principal-studio':'Principal workspace home','audit-logs':'Security audit history'});
+const shells=Object.freeze({overview:'Workspace home','feature-controls':'School availability settings within Creator grants',settings:'Account and school settings shell',profile:'Account settings shell','help-support':'Contact platform support',schools:'Legacy creator shell',management:'Legacy management shell','command-centre':'Workspace home alias','principal-studio':'Principal workspace home','audit-logs':'Security audit history'});
 const views=Object.create(null);
 for(const f of catalog){Object.freeze(f.views);Object.freeze(f);for(const view of [f.feature_key,...f.views]){if(views[view])throw Error('Duplicate feature route: '+view);views[view]=f.feature_key;}}
 Object.freeze(catalog);Object.freeze(views);

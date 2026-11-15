@@ -6,7 +6,7 @@ const permitted=()=>['owner','principal','manager'].includes(a().profile?.role)&
 let loading=false,queued=false,channel=null,identity='',timer=null,snapshot=null,insight='Leadership in education builds brighter tomorrows.';
 const button=(text,route)=>`<button type="button" class="pd-link" data-route="${route}">${text}</button>`;
 const empty=text=>`<p class="pd-empty">${text}</p>`;
-const card=(title,id,route,label='Manage →',extra='')=>`<section class="pd-card"><header><div style="display:flex;align-items:center;gap:10px"><h2>${title}</h2>${extra}</div>${button(label,route)}</header><div id="${id}"></div></section>`;
+const card=(title,id,route,label='Manage →',extra='')=>`<section class="pd-card" data-feature-view="${route}"><header><div style="display:flex;align-items:center;gap:10px"><h2>${title}</h2>${extra}</div>${button(label,route)}</header><div id="${id}"></div></section>`;
 
 function clock(tz){const ps=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'}).formatToParts(new Date()),g=k=>ps.find(x=>x.type===k)?.value||'';return {day:`${g('year')}-${g('month')}-${g('day')}`,time:g('hour')+':'+g('minute'),weekday:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(g('weekday')),tz};}
 
@@ -66,7 +66,7 @@ function setup(){
           ${card('Class-wise Attendance (Classes 1 – 5)','pd-classes','classes','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
           ${card('Classes 6 – 10 Attendance Trend','pd-trend','attendance','Full report →')}
         </div>
-        <section class="pd-card pd-schedule">
+        <section class="pd-card pd-schedule" data-feature-view="schedules">
           <header>
             <h2>◷ Currently Active Periods</h2>
             <div style="display:flex;gap:8px;align-items:center">
@@ -93,7 +93,6 @@ function setup(){
         ${card('Action Required','pd-actions','attendance','Review →')}
         ${card('Today’s Notices','pd-notices','notices','View all →')}
         ${card('Upcoming Meetings','pd-meetings','meetings','View all →')}
-        ${card('School Calendar','pd-events','school-calendar','Open →')}
       </aside>
     </div>
     <dialog id="pd-dialog">
@@ -724,7 +723,6 @@ async function refresh(){
     window.NOOR_LIVE_ANALYTICS?.decorate();
     q('#pd-notices').innerHTML=res.notices.error?empty('Notices unavailable.'):eventList(rows('notices').filter(x=>(!x.starts_at||Date.parse(x.starts_at)<=Date.now())&&(!x.ends_at||Date.parse(x.ends_at)>Date.now())).slice(0,5),'notices')||empty('No active notices.');
     q('#pd-meetings').innerHTML=res.events.error?empty('Meetings unavailable.'):eventList(upcoming.filter(x=>/meeting/i.test(x.event_type)).slice(0,4),'meetings')||empty('No upcoming meetings.');
-    q('#pd-events').innerHTML=res.events.error?empty('Calendar unavailable.'):eventList(upcoming.filter(x=>!/meeting/i.test(x.event_type)).slice(0,4),'school-calendar')||empty('No upcoming school events.');
     q('#pd-tasks').innerHTML=res.tasks.error?empty('Tasks unavailable.'):rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status)).slice(0,5).map(x=>`<button class="pd-item" data-route="school-tasks"><strong>${e(x.title)}</strong><small>${e(x.status)}${x.due_at?' · '+e(new Date(x.due_at).toLocaleDateString('en-IN',{timeZone:d.tz})):''}</small></button>`).join('')||empty('No pending tasks.');
     q('#pd-lessons').innerHTML=res.lessons.error?empty('Lessons unavailable.'):rows('lessons').slice(0,5).map(x=>`<button class="pd-item" data-route="academic-monitoring"><strong>${e(teacherMap.get(x.teacher_id)||'Teacher')}</strong><p>${e(x.topic)}</p><small>${e(x.homework||'')}</small></button>`).join('')||empty('No lessons recorded today.');
 

@@ -1,0 +1,44 @@
+const {JSDOM}=require(process.env.JSDOM_MODULE||'jsdom');
+const fs=require('fs'),assert=require('node:assert/strict'),path=require('path');
+const source=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+(async()=>{
+ const dom=new JSDOM('<!doctype html><html><head></head><body><div id="workspace"><nav id="mainNav"><button data-view="school-calendar">Calendar</button><button data-view="feature-controls">Feature Controls</button></nav><section id="view-principal-studio" class="view"><div id="noor-principal"></div></section><section id="view-feature-controls" class="view active"></section></div></body></html>',{url:'https://noor.example.test',runScripts:'outside-only'});
+ const w=dom.window,d=w.document,root=d.getElementById('view-feature-controls'),calls=[];let rejectSave=false,delayLoad=false,finishLoad;
+ const flush=()=>new Promise(r=>setTimeout(r,30));
+ const catalog=[{feature_key:'calendar',label:'Calendar',category:'Academics',description:'School calendar and holidays',creator_allowed:true,school_enabled:true,enabled:true},{feature_key:'attendance',label:'Student Attendance',category:'Academics',description:'Daily attendance',creator_allowed:false,school_enabled:true,enabled:false},{feature_key:'smart_notes',label:'Smart Notes',category:'Learning',description:'Notes',creator_allowed:true,school_enabled:true,enabled:false}];
+ w.NOOR_ACCOUNT_CONTEXT={enabled:()=>true};
+ w.NOOR_AI_APP={user:{id:'p1'},schoolId:'s1',school:{name:'Example <img onerror="bad()">'},profile:{id:'p1',school_id:'s1',role:'principal',status:'active'},db:{rpc:async(name,args)=>{
+  calls.push({name,args});
+  if(name==='noor_feature_access')return {data:{paused:false,features:Object.fromEntries(catalog.map(f=>[f.feature_key,f.enabled]))}};
+  if(name==='noor_class_update_status')return{data:{start_year:2026,is_open:false}};
+  if(name==='noor_manageable_members')return{data:[]};
+  if(delayLoad)await new Promise(r=>finishLoad=r);
+  if(Object.keys(args.p_changes).length&&rejectSave)return{error:{message:'Save denied'}};
+  for(const f of catalog)if(f.feature_key in args.p_changes){f.school_enabled=args.p_changes[f.feature_key];f.enabled=f.creator_allowed&&f.school_enabled;}
+  return{data:{catalog:structuredClone(catalog)}};
+ }}};
+ for(const f of ['noor-platform-access.js','noor-member-access.js','noor-feature-controls.js'])w.eval(source(f));
+ await w.NOOR_FEATURE_CONTROLS.mount(root);await flush();
+ assert(root.querySelector('[data-year-form]'),'Year controls missing from Feature Controls');
+ assert.equal(d.querySelector('#view-principal-studio #noorMemberControl'),null);
+ assert.equal(d.querySelector('.nfc img'),null);
+ assert(root.querySelector('[data-school-feature=attendance]').disabled,'Creator lock was editable');
+ assert.match(root.querySelector('[data-school-feature=smart_notes]').parentNode.textContent,/Enable Learning Library/);
+ root.querySelector('[data-school-feature=calendar]').click();await flush();
+ assert.equal(root.querySelector('[data-school-feature=calendar]').getAttribute('aria-checked'),'false');
+ assert.equal(d.querySelector('#mainNav [data-view=school-calendar]').style.display,'none');
+ assert.equal(w.NOOR_PLATFORM_ACCESS.allowed('school-calendar'),false);
+ assert.equal(w.NOOR_PLATFORM_ACCESS.allowed('feature-controls'),true,'Controls locked themselves out');
+ await w.NOOR_FEATURE_CONTROLS.mount(root);assert.equal(root.querySelector('[data-school-feature=calendar]').getAttribute('aria-checked'),'false');
+ root.querySelector('[data-school-feature=calendar]').click();await flush();
+ assert.equal(root.querySelector('[data-school-feature=calendar]').getAttribute('aria-checked'),'true');
+ assert.equal(d.querySelector('#mainNav [data-view=school-calendar]').style.display,'');
+ rejectSave=true;root.querySelector('[data-school-feature=calendar]').click();await flush();
+ assert.match(root.querySelector('[data-status]').textContent,/Save denied/);
+ assert.equal(root.querySelector('[data-school-feature=calendar]').getAttribute('aria-checked'),'true','Failed save changed switch');
+ const search=root.querySelector('[data-search]');search.value='Calendar';search.dispatchEvent(new w.Event('input'));assert.equal(root.querySelectorAll('.nfc-row').length,1);
+ delayLoad=true;const pending=w.NOOR_FEATURE_CONTROLS.mount(root);w.NOOR_AI_APP.schoolId='s2';finishLoad();await pending;
+ assert.equal(root.querySelectorAll('[data-school-feature]').length,0,'Old school response applied to new account');
+ assert(calls.filter(c=>c.name==='noor_school_features').every(c=>c.args.p_institution==='s1'));
+ w.NOOR_AI_APP.profile.status='inactive';await flush();dom.window.close();console.log('PASS: separate controls, year control relocation, Creator locks, save/reopen, denied-save recovery, search and account switch');
+})().catch(e=>{console.error(e);process.exit(1)});

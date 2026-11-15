@@ -25,13 +25,13 @@ test('manager has same verified school principal layout without overriding the m
  assert.match(html,/Manager access must be granted by the School Owner using a secure invitation/);
 });
 
-test('principal classes 6–10 show only attendance percentage ring and class bars',async()=>{
- const principal=await read('principal-live.js');
- assert.match(principal,/const donutHTML/);
- assert.match(principal,/const barChartSvg/);
- assert.match(principal,/return '<div class="pd-chart-pair">'\+donutHTML\+barChartSvg/);
- assert.doesNotMatch(principal,/Multi-section Line Trend Chart|Section Trend Lines|lineChartHTML/);
+test('principal classes 6–10 use the approved section counts chart',async()=>{
+ const principal=await read('principal-live.js'),reference=await read('noor-principal-reference-ui.js');
+ assert.match(principal,/NOOR_PRINCIPAL_REFERENCE.secondary/);
+ assert.match(reference,/numbers above bars show present students/);
+ assert.doesNotMatch(reference,/donutHTML|lineChartHTML/);
  assert.doesNotThrow(()=>new Script(principal));
+ assert.doesNotThrow(()=>new Script(reference));
 });
 
 test('teacher attendance is actual authorised database workflow, never a fake demo roster',async()=>{

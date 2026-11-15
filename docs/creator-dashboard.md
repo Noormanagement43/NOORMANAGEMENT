@@ -108,3 +108,8 @@ shared registry, so disabling school modules cannot hide their re-enable control
 It consumes the database catalog and school preferences from main, underneath the
 Creator availability ceiling. Dynamic dashboard shortcuts (`data-feature-view`)
 use the same registry mappings as sidebar/mobile links, including mixed launchers.
+
+
+Dashboard action buttons (`data-route`) now use the same registry checks as
+sidebar, mobile navigation and feature cards. Phone header changes preserve
+Creator messages under Settings and leave that account/support shell reachable.

@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+const source=fs.readFileSync(new URL('../noor-password-policy.js',import.meta.url),'utf8');
+function api(){const window={};vm.runInNewContext(source,{window});return window.NOOR_PASSWORD_POLICY;}
+test('new passwords reject common variants and repetition without changing login behavior',()=>{const x=api();for(const p of ['Password123!','12345678','Qwerty123','aaaaaaaa','school@123','short'])assert.throws(()=>x.validate(p));assert.equal(x.validate('Three!Unrelated!Words!29'),true);assert.equal(x.validate('Unique8329!'),true);assert.throws(()=>x.validate('z'.repeat(129)));});
+test('password checks remain local and no password is logged or sent to a third party',()=>{assert.doesNotMatch(source,/fetch\(|console\.|localStorage|sessionStorage/);for(const page of ['index.html','forgot-password.html'])assert.match(fs.readFileSync(new URL('../'+page,import.meta.url),'utf8'),/noor-password-policy\.js/);});

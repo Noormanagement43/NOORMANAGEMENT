@@ -34,11 +34,17 @@ export async function handle(req:Request):Promise<Response>{
  }
  const emailFor=async(row:QueueItem,validRoles:string[])=>{
   const m=await db.from('institution_memberships').select('role,status').eq('institution_id',row.institution_id).eq('user_id',row.recipient_user_id).eq('status','active').maybeSingle();
-  if(m.error||!m.data||!recipientRoles(validRoles,m.data.role))return null;
+  if(m.error)throw Error('RECIPIENT_MEMBERSHIP_LOOKUP_FAILED');
+  if(!m.data)return {skip:'MEMBERSHIP_INACTIVE'};
+  if(!recipientRoles(validRoles,m.data.role))return {skip:'AUDIENCE_CHANGED'};
   const user=await db.auth.admin.getUserById(row.recipient_user_id);
   const u=user.data?.user;
-  if(user.error||!u?.email_confirmed_at||!mail.test(u.email||''))return null;
-  return u.email!.trim().toLowerCase();
+  if(user.error){if(user.error.status===404)return {skip:'RECIPIENT_REMOVED'};throw Error('RECIPIENT_AUTH_LOOKUP_FAILED');}
+  if(!u?.email_confirmed_at)return {skip:'EMAIL_UNCONFIRMED'};
+  if(!mail.test(u.email||''))return {skip:'EMAIL_INVALID'};
+  const banned=(u as typeof u&{banned_until?:string}).banned_until;
+  if(banned&&new Date(banned).getTime()>Date.now())return {skip:'RECIPIENT_SUSPENDED'};
+  return {email:u.email!.trim().toLowerCase()};
  };
  for(const [campaignId,items] of campaigns){
   try{
@@ -46,9 +52,14 @@ export async function handle(req:Request):Promise<Response>{
    if(c.error||!c.data||!c.data.channels.includes('email'))throw Error('Invalid campaign');
    const approved:Array<{item:QueueItem,email:string}>=[];
    for(const item of items){
-    const email=await emailFor(item,c.data.audience);
-    if(!email){await state(item,'skipped',undefined,'MEMBERSHIP_OR_EMAIL_UNAVAILABLE');failed++;continue;}
-    approved.push({item,email});
+    try{
+     const recipient=await emailFor(item,c.data.audience);
+     if('skip' in recipient){await state(item,'skipped',undefined,recipient.skip);failed++;continue;}
+     approved.push({item,email:recipient.email});
+    }catch(error){
+     const again=item.attempts<4;const code=error instanceof Error&&error.message.startsWith('RECIPIENT_')?error.message:'RECIPIENT_LOOKUP_FAILED';
+     await state(item,again?'queued':'failed',undefined,code);if(again)retry++;else failed++;
+    }
    }
    if(!approved.length){await db.rpc('noor_refresh_campaign_counts',{p_campaign:campaignId});continue;}
    const top=items[0];

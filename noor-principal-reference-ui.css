@@ -1,0 +1,57 @@
+html[data-noor-theme]{--pd-ref-accent:var(--berry);--pd-ref-soft:var(--rose-soft);--pd-ref-border:var(--rose-line);--pd-ref-gold:var(--gold);--pd-ref-ink:var(--ink)}
+/* Only the five selected principal reference areas; existing data and themes remain intact. */
+body.noor-principal-mode #workspace #sidebar{background:var(--paper,#fffdf8)!important;color:var(--ink,#25392e)!important;border-right:1px solid var(--line,#dfe5dc);padding:24px 14px!important;box-shadow:none}
+body.noor-principal-mode #workspace #sidebar :is(.brand b,.brand small,.navlabel,.schoolbadge b,.schoolbadge small,.sidebar-bottom,.sidebar-bottom b){color:var(--ink,#25392e)!important}
+body.noor-principal-mode #workspace #sidebar .brand{border-bottom:1px solid var(--line);padding:0 8px 20px}
+body.noor-principal-mode #workspace #sidebar .brand small{display:block!important;font-size:11px;letter-spacing:0;margin-top:6px}
+body.noor-principal-mode #workspace #sidebar .navlabel{display:none}
+body.noor-principal-mode #workspace #sidebar .schoolbadge{display:none!important}
+body.noor-principal-mode #workspace #mainNav{gap:8px;padding-top:18px;display:flex;flex-direction:column}
+body.noor-principal-mode #workspace #mainNav button{background:transparent!important;color:var(--pd-ref-ink,var(--ink))!important;border:1px solid transparent!important;box-shadow:none!important;border-radius:10px!important;min-height:52px!important;font-weight:500;font-size:16px!important;gap:14px!important}
+body.noor-principal-mode #workspace #mainNav button:hover{background:var(--pd-ref-soft,var(--rose-soft))!important}
+body.noor-principal-mode #workspace #mainNav button.active{background:var(--pd-ref-soft,var(--rose-soft))!important;color:var(--pd-ref-accent,var(--berry))!important;border-color:var(--pd-ref-border,var(--rose-line))!important;font-weight:700}
+body.noor-principal-mode #workspace #mainNav .ico{width:27px;height:27px;background:none!important;color:inherit!important}
+body.noor-principal-mode #workspace #mainNav .np-icon{width:25px;height:25px;stroke-width:1.7}
+body.noor-principal-mode #workspace #mainNav [data-view="help-support"]{margin-top:18px;border-top:1px solid var(--line)!important;border-radius:0!important;padding-top:20px!important}
+body.noor-principal-mode #workspace #noorSchoolBell{order:99;position:relative;flex:0 0 46px;width:46px;height:46px;min-height:46px;display:inline-grid;place-items:center;padding:10px!important;border:1px solid var(--line)!important;background:var(--paper)!important;color:var(--pd-ref-accent,var(--berry))!important;border-radius:11px!important;margin-left:8px}
+body.noor-principal-mode #workspace #noorSchoolBell>span{display:none!important}
+body.noor-principal-mode #workspace #noorSchoolBell .np-icon{width:25px;height:25px}
+body.noor-principal-mode #workspace #noorSchoolBell [data-count]{position:absolute;right:5px;top:4px;min-width:9px;width:9px;height:9px;border:2px solid var(--paper);padding:0;border-radius:50%;background:#d84f51;color:transparent;font-size:0}
+body.noor-principal-mode #workspace #noorSchoolBell [data-count]:empty{display:none}
+body.noor-principal-mode #workspace .user-mini{margin-left:auto}
+#workspace #noor-principal .pd-reference-actions>header h2,#workspace #noor-principal .pd-reference-communications>header h2{display:flex;align-items:center;gap:10px;font-size:20px!important;font-family:Inter,system-ui,sans-serif!important}
+#workspace #noor-principal .pd-reference-actions>header .np-icon{color:#ba8b30}
+#workspace #noor-principal .pd-reference-communications>header .np-icon{color:var(--pd-ref-accent,var(--berry))}
+#workspace #noor-principal .pd-reference-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--pd-ref-ink,var(--ink));padding:12px;margin:8px 0;min-height:70px;cursor:pointer;font:inherit}
+#workspace #noor-principal .pd-reference-row:hover{background:var(--pd-ref-soft,var(--rose-soft))}
+#workspace #noor-principal .pd-reference-icon{color:var(--pd-ref-accent,var(--berry));display:grid;place-items:center;flex:0 0 26px}
+#workspace #noor-principal .pd-reference-copy{min-width:0;flex:1}
+#workspace #noor-principal .pd-reference-copy strong{display:block;font-size:15px;font-weight:700;overflow-wrap:anywhere}
+#workspace #noor-principal .pd-reference-copy small{display:block;color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
+#workspace #noor-principal .pd-reference-cta{background:var(--action-fill,var(--berry2));color:var(--action-ink,#fff);padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+#workspace #noor-principal .pd-message-tabs{display:flex;background:var(--canvas,#f4f4f0);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:12px 0}
+#workspace #noor-principal .pd-message-tabs button{flex:1;border:0;border-right:1px solid var(--line);padding:10px 6px;min-height:44px;background:none;color:var(--pd-ref-ink,var(--ink));font:500 14px Inter,system-ui;cursor:pointer}
+#workspace #noor-principal .pd-message-tabs button:last-child{border-right:0}
+#workspace #noor-principal .pd-message-tabs button[aria-selected="true"]{background:var(--action-fill,var(--berry2));color:var(--action-ink,#fff);font-weight:700}
+#workspace #noor-principal .pd-secondary-subhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:14px;color:var(--muted)}
+#workspace #noor-principal .pd-secondary-legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--pd-ref-ink,var(--ink));font-size:13px}
+#workspace #noor-principal .pd-secondary-legend span{display:flex;align-items:center;gap:5px}
+#workspace #noor-principal .pd-secondary-legend i{width:15px;height:12px;border-radius:3px}
+#workspace #noor-principal .pd-secondary-legend .present{background:var(--pd-ref-accent,var(--berry))}.pd-secondary-legend .absent{background:var(--pd-ref-border,var(--rose-line))}.pd-secondary-legend .late{background:var(--pd-ref-gold,var(--gold))}
+#workspace #noor-principal .pd-secondary-scroll{overflow-x:auto;max-width:100%;margin-top:8px;color:var(--pd-ref-ink,var(--ink))}
+#workspace #noor-principal .pd-secondary-svg{display:block;width:100%;min-width:620px;height:auto}
+#workspace #noor-principal .pd-secondary-summary{background:var(--pd-ref-soft,var(--rose-soft));border-radius:9px;padding:8px 12px;text-align:center;color:var(--pd-ref-accent,var(--berry));font-weight:700;font-size:15px;margin-top:4px}
+#workspace #noor-principal .pd-reference-actions,#workspace #noor-principal .pd-reference-communications{box-shadow:0 3px 14px #162c4610!important}
+html[data-noor-mode="dark"] body.noor-principal-mode #workspace #mainNav button.active{background:var(--pd-ref-soft,var(--rose-soft))!important;color:var(--pd-ref-ink,var(--ink))!important}
+html[data-noor-mode="dark"] #workspace #noor-principal .pd-reference-icon{color:var(--pd-ref-accent,var(--berry))}
+@media(min-width:1100px){#workspace #noor-principal .pd-charts{grid-template-columns:minmax(0,1fr)!important}#workspace #noor-principal .pd-rail{grid-template-columns:1fr!important}}
+@media(max-width:760px){body.noor-principal-mode #workspace #noorSchoolBell{margin-left:0;width:42px;height:42px;min-height:42px;flex-basis:42px}#workspace #noor-principal .pd-reference-cta{padding:7px;font-size:11px}#workspace #noor-principal .pd-reference-row{gap:9px;padding:10px}}
+
+body.noor-principal-mode #workspace #mainNav [data-view="overview"]{display:flex!important}
+body.noor-principal-mode #workspace #sidebar::after,body.noor-principal-mode #workspace #sidebar::before{content:none!important}
+body:has(#view-principal-studio.active) #workspace #mainNav [data-view="overview"]{background:var(--pd-ref-soft,var(--rose-soft))!important;color:var(--pd-ref-accent,var(--berry))!important;font-weight:700}
+#workspace #noor-principal .pd-reference-bottom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+@media(max-width:1000px){#workspace #noor-principal .pd-reference-bottom{grid-template-columns:minmax(0,1fr)}}
+
+html[data-noor-theme] body.noor-principal-mode #workspace #noor-principal .pd-reference-row .pd-reference-cta,html[data-noor-theme] body.noor-principal-mode #workspace #noor-principal .pd-reference-row .pd-reference-cta span{color:var(--action-ink,#fff)!important;-webkit-text-fill-color:var(--action-ink,#fff)!important;background:var(--action-fill,var(--berry2))!important}
+html[data-noor-theme] body.noor-principal-mode #workspace #noor-principal .pd-message-tabs button[aria-selected="true"]{color:var(--action-ink,#fff)!important;-webkit-text-fill-color:var(--action-ink,#fff)!important;background:var(--action-fill,var(--berry2))!important}

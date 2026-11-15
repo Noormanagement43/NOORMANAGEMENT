@@ -25,6 +25,7 @@
    async save(password,confirmation){
     requireIdle();if(!verifiedUser)throw failure('Verify your recovery code or open the email reset link first.');
     if(typeof password!=='string'||password.length<8||password.length>128||password!==confirmation)throw failure('Use 8–128 characters and enter the same password twice.');
+    root.NOOR_PASSWORD_POLICY?.validate(password);
     busy=true;
     try{
      const {data,error}=await auth.getUser();

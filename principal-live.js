@@ -3,7 +3,7 @@
 const a=()=>window.NOOR_AI_APP||{},e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const root=()=>document.getElementById('view-principal-studio');
 const permitted=()=>['owner','principal','manager'].includes(a().profile?.role)&&a().profile?.status==='active'&&a().profile?.school_id===a().schoolId&&a().school?.verification_status==='verified'&&a().school?.account_status==='active'&&a().school?.is_active===true;
-let loading=false,queued=false,channel=null,identity='',timer=null,snapshot=null,insight='Leadership in education builds brighter tomorrows.';
+let loading=false,queued=false,channel=null,identity='',timer=null,snapshot=null,communicationRows=[],communicationKind='notice',insight='Leadership in education builds brighter tomorrows.';
 const button=(text,route)=>`<button type="button" class="pd-link" data-route="${route}">${text}</button>`;
 const empty=text=>`<p class="pd-empty">${text}</p>`;
 const card=(title,id,route,label='Manage →',extra='')=>`<section class="pd-card" data-feature-view="${route}"><header><div style="display:flex;align-items:center;gap:10px"><h2>${title}</h2>${extra}</div>${button(label,route)}</header><div id="${id}"></div></section>`;
@@ -30,7 +30,7 @@ function setup(){
       </div>
       <div class="pd-head-actions">
         <button class="pd-btn" id="pd-search-people">⌕ Search people</button>
-        <button class="pd-btn" data-route="notifications" aria-label="Notifications">♧</button>
+
         <button class="pd-btn" id="pd-mode" aria-label="Toggle dashboard theme">☾</button>
         <button class="pd-btn" data-route="settings" aria-label="Settings">⚙</button>
       </div>
@@ -64,7 +64,15 @@ function setup(){
         </div>
         <div class="pd-charts">
           ${card('Class-wise Attendance (Classes 1 – 5)','pd-classes','classes','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
-          ${card('Classes 6 – 10 Attendance Trend','pd-trend','attendance','Full report →')}
+          ${card('Secondary Attendance','pd-trend','attendance','Full report →')}
+        </div>
+        <div class="pd-reference-bottom">
+        <section class="pd-card pd-reference-actions"><header><h2>${window.NOOR_UI_POLISH?.icon('warning')||''} Action Required</h2></header><div id="pd-actions"></div></section>
+        <section class="pd-card pd-reference-communications" data-feature-view="notices"><header><h2>${window.NOOR_UI_POLISH?.icon('megaphone')||''} Notices &amp; Meetings</h2></header>
+          <div class="pd-message-tabs" role="tablist" aria-label="School communication type">${['notice','meeting','email'].map(kind=>`<button type="button" role="tab" id="pd-tab-${kind}" aria-controls="pd-communications" aria-selected="${kind===communicationKind}" tabindex="${kind===communicationKind?0:-1}" data-pd-message-kind="${kind}">${kind[0].toUpperCase()+kind.slice(1)}</button>`).join('')}</div>
+          <div id="pd-communications" role="tabpanel" aria-labelledby="pd-tab-notice"></div>
+          <button type="button" class="pd-link" data-route="notices">Open Notices &amp; Meetings →</button>
+        </section>
         </div>
         <section class="pd-card pd-schedule" data-feature-view="schedules">
           <header>
@@ -90,9 +98,7 @@ function setup(){
           <span id="pd-quote-author">LEARN · TEACH · GROW</span>
         </section>
         ${card('Manager Activity','pd-manager-activity','manager','Open Manager →')}
-        ${card('Action Required','pd-actions','attendance','Review →')}
-        ${card('Today’s Notices','pd-notices','notices','View all →')}
-        ${card('Upcoming Meetings','pd-meetings','meetings','View all →')}
+        ${card('School Calendar','pd-events','school-calendar','Open →')}
       </aside>
     </div>
     <dialog id="pd-dialog">
@@ -115,7 +121,16 @@ function setup(){
     </dialog>
   </div>`;
 
+  r.addEventListener('keydown',ev=>{
+    const tab=ev.target.closest('[data-pd-message-kind]');if(!tab)return;
+    const tabs=[...r.querySelectorAll('[data-pd-message-kind]')],i=tabs.indexOf(tab);
+    const target=ev.key==='ArrowRight'?tabs[(i+1)%tabs.length]:ev.key==='ArrowLeft'?tabs[(i+tabs.length-1)%tabs.length]:ev.key==='Home'?tabs[0]:ev.key==='End'?tabs.at(-1):null;
+    if(target){ev.preventDefault();target.click();target.focus();}
+  });
   r.onclick=ev=>{
+    const messageTab=ev.target.closest('[data-pd-message-kind]');
+    if(messageTab){communicationKind=messageTab.dataset.pdMessageKind;paintCommunications();return;}
+
     const b=ev.target.closest('[data-route]');
     if(b&&r.contains(b)){
       if(b.dataset.route==='__more')document.getElementById('sidebar')?.classList.toggle('open');
@@ -491,105 +506,14 @@ function aggregate(students,sessions,records,day){
 }
 
 function graph(classes,sections,students,sessions,records,day){
-  if(window.NOOR_DASHBOARD_CHARTS&&window.NOOR_PRINCIPAL_DATA?.current())return window.NOOR_DASHBOARD_CHARTS.graph(classes,sections,students,sessions,records,day,aggregate);
-  const cs=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
-  if(!cs.length)return '<p class="pd-empty">No classes 6–10 have been created yet. Add classes and sections for real attendance charts.</p>';
+  return window.NOOR_PRINCIPAL_REFERENCE.secondary(classes,sections,students,sessions,records,day);
+}
 
-  const colors=['#10b981','#2563eb','#f59e0b','#f43f5e','#8b5cf6'];
-  const names=[...new Set(sections.filter(s=>cs.some(c=>c.id===s.class_id)).map(s=>s.name))].sort();
-  // Class totals remain visible even if a school has not yet created sections.
-
-  // Compute stats per class
-  const classStats=cs.map(c=>{
-    const cStudents=students.filter(s=>s.class_id===c.id);
-    const agg=cStudents.length ? aggregate(cStudents,sessions,records,day) : {present: 0, marked: 0, total: 0};
-    const pct=agg.marked&&agg.total?percent(agg.present,agg.total):null;
-    return {class:c,students:cStudents,agg,pct};
-  });
-
-  // 1. Overall Donut Chart for School Attendance Proportion
-  const submitted=new Set(sessions.filter(x=>x.attendance_date===day&&x.status==='submitted').map(x=>x.id));
-  const roster=new Set(students.map(x=>x.id));
-  const latest=new Map();
-  for(const record of records){
-    if(!submitted.has(record.session_id)||!roster.has(record.student_id)||!['present','late','absent'].includes(record.status))continue;
-    const prev=latest.get(record.student_id);
-    if(!prev||String(record.updated_at||record.marked_at||'')>String(prev.updated_at||prev.marked_at||''))latest.set(record.student_id,record);
-  }
-  const marked=[...latest.values()];
-  const totalPresent=marked.filter(x=>x.status==='present').length;
-  const totalLate=marked.filter(x=>x.status==='late').length;
-  const totalAbsent=marked.filter(x=>x.status==='absent').length;
-  const totalMarked=marked.length;
-  const overallPct=totalMarked?Math.round((totalPresent+totalLate)/totalMarked*100):null;
-  const donutCircumference=2*Math.PI*34;
-  const pPresent=totalMarked?totalPresent/totalMarked:0;
-  const pLate=totalMarked?totalLate/totalMarked:0;
-  const pAbsent=totalMarked?totalAbsent/totalMarked:0;
-
-  const dashPresent = pPresent * donutCircumference;
-  const dashLate = pLate * donutCircumference;
-  const dashAbsent = pAbsent * donutCircumference;
-
-  const donutHTML = `
-    <div style="background:#fffcfd;border:1px solid #f1e2e8;border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-around;flex-wrap:wrap;gap:14px">
-      <div style="position:relative;width:95px;height:95px;display:grid;place-items:center">
-        <svg viewBox="0 0 80 80" width="95" height="95" style="transform:rotate(-90deg)">
-          <circle cx="40" cy="40" r="34" stroke="#f1e4eb" stroke-width="8" fill="none" />
-          <circle cx="40" cy="40" r="34" stroke="#10b981" stroke-width="8" fill="none" stroke-dasharray="${dashPresent} ${donutCircumference}" stroke-dashoffset="0" stroke-linecap="round" />
-          <circle cx="40" cy="40" r="34" stroke="#f59e0b" stroke-width="8" fill="none" stroke-dasharray="${dashLate} ${donutCircumference}" stroke-dashoffset="-${dashPresent}" stroke-linecap="round" />
-          <circle cx="40" cy="40" r="34" stroke="#f43f5e" stroke-width="8" fill="none" stroke-dasharray="${dashAbsent} ${donutCircumference}" stroke-dashoffset="-${dashPresent + dashLate}" stroke-linecap="round" />
-        </svg>
-        <div style="position:absolute;text-align:center">
-          <strong style="font:800 16px Manrope;color:#4c1e34;display:block">${overallPct===null?'—':overallPct+'%'}</strong>
-          <small style="font-size:9px;color:#8c7582;text-transform:uppercase">Present</small>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px;font-size:11px">
-        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10b981"></b> ${totalMarked ? totalPresent + ' Present' : 'Not recorded'} <small style="color:#6b7280">(${Math.round(pPresent*100)}%)</small></span>
-        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f59e0b"></b> ${totalMarked ? totalLate + ' Late' : 'Not recorded'} <small style="color:#6b7280">(${Math.round(pLate*100)}%)</small></span>
-        <span style="display:flex;align-items:center;gap:6px"><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f43f5e"></b> ${totalMarked ? totalAbsent + ' Absent' : 'Absent'} <small style="color:#6b7280">(${Math.round(pAbsent*100)}%)</small></span>
-      </div>
-    </div>
-  `;
-
-  // 2. Interactive SVG Bar Chart (Side-by-Side Columns for Classes)
-  const barChartSvg = `
-    <div style="background:#ffffff;border:1px solid #f1e2e8;border-radius:14px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <b style="font-size:12px;color:#4a2237">📊 Class-wise Comparative Bar Graph</b>
-        <span style="font-size:10px;color:#786570">Classes 6–10 · Today</span>
-      </div>
-      <svg viewBox="0 0 460 140" width="100%" height="130" style="overflow:visible">
-        <line x1="30" y1="20" x2="440" y2="20" stroke="#f1e2e8" stroke-dasharray="3 3"/>
-        <line x1="30" y1="60" x2="440" y2="60" stroke="#f1e2e8" stroke-dasharray="3 3"/>
-        <line x1="30" y1="100" x2="440" y2="100" stroke="#f1e2e8"/>
-        <text x="22" y="24" font-size="9" fill="#9c8792" text-anchor="end">100%</text>
-        <text x="22" y="64" font-size="9" fill="#9c8792" text-anchor="end">50%</text>
-        <text x="22" y="104" font-size="9" fill="#9c8792" text-anchor="end">0%</text>
-        ${classStats.map((item, i)=>{
-          const colX = 55 + i * 80;
-          const p = item.pct;
-          const barH = p==null?0:Math.max(6,(p/100)*80);
-          const barY = 100 - barH;
-          const barColor = colors[i % colors.length];
-          return `
-            <g>
-              ${p===null?'':`<rect x="${colX}" y="${barY}" width="38" height="${barH}" rx="6" fill="${barColor}" opacity="0.9">`}
-                <title>${e(item.class.name)}: ${p==null?'Not recorded':p+'% attendance'}</title>
-              ${p===null?'':'</rect>'}
-              <text x="${colX + 19}" y="${barY - 5}" font-size="10" font-weight="800" fill="${barColor}" text-anchor="middle">${p==null?'—':p+'%'}</text>
-              <text x="${colX + 19}" y="116" font-size="10" font-weight="700" fill="#4a2237" text-anchor="middle">${e(item.class.name)}</text>
-            </g>
-          `;
-        }).join('')}
-      </svg>
-    </div>
-  `;
-
-  return '<div class="pd-chart-pair">'+donutHTML+barChartSvg+'</div>'+
-    '<p class="pd-muted" style="margin-top:8px">Classes 6–10 · Today’s submitted attendance records only</p>';
-
+function paintCommunications(){
+ const r=root();if(!r)return;
+ r.querySelectorAll('[data-pd-message-kind]').forEach(b=>{const selected=b.dataset.pdMessageKind===communicationKind;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;});
+ const panel=r.querySelector('#pd-communications');
+ if(panel){panel.setAttribute('aria-labelledby','pd-tab-'+communicationKind);panel.innerHTML=window.NOOR_PRINCIPAL_REFERENCE.messages(communicationRows,communicationKind,a().school?.timezone||'Asia/Kolkata');}
 }
 
 async function refresh(){
@@ -605,7 +529,7 @@ async function refresh(){
     const pref=canonical?{data:null}:await db.from('noor_principal_dashboard_settings').select('insight').eq('school_id',sid).maybeSingle();
     if(pref.error)throw pref.error;
     if(canonical)await window.NOOR_DASHBOARD_CHARTS?.load(db,sid);
-    
+
     // Check dynamic quotes
     if(window.NOOR_DAILY_QUOTES){
       const dynamicQ=await window.NOOR_DAILY_QUOTES.getDailyQuote('principal');
@@ -684,7 +608,7 @@ async function refresh(){
     const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
     const pageHeading=q('.pd-head h1');if(pageHeading)pageHeading.textContent=leadershipLabel+' Dashboard';
     q('#pd-greeting').innerHTML=window.NOOR_DASHBOARD_EXPERIENCE.greeting(p.full_name||leadershipLabel);
-    
+
     q('#pd-profile').innerHTML=`<div class="pd-photo" aria-label="Profile photo">${p.avatar_url?`<img src="${e(p.avatar_url)}" alt="${e(p.full_name)}">`:`<span>${e((p.full_name||'P').split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>`}</div>
       <div class="pd-profile-info">
         <div class="pd-profile-heading">${window.NOOR_DASHBOARD_EXPERIENCE.brand()}${window.NOOR_DASHBOARD_EXPERIENCE.dateLine()}<h2>${e(p.full_name||leadershipLabel)}</h2>
@@ -721,8 +645,14 @@ async function refresh(){
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
 
     window.NOOR_LIVE_ANALYTICS?.decorate();
-    q('#pd-notices').innerHTML=res.notices.error?empty('Notices unavailable.'):eventList(rows('notices').filter(x=>(!x.starts_at||Date.parse(x.starts_at)<=Date.now())&&(!x.ends_at||Date.parse(x.ends_at)>Date.now())).slice(0,5),'notices')||empty('No active notices.');
-    q('#pd-meetings').innerHTML=res.events.error?empty('Meetings unavailable.'):eventList(upcoming.filter(x=>/meeting/i.test(x.event_type)).slice(0,4),'meetings')||empty('No upcoming meetings.');
+    communicationRows=[...rows('notices').filter(x=>(!x.starts_at||Date.parse(x.starts_at)<=Date.now())&&(!x.ends_at||Date.parse(x.ends_at)>Date.now())).map(x=>({...x,kind:'notice'})),...upcoming.filter(x=>/meeting/i.test(x.event_type)).map(x=>({...x,kind:'meeting'}))];
+    if(canonical&&window.NOOR_COMMUNICATIONS){
+      try{const context=await window.NOOR_COMMUNICATIONS.context(),messages=await window.NOOR_COMMUNICATIONS.read(context);
+        if(a().schoolId!==sid||a().user?.id!==uid||!permitted())return;
+        communicationRows.push(...messages);
+      }catch{communicationRows.push({unavailable:true});}
+    }
+    paintCommunications();
     q('#pd-tasks').innerHTML=res.tasks.error?empty('Tasks unavailable.'):rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status)).slice(0,5).map(x=>`<button class="pd-item" data-route="school-tasks"><strong>${e(x.title)}</strong><small>${e(x.status)}${x.due_at?' · '+e(new Date(x.due_at).toLocaleDateString('en-IN',{timeZone:d.tz})):''}</small></button>`).join('')||empty('No pending tasks.');
     q('#pd-lessons').innerHTML=res.lessons.error?empty('Lessons unavailable.'):rows('lessons').slice(0,5).map(x=>`<button class="pd-item" data-route="academic-monitoring"><strong>${e(teacherMap.get(x.teacher_id)||'Teacher')}</strong><p>${e(x.topic)}</p><small>${e(x.homework||'')}</small></button>`).join('')||empty('No lessons recorded today.');
 
@@ -733,9 +663,9 @@ async function refresh(){
     q('#pd-manager-activity').innerHTML=managerChanges.error?empty('Manager history could not load. Open Manager to retry.'):(managerChanges.data||[]).map(x=>`<button type="button" class="pd-item" data-route="manager"><strong>${e(x.actor_name)}</strong><p>${e(({attendance_records:'Attendance',noor_assessment_results:'Marks'}[x.entity_table]||'School record')+' · '+x.action.toLowerCase())}</p><small>${e(new Date(x.created_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'}))}</small></button>`).join('')||empty('No manager changes recorded yet.');
     const attention=[];
     if(!attError&&today.total>today.marked)attention.push({title:(today.total-today.marked)+' students awaiting attendance',route:'attendance',sub:'Today’s marks have not been recorded.'});
-    if(!res.staff.error){const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+' teachers marked absent',route:'staff-management',sub:'Review today’s staff availability.'});}
-    if(!res.tasks.error){const pending=rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status));if(pending.length)attention.push({title:pending.length+' pending school tasks',route:'school-tasks',sub:'Open tasks and review deadlines.'});}
-    q('#pd-actions').innerHTML=attention.length?attention.map(x=>`<button type="button" class="pd-item" data-route="${x.route}"><strong>${e(x.title)}</strong><small>${e(x.sub)}</small></button>`).join(''):empty(attError?'Attendance status unavailable. Please retry.':'No pending actions in the loaded records.');
+    if(!res.staff.error){const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+(absent===1?' teacher marked absent':' teachers marked absent'),route:'staff-management',sub:'Review today’s staff availability.'});}
+    if(!res.tasks.error){const pending=rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status));if(pending.length)attention.push({title:pending.length+(pending.length===1?' pending school task':' pending school tasks'),route:'school-tasks',sub:'Open tasks and review deadlines.'});}
+    q('#pd-actions').innerHTML=attention.length?window.NOOR_PRINCIPAL_REFERENCE.actions(attention):empty(attError?'Attendance status unavailable. Please retry.':'No pending actions in the loaded records.');
     q('#pd-status').textContent='Last updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:d.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+d.tz;
   }catch(err){
     if(q('#pd-errors'))q('#pd-errors').innerHTML=`<p class="pd-alert">${e(err.message||'Unable to refresh records.')}</p>`;
@@ -770,6 +700,7 @@ function render(){
   setup();connect();refresh();
 }
 
+window.addEventListener('noor:school-message-saved',()=>{if(permitted())refresh();});
 window.addEventListener('noor:timetable-saved',()=>{if(permitted())refresh();});
 window.NOOR_PRINCIPAL_LIVE={render,refresh,aggregate,clock,activePeriods,showStaffProfile,showStudentDashboard};
 })();

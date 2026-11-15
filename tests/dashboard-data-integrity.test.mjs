@@ -20,7 +20,7 @@ test('student performance never falls back to fabricated report-card marks',asyn
 });
 
 test('principal analytics use recorded submissions and no benchmark fallback',async()=>{
-  const code=await source('principal-live.js');
+  const code=await source('noor-principal-reference-ui.js');
   assert.doesNotMatch(code,/mock-c|Classes 6 – 10 Benchmark|Present \(Optimal\)|\[92, 88, 95, 85, 90\]/);
   assert.match(code,/attendance_date===day&&x\.status==='submitted'/);
   assert.match(code,/No classes 6–10 have been created yet/);

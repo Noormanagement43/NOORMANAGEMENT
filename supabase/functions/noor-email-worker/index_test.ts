@@ -1,6 +1,6 @@
 import {handle} from './index.ts';
 function assert(v:unknown,msg='Assertion failed'):asserts v{if(!v)throw Error(msg)}
-for(const scenario of ['active','school-paused','sender-paused','sender-revoked','sender-demoted','lookup-error','feature-disabled','billing-paused']){
+for(const scenario of ['active','school-paused','sender-paused','sender-revoked','sender-demoted','lookup-error','feature-disabled','billing-paused','recipient-lookup-error','auth-lookup-error','recipient-unconfirmed','recipient-paused']){
  Deno.test('queued delivery rechecks current school and sender: '+scenario,async()=>{
   const names=['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','BREVO_API_KEY'];
   const original=names.map(x=>Deno.env.get(x)),oldFetch=globalThis.fetch;
@@ -21,19 +21,19 @@ for(const scenario of ['active','school-paused','sender-paused','sender-revoked'
     if(url.pathname.endsWith('/institutions')){assert(url.searchParams.get('id')==='eq.school');return Response.json([{status:scenario==='school-paused'?'suspended':'active'}]);}
     if(url.pathname.endsWith('/institution_memberships')){
      assert(url.searchParams.get('institution_id')==='eq.school');
-     if(url.searchParams.get('user_id')==='eq.11111111-1111-4111-8111-111111111111')return Response.json([{role:'student',status:'active'}]);
+     if(url.searchParams.get('user_id')==='eq.11111111-1111-4111-8111-111111111111'){if(scenario==='recipient-lookup-error')return Response.json({message:'Temporary lookup failure'},{status:503});return Response.json(scenario==='recipient-paused'?[]:[{role:'student',status:'active'}]);}
      assert(url.searchParams.get('user_id')==='eq.sender','Must authorize campaign creator');
      if(scenario==='lookup-error')return Response.json({message:'Unavailable'},{status:500});
      return Response.json([{role:scenario==='sender-demoted'?'teacher':'principal',status:scenario==='sender-paused'?'suspended':scenario==='sender-revoked'?'revoked':'active'}]);
     }
-    if(url.pathname.endsWith('/auth/v1/admin/users/11111111-1111-4111-8111-111111111111'))return Response.json({id:'11111111-1111-4111-8111-111111111111',email:'recipient@example.invalid',email_confirmed_at:'2026-11-01T00:00:00Z'});
+    if(url.pathname.endsWith('/auth/v1/admin/users/11111111-1111-4111-8111-111111111111'))return scenario==='auth-lookup-error'?Response.json({msg:'Temporary auth outage'},{status:503}):Response.json({id:'11111111-1111-4111-8111-111111111111',email:'recipient@example.invalid',email_confirmed_at:scenario==='recipient-unconfirmed'?null:'2026-11-01T00:00:00Z'});
     if(url.pathname.endsWith('/noor_email_queue')&&init?.method==='PATCH'){const patch=JSON.parse(String(init.body));states.push(patch.status);return new Response(null,{status:204});}
     throw Error('Unexpected request');
    };
    const response=await handle(new Request('https://example.invalid',{method:'POST',headers:{'x-noor-worker-token':'a'.repeat(64)},body:'{}'}));
    assert(response.status===200);
    assert(sends===(scenario==='active'?1:0),'Inactive or unverified authority must never send');
-   assert(states.includes(scenario==='active'?'accepted':scenario==='lookup-error'?'queued':'skipped'),'Expected delivery disposition');
+   assert(states.includes(scenario==='active'?'accepted':['lookup-error','recipient-lookup-error','auth-lookup-error'].includes(scenario)?'queued':'skipped'),'Expected delivery disposition');
   }finally{globalThis.fetch=oldFetch;names.forEach((name,i)=>original[i]===undefined?Deno.env.delete(name):Deno.env.set(name,original[i]!));}
  });
 }

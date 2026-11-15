@@ -26,7 +26,7 @@ function secondary(classes,sections,students,sessions,records,day){
  const entries=groups.flatMap(g=>g.entries),top=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));
  const step=Math.max(1,Math.ceil(top/5)),max=step*5,left=44,plot=206,base=242;
  const widths=groups.map(g=>Math.max(96,g.entries.length*70+20)),width=Math.max(620,left+widths.reduce((a,b)=>a+b,0)+16),plotWidth=width-left-16;
- const scale=n=>plot*n/max;let svg=`<svg class="pd-secondary-svg" viewBox="0 0 ${width} 320" role="img" aria-label="Secondary attendance by class and section; numbers above green bars show present students"><title>Classes 6–10: recorded present, absent and late student counts</title>`;
+ const scale=n=>plot*n/max;let svg=`<svg class="pd-secondary-svg" viewBox="0 0 ${width} 320" role="img" aria-label="Secondary attendance by class and section; numbers above bars show present students"><title>Classes 6–10: recorded present, absent and late student counts</title>`;
  for(let n=0;n<=5;n++){const value=n*step,y=base-scale(value);svg+=`<path d="M${left} ${y}H${width-16}" stroke="currentColor" opacity=".15"/><text x="${left-9}" y="${y+4}" text-anchor="end" fill="currentColor" font-size="12">${value}</text>`;}
  let offset=left;
  groups.forEach((g,i)=>{
@@ -35,12 +35,12 @@ function secondary(classes,sections,students,sessions,records,day){
    const x=offset+slot*(j+.5),barWidth=Math.min(27,slot*.4),mark=s.marked?String(s.present):'—';
    svg+=`<g><title>${E(g.name)} · ${E(s.label)}: ${s.marked?s.present+' present, '+s.absent+' absent, '+s.late+' late, '+s.leave+' on leave; '+s.marked+' marked of '+s.total:'Attendance not submitted; '+s.total+' enrolled'}</title>`;
    if(s.marked){
-    svg+=`<rect x="${x-barWidth/2-5}" y="${base-scale(s.present)}" width="${barWidth}" height="${scale(s.present)}" fill="#3f6b4c"/>`;
-    svg+=`<rect x="${x+barWidth/2-4}" y="${base-scale(s.absent)}" width="8" height="${scale(s.absent)}" fill="#e6dcca"/><rect x="${x+barWidth/2+5}" y="${base-scale(s.late)}" width="8" height="${scale(s.late)}" fill="#e6b957"/>`;
+    svg+=`<rect x="${x-barWidth/2-5}" y="${base-scale(s.present)}" width="${barWidth}" height="${scale(s.present)}" fill="var(--pd-ref-accent,var(--berry))"/>`;
+    svg+=`<rect x="${x+barWidth/2-4}" y="${base-scale(s.absent)}" width="8" height="${scale(s.absent)}" fill="var(--pd-ref-border,var(--rose-line))"/><rect x="${x+barWidth/2+5}" y="${base-scale(s.late)}" width="8" height="${scale(s.late)}" fill="var(--pd-ref-gold,var(--gold))"/>`;
    }
    svg+=`<text x="${x-5}" y="${base-scale(s.present)-9}" text-anchor="middle" fill="currentColor" font-size="17" font-weight="750">${mark}</text><text x="${x}" y="262" text-anchor="middle" fill="currentColor" font-size="12">${E(s.label)}</text></g>`;
   });
-  svg+=`<rect x="${offset+5}" y="276" width="${groupWidth-10}" height="27" rx="9" fill="#e6eedf"/><text x="${offset+groupWidth/2}" y="295" text-anchor="middle" fill="#25392e" font-size="13" font-weight="700">${E(g.name)}</text>`;
+  svg+=`<rect x="${offset+5}" y="276" width="${groupWidth-10}" height="27" rx="9" fill="var(--pd-ref-soft,var(--rose-soft))"/><text x="${offset+groupWidth/2}" y="295" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="700">${E(g.name)}</text>`;
   offset+=groupWidth;
  });
  const totals=entries.reduce((t,x)=>({present:t.present+x.present,total:t.total+x.total,marked:t.marked+x.marked}),{present:0,total:0,marked:0});

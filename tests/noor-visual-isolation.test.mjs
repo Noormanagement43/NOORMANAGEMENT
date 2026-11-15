@@ -28,7 +28,7 @@ test('manager has same verified school principal layout without overriding the m
 test('principal classes 6–10 use the approved section counts chart',async()=>{
  const principal=await read('principal-live.js'),reference=await read('noor-principal-reference-ui.js');
  assert.match(principal,/NOOR_PRINCIPAL_REFERENCE.secondary/);
- assert.match(reference,/numbers above green bars show present students/);
+ assert.match(reference,/numbers above bars show present students/);
  assert.doesNotMatch(reference,/donutHTML|lineChartHTML/);
  assert.doesNotThrow(()=>new Script(principal));
  assert.doesNotThrow(()=>new Script(reference));

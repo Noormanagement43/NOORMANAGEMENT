@@ -62,6 +62,15 @@ function setup(){
           <span id="pd-status" role="status">Syncing school records…</span>
           <button class="pd-link" id="pd-refresh">↻ Refresh</button>
         </div>
+        <section class="pd-card pd-schedule" data-feature-view="schedules">
+          <header>
+            <h2>Currently Active Periods</h2>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="pd-link" id="pd-timetable">Staff · All Periods →</button>
+            </div>
+          </header>
+          <div id="pd-periods"></div>
+        </section>
         <div class="pd-charts">
           ${card('Class-wise Attendance (Classes 1 – 5)','pd-classes','classes','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
           ${card('Secondary Attendance','pd-trend','attendance','Full report →')}
@@ -74,15 +83,6 @@ function setup(){
           <button type="button" class="pd-link" data-route="notices">Open Notices &amp; Meetings →</button>
         </section>
         </div>
-        <section class="pd-card pd-schedule" data-feature-view="schedules">
-          <header>
-            <h2>◷ Currently Active Periods</h2>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="pd-link" id="pd-timetable">Staff · All Periods →</button>
-            </div>
-          </header>
-          <div id="pd-periods"></div>
-        </section>
         <div class="pd-extras">
           ${card('Daily Academic Monitoring · Lesson Diary','pd-lessons','academic-monitoring','Open Monitoring →')}
           ${card('School Tasks & Deadlines','pd-tasks','school-tasks','New task →')}
@@ -591,7 +591,7 @@ async function refresh(){
     }
     const staffPresent=new Set(rows('staff').filter(s=>s.status==='present'&&teacherMap.has(s.teacher_id)).map(s=>s.teacher_id)).size;
     const runningPeriods=activePeriods(rows('periods'),runs,d);
-    const active=canonical?runningPeriods.length:rows('periods').filter(p=>p.block_type==='class'&&teacherMap.has(p.teacher_id)&&p.start_time.slice(0,5)<=d.time&&p.end_time.slice(0,5)>d.time&&runs.get(p.id)?.status==='ongoing').length;
+    const active=runningPeriods.length;
     // Verified daily summary only, never a synthetic school-health percentage.
     q('#pd-pulse-title').textContent='Live School Overview';
     q('#pd-pulse-desc').textContent=classes.length+' active class records · '+today.marked+' student attendance marks today · '+active+(canonical?' periods scheduled now':' active teaching periods');
@@ -602,7 +602,7 @@ async function refresh(){
     q('#pd-kpis').innerHTML=metric('Students Present Today',attError?'—':`${today.marked?today.present:'—'} <em>/ ${today.total}</em>`,today.marked?`${today.marked} marked · ${today.total-today.marked} unmarked`:'Attendance not submitted','#8e4359',!attError&&today.marked?percent(today.present,today.total):null)+
       metric('Teachers Present Today',res.teachers.error?'—':res.staff.error?`— <em>/ ${teachers.length}</em>`:`${rows('staff').length?staffPresent:'—'} <em>/ ${teachers.length}</em>`,res.staff.unavailable?'Staff check-in not configured':'Verified staff check-ins today','#8a633d',!res.staff.error&&teachers.length?percent(staffPresent,teachers.length):null)+
       metric('Overall Attendance',attError||!total?'—':percent(present,total)+'%','Last 7 days · submitted marks','#3d795b',null)+
-      metric(canonical?'Scheduled Classes Now':'Active Classes Now',res.periods.error||res.runs.error?'—':active,canonical?'Scheduled time · not a staff check-in':'Teacher started · within scheduled time','#3e6b82',null);
+      metric('Current Periods',res.periods.error||res.runs.error?'—':active,'Within scheduled time · completed periods excluded','#3e6b82',null);
 
     const p=a().profile,school=a().school,h=Number(d.time.slice(0,2));
     const leadershipLabel=p.role==='manager'?'Manager':p.role==='owner'?'School Owner':'Principal';
@@ -663,7 +663,7 @@ async function refresh(){
     q('#pd-manager-activity').innerHTML=managerChanges.error?empty('Manager history could not load. Open Manager to retry.'):(managerChanges.data||[]).map(x=>`<button type="button" class="pd-item" data-route="manager"><strong>${e(x.actor_name)}</strong><p>${e(({attendance_records:'Attendance',noor_assessment_results:'Marks'}[x.entity_table]||'School record')+' · '+x.action.toLowerCase())}</p><small>${e(new Date(x.created_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'}))}</small></button>`).join('')||empty('No manager changes recorded yet.');
     const attention=[];
     if(!attError&&today.total>today.marked)attention.push({title:(today.total-today.marked)+' students awaiting attendance',route:'attendance',sub:'Today’s marks have not been recorded.'});
-    if(!res.staff.error){const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+(absent===1?' teacher marked absent':' teachers marked absent'),route:'staff-management',sub:'Review today’s staff availability.'});}
+    if(!res.staff.error&&!res.teachers.error){const recorded=new Set(rows('staff').filter(x=>teacherMap.has(x.teacher_id)).map(x=>x.teacher_id));const pending=teachers.length-recorded.size;if(pending>0)attention.push({title:pending+(pending===1?' teacher check-in pending':' teacher check-ins pending'),route:'staff-management',sub:'Today’s staff attendance has not been recorded yet.'});const absent=new Set(rows('staff').filter(x=>x.status==='absent'&&teacherMap.has(x.teacher_id)).map(x=>x.teacher_id)).size;if(absent)attention.push({title:absent+(absent===1?' teacher marked absent':' teachers marked absent'),route:'staff-management',sub:'Review today’s staff availability.'});}
     if(!res.tasks.error){const pending=rows('tasks').filter(x=>!['done','completed','cancelled'].includes(x.status));if(pending.length)attention.push({title:pending.length+(pending.length===1?' pending school task':' pending school tasks'),route:'school-tasks',sub:'Open tasks and review deadlines.'});}
     q('#pd-actions').innerHTML=attention.length?window.NOOR_PRINCIPAL_REFERENCE.actions(attention):empty(attError?'Attendance status unavailable. Please retry.':'No pending actions in the loaded records.');
     q('#pd-status').textContent='Last updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:d.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+d.tz;
@@ -701,6 +701,7 @@ function render(){
 }
 
 window.addEventListener('noor:school-message-saved',()=>{if(permitted())refresh();});
+window.addEventListener('focus',()=>{if(permitted())refresh();});
 window.addEventListener('noor:timetable-saved',()=>{if(permitted())refresh();});
 window.NOOR_PRINCIPAL_LIVE={render,refresh,aggregate,clock,activePeriods,showStaffProfile,showStudentDashboard};
 })();

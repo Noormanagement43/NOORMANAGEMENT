@@ -113,3 +113,11 @@ use the same registry mappings as sidebar/mobile links, including mixed launcher
 Dashboard action buttons (`data-route`) now use the same registry checks as
 sidebar, mobile navigation and feature cards. Phone header changes preserve
 Creator messages under Settings and leave that account/support shell reachable.
+
+
+The live parent/student period cards and teacher current-period card declare
+`timetable`; the first teacher check-in card declares `staff_attendance`. Shared
+access decoration hides them when disabled, including clock-driven re-renders.
+The new Ask My Teacher chat's direct entry checks its existing `diary` key before
+loading; private chat storage and question rows retain main's server/RLS guards.
+No new defaults or overrides are changed by these compatibility updates.

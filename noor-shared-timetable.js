@@ -34,13 +34,16 @@ async function read(){
  c.db.from('noor_daily_period_lessons').select('period_id,lesson_date,lesson,topic,completed,progress_status,planned_subject_name').eq('institution_id',c.school.id).eq('lesson_date',schoolDay(c.school.timezone))
  ]);
  for(const result of [periods,groups,slots,lessons])if(result.error)throw result.error;
- if(A().user?.id!==c.userId)throw Error('Your account changed. Reopen the timetable.');
+ if(A().user?.id!==c.userId||(A().profile?.institution_id||A().schoolId)!==c.school.id)throw Error('Your account changed. Reopen the timetable.');
  const gs=groups.data||[];
- const stored=(periods.data||[]).filter(p=>{const g=gs.find(x=>x.id===p.academic_group_id);return g&&(g.group_type!=='section'||gs.some(parent=>parent.id===g.parent_group_id&&parent.is_active!==false));}).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),subject_name:((lessons.data||[]).find(x=>x.period_id===p.id)?.planned_subject_name||p.subject_name),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
+ let guardianGroups=null;
+ if(c.membership.role==='parent'){const result=await c.db.rpc('noor_guardian_group_ids',{p_institution:c.school.id});if(result.error)throw result.error;guardianGroups=new Set((result.data||[]).filter(x=>x.group_role==='student').map(x=>x.group_id));for(const g of gs)if(guardianGroups.has(g.id)&&g.group_type==='section'&&g.parent_group_id)guardianGroups.add(g.parent_group_id);}
+ if(A().user?.id!==c.userId||(A().profile?.institution_id||A().schoolId)!==c.school.id)throw Error('Your account changed. Reopen the timetable.');
+ const stored=(periods.data||[]).filter(p=>{const g=gs.find(x=>x.id===p.academic_group_id);return p.institution_id===c.school.id&&(!guardianGroups||guardianGroups.has(p.academic_group_id))&&g&&(g.group_type!=='section'||gs.some(parent=>parent.id===g.parent_group_id&&parent.is_active!==false));}).map(p=>{const g=gs.find(x=>x.id===p.academic_group_id),parent=gs.find(x=>x.id===g?.parent_group_id);return{...p,...((lessons.data||[]).find(x=>x.period_id===p.id)||{}),subject_name:((lessons.data||[]).find(x=>x.period_id===p.id)?.planned_subject_name||p.subject_name),weekday:Number(p.weekday),school_id:p.institution_id,teacher_id:p.teacher_membership_id,class_id:parent?.id||g?.id||null,section_id:g?.group_type==='section'?g.id:null,class_label:parent?parent.name+' · '+g.name:g?.name||'No class linked',block_type:'class',approval_status:'approved',schedule_status:state(p,c.school.timezone)};});
  const data=expandPeriods(stored,c.school.timezone);
- return{...c,data,groups:gs,slots:slots.data||[]};
+ return{...c,data,groups:gs,slots:slots.data||[],guardianGroupCount:guardianGroups?.size};
 }
-async function load(){try{const r=await read();return{data:r.data,slots:r.slots,error:null}}catch(error){return{data:[],error}}}
+async function load(){try{const r=await read();return{data:r.data,slots:r.slots,guardianGroupCount:r.guardianGroupCount,error:null}}catch(error){return{data:[],error}}}
 async function save(values,existing=null){
  await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('timetable');
  const c=await context(),m=c.membership;
@@ -135,7 +138,7 @@ async function removePeriod(period){
  const c=await context();if(!['teacher','faculty'].includes(c.membership.role)||period.teacher_membership_id!==c.membership.id||period.institution_id!==c.school.id)throw Error('Only your own periods can be removed.');const r=await c.db.from('teacher_timetable_periods').delete().eq('id',period.id).eq('institution_id',c.school.id).eq('teacher_membership_id',c.membership.id).select('id').single();if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:timetable-saved'));return r.data;}
 let refreshTimer=null;
 function changed(){if(dialog?.dataset.mode==='day'){openDay(dialog._dayOptions||{});}clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{window.dispatchEvent(new CustomEvent('noor:timetable-saved'));if(dialog?.dataset.mode==='list')open();},120);}
-function subscribe(){const a=A(),key=a.user?.id+':'+a.schoolId;if(!current()||!a.db||!a.user?.id||!a.schoolId)return;if(channelKey===key)return;if(channel)a.db.removeChannel(channel);channelKey=key;channel=a.db.channel('noor-destination-timetable-'+key);for(const table of ['teacher_timetable_periods','institution_period_slots','noor_daily_period_lessons'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a.schoolId},changed);channel.subscribe();}
+function subscribe(){const a=A(),key=a.user?.id+':'+a.schoolId;if(!current()||!a.db||!a.user?.id||!a.schoolId)return;if(channelKey===key)return;if(channel)a.db.removeChannel(channel);channelKey=key;channel=a.db.channel('noor-destination-timetable-'+key);for(const table of ['teacher_timetable_periods','institution_period_slots','noor_daily_period_lessons','academic_group_memberships','academic_groups','noor_guardian_links'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a.schoolId},changed);channel.subscribe();}
 
 const weekday=()=>days.indexOf(new Intl.DateTimeFormat('en-GB',{timeZone:A().school?.timezone||'Asia/Kolkata',weekday:'long'}).format(new Date()));
 window.NOOR_SHARED_TIMETABLE=Object.freeze({expandPeriods,uniquePeriods,schoolDay,weekday,current,context,load,save,saveSlot,saveLesson,setProgress,removePeriod,open,openDay,openDaily,openEditor,openSlots,subscribe,status:state});

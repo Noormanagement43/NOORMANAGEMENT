@@ -33,7 +33,12 @@ function logActivity(runs,periods,checkin,notices){
  messages.sort((a,b)=>(new Date(b.timestamp).getTime()||0)-(new Date(a.timestamp).getTime()||0));
  return messages.slice(0,5);
 }
+function checkinHTML(checkin,error){
+ const saved=['present','late'].includes(checkin?.status),blocked=!!checkin&&!saved;
+ return '<section class="nt-checkin-first" aria-label="Teacher check-in"><span class="nt-checkin-symbol" aria-hidden="true">'+(saved?'✓':'○')+'</span><div><h2>Teacher Check-in</h2><p>'+esc(error?'Check-in status could not load. Refresh before trying again.':saved?(checkin.status==='late'?'Late · Checked in':'Present · Checked in'):blocked?'Attendance marked '+checkin.status+'. Contact your principal for a correction.':'Start your day by marking your own attendance.')+'</p>'+(saved&&checkin.checked_in_at?'<small>'+esc(dateTime(checkin.checked_in_at))+'</small>':'')+'</div>'+(!saved&&!blocked?'<button type="button" class="nt-btn primary" id="ntCheckIn" '+(error?'disabled':'')+'>Check in ✓</button>':saved?'<span class="nt-checkin-saved">Saved ✓</span>':'')+'</section>';
+}
 function periodBadge(p,run){
+ if(window.NOOR_DASHBOARD_EXPERIENCE?.periodState){const label=window.NOOR_DASHBOARD_EXPERIENCE.periodState(p,new Map(run?[[p.id,run]]:[]),get().school?.timezone);return{label:label==='Completed'?'Completed':['In progress','Scheduled now'].includes(label)?'In Progress':label==='Awaiting update'?'Awaiting update':'Pending',tone:label==='Completed'?'complete':['In progress','Scheduled now'].includes(label)?'current':'pending'};}
  if(run?.status==='done'||p.completed||p.progress_status==='completed')return{label:'Completed',tone:'complete'};
  if(run?.status==='ongoing'||p.progress_status==='ongoing'||p.schedule_status==='Scheduled now')return{label:'In Progress',tone:'current'};
  return{label:'Pending',tone:'pending'};
@@ -114,15 +119,15 @@ async function render(){
  const events=(calendar.data||[]).filter(x=>!x.teacher_id||x.teacher_id===uid).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  const now=window.NOOR_DASHBOARD_EXPERIENCE.clock(app.school?.timezone).time;
  const todayPeriods=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='approved');
- const currentPeriod=todayPeriods.find(x=>runByPeriod.get(x.id)?.status==='ongoing')||todayPeriods.find(x=>fmt(x.start_time)<=now&&fmt(x.end_time)>now);
+ const currentPeriod=window.NOOR_DASHBOARD_EXPERIENCE.runningPeriods(todayPeriods,runByPeriod,app.school?.timezone)[0];
  const name=app.profile.full_name||'Teacher',initials=name.split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase();
- current={details,periods:allPeriods,runs:allRuns,checkin:checkin.data,assignments:assignment.data||[],notices:validNotices,events,avatar};
+ current={day:window.NOOR_SHARED_TIMETABLE.schoolDay(app.school?.timezone),details,periods:allPeriods,runs:allRuns,checkin:checkin.data,assignments:assignment.data||[],notices:validNotices,events,avatar};
  const rejectedToday=allPeriods.filter(x=>x.weekday===weekday&&x.approval_status==='rejected');
  const staff=['present','late'].includes(checkin.data?.status);
  const taskStatus=new Map((assignees.data||[]).map(x=>[x.task_id,x.status]));
  const activities=logActivity(allRuns,approved,checkin.data,validNotices);
  const assignedTasks=tasks.filter(x=>taskStatus.get(x.id)!=='completed'&&taskStatus.get(x.id)!=='done');
- wrapper.innerHTML='<div class="noor-t4">'+
+ wrapper.innerHTML='<div class="noor-t4">'+checkinHTML(checkin.data,checkin.error)+
  '<div class="nt-head"><div><h1>'+esc(app.school?.name||app.profile.school_name_submitted||'School')+' · Teacher Dashboard</h1><p class="nt-greeting">'+window.NOOR_DASHBOARD_EXPERIENCE.greeting(name)+'</p><time class="nt-dashboard-date" datetime="'+esc(window.NOOR_SHARED_TIMETABLE?.schoolDay(app.school?.timezone)||today())+'">'+esc(new Date().toLocaleDateString('en-IN',{timeZone:app.school?.timezone||'Asia/Kolkata',weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</time></div></div>'+
  '<section class="nt-card nt-profile"><div class="nt-photo-column"><div class="nt-photo">'+(avatar?'<img src="'+esc(avatar)+'" alt="Teacher profile photograph">':esc(initials))+'</div></div>'+
  '<div><div class="nt-person-head">'+window.NOOR_DASHBOARD_EXPERIENCE.brand()+window.NOOR_DASHBOARD_EXPERIENCE.dateLine()+'<h2>'+esc(name)+'</h2><div class="nt-row" style="gap:6px"><span class="nt-pill">Teacher</span></div></div>'+
@@ -142,9 +147,9 @@ async function render(){
  '</div>'+
  '</section></div>'+
  '<div><section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">▣</span><h2>Today\'s Status</h2></div><span class="nt-pill done"><span class="nt-pulse"></span> School data</span></div>'+
- '<div class="nt-status-list"><div class="nt-status-box '+(staff?'good':'')+'"><span class="nt-round">'+(staff?'✓':'○')+'</span><div><b>'+ (staff?'Present · Checked in':'Not checked in')+'</b><small>'+ (staff?esc(dateTime(checkin.data.checked_in_at)):'Mark your attendance for today')+'</small></div>'+
- (staff?'':'<button class="nt-btn small" id="ntCheckIn">Check in</button>')+'</div>'+
- '<div class="nt-status-box"><span class="nt-round">▦</span><div><b>'+(currentPeriod?'Period '+esc(currentPeriod.period_number)+' · '+esc(currentPeriod.subject_name):'No current period')+'</b><small>'+(currentPeriod?esc(currentPeriod.class_label)+' · '+esc(prettyTime(currentPeriod.start_time)):'Your approved schedule is shown on the left')+'</small></div></div>'+
+ '<div class="nt-status-list"><div class="nt-status-box '+(staff?'good':'')+'"><span class="nt-round">'+(staff?'✓':'○')+'</span><div><b>'+ (staff?(checkin.data.status==='late'?'Late · Checked in':'Present · Checked in'):'Not checked in')+'</b><small>'+ (staff?esc(dateTime(checkin.data.checked_in_at)):'Mark your attendance for today')+'</small></div>'+
+ ''+'</div>'+
+ '<div class="nt-status-box" id="ntCurrentPeriodStatus"><span class="nt-round">▦</span><div><b>'+(currentPeriod?'Period '+esc(currentPeriod.period_number)+' · '+esc(currentPeriod.subject_name):'No current period')+'</b><small>'+(currentPeriod?esc(currentPeriod.class_label)+' · '+esc(prettyTime(currentPeriod.start_time)):'Your approved schedule is shown on the left')+'</small></div></div>'+
  '<div class="nt-status-box"><span class="nt-round">◉</span><div><b>Principal activity view</b><small id="ntLiveStatus">Today\'s class activity and check-in are saved to the school database.</small></div></div></div></section>'+'<section class="nt-card"><div class="nt-card-head"><div><h2>Quick Actions</h2></div></div><div class="nt-3d-quick-grid nt-refined-actions"><button type="button" class="nt-3d-quick-btn" data-action="take-attendance"><span class="nt-quick-icon students" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('students')||'')+'</span><span class="nt-quick-text"><b>Take Attendance</b><small>Mark today’s class</small></span></button><button type="button" class="nt-3d-quick-btn" data-action="learning-hub"><span class="nt-quick-icon notes" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('notes')||'')+'</span><span class="nt-quick-text"><b>Assignments &amp; Smart Notes</b><small>Choose what to publish</small></span></button><button type="button" class="nt-3d-quick-btn" data-link="weekly-plan"><span class="nt-quick-icon calendar" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('calendar')||'')+'</span><span class="nt-quick-text"><b>Weekly Planner</b><small>Prepare your week</small></span></button><button type="button" class="nt-3d-quick-btn" data-link="today-note"><span class="nt-quick-icon notes" aria-hidden="true">'+(window.NOOR_UI_POLISH?.icon('notes')||'')+'</span><span class="nt-quick-text"><b>Today Notes</b><small>Share today’s classwork</small></span></button></div></section>'+
  '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">✦</span><h2>Notices & Messages</h2></div><button class="nt-btn small" data-link="notices">View all</button></div>'+
  (validNotices.slice(0,3).map(x=>'<button type="button" class="nt-event" style="width:100%;text-align:left;background:none;border:0" data-link="notices"><span class="nt-round">▤</span><span><b>'+esc(x.title)+'</b><small>'+esc(formatDate(x.created_at))+'</small></span><span class="nt-arrow">›</span></button>').join('')||'<p class="nt-muted">No school notices for teachers yet.</p>')+
@@ -155,7 +160,7 @@ async function render(){
  '<section class="nt-card"><div class="nt-card-head"><div><span class="nt-icon">◷</span><h2>Recent Activity</h2></div><button class="nt-btn small" data-link="calendar">School Calendar</button></div><div class="nt-activity">'+activityHtml(activities)+'</div></section>'+
  '<input id="ntHiddenPhoto" type="file" accept="image/jpeg,image/png,image/webp" hidden></div>';
  const readErrors=[extra.error,periods.error,runs.error,checkin.error,assignees.error,personal.error,notices.error,calendar.error,assignment.error,membership.error].filter(Boolean);
- if(readErrors.length){const warning=document.createElement('p');warning.className='nt-followup';warning.textContent='Some school records could not be loaded. Check your account permissions or connection and try again.';wrapper.querySelector('.noor-t4')?.prepend(warning);}
+ if(readErrors.length){const warning=document.createElement('p');warning.className='nt-followup';warning.textContent='Some school records could not be loaded. Check your account permissions or connection and try again.';wrapper.querySelector('.nt-checkin-first')?.insertAdjacentElement('afterend',warning);}
  const dash=wrapper.querySelector('.noor-t4'),profileNode=dash?.querySelector('.nt-profile');
 
  // Reference layout: timetable on the left, status and compact actions on the right.
@@ -228,7 +233,7 @@ async function updateRun(periodId,status,b){
 async function checkIn(b){
  const a=get();b.disabled=true;
  try{
- if(window.NOOR_TEACHER_DATA?.current()){const saved=await window.NOOR_TEACHER_DATA.checkIn();notify(['present','late'].includes(saved.status)?'Present — check-in saved.':'Your attendance was already marked '+saved.status+'. Contact your principal.');await render();return;}
+ if(window.NOOR_TEACHER_DATA?.current()){const saved=await window.NOOR_TEACHER_DATA.checkIn();notify(['present','late'].includes(saved.status)?(saved.status==='late'?'Late — check-in saved.':'Present — check-in saved.'):'Your attendance was already marked '+saved.status+'. Contact your principal.');await render();return;}
  const row={school_id:a.schoolId,teacher_id:a.user.id,attendance_date:today(),status:'present',checked_in_at:new Date().toISOString()};
  const r=await a.db.from('noor_staff_attendance').insert(row);
  if(r.error?.code==='23505'){notify('Already checked in today.');}else if(r.error)throw r.error;else notify('Staff check-in recorded.');await render();
@@ -371,6 +376,13 @@ async function renderCalendar(){
  const rows=(r.data||[]).filter(x=>!x.teacher_id||x.teacher_id===get().user.id).filter(x=>!x.target_roles?.length||x.target_roles.includes('teacher')||x.target_roles.includes('all'));
  v.querySelector('#ntCalItems').innerHTML=rows.length?rows.map(x=>'<div class="nt-event"><span class="nt-round">▣</span><div><b>'+esc(x.title)+'</b><small>'+esc(dateTime(x.starts_at))+' · '+esc(x.event_type||'School event')+'</small><p class="nt-muted">'+esc(x.description||'')+'</p></div></div>').join(''):'<p class="nt-empty">No upcoming school calendar events.</p>';
 }
+window.addEventListener('noor:period-clock',()=>{
+ if(document.hidden||!root()?.classList.contains('active')||!current)return;if(current.day!==window.NOOR_SHARED_TIMETABLE.schoolDay(get().school?.timezone)){render();return;}
+ const focus=root().querySelector('.noor-current-card'),runs=new Map((current.runs||[]).map(r=>[r.period_id,r]));
+ if(focus)focus.outerHTML=window.NOOR_DASHBOARD_EXPERIENCE.teacherFocus(current.periods||[],runs);
+ const livePeriod=window.NOOR_DASHBOARD_EXPERIENCE.runningPeriods(current.periods||[],runs,get().school?.timezone)[0],status=root().querySelector('#ntCurrentPeriodStatus');if(status){status.querySelector('b').textContent=livePeriod?'Period '+livePeriod.period_number+' · '+livePeriod.subject_name:'No current period';status.querySelector('small').textContent=livePeriod?livePeriod.class_label+' · '+prettyTime(livePeriod.start_time):'Open your timetable to review the full schedule.';}
+ root().querySelectorAll('[data-toggle-period]').forEach(button=>{const period=current.periods?.find(p=>p.id===button.dataset.togglePeriod&&p.weekday===window.NOOR_SHARED_TIMETABLE.weekday());if(!period)return;const badge=periodBadge(period,runs.get(period.id)),article=button.closest('.nt-period'),label=article?.querySelector('.nt-period-badge');if(label){label.textContent=badge.label;label.className='nt-period-badge '+badge.tone;}if(article)article.className='nt-period '+(badge.tone==='complete'?'complete':badge.tone==='current'?'ongoing':'pending');});
+});
 function setLive(){
  const a=get(),identity=a.user?.id+':'+a.schoolId;
  if(channel&&sessionKey!==identity){a.db.removeChannel(channel);channel=null}

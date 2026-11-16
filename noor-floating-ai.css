@@ -1,0 +1,67 @@
+/* Theme-aware, touch-friendly AI quick launcher. Does not modify the chat itself. */
+#noorFloatingAI[hidden]{display:none!important}
+#noorFloatingAI.noor-floating-ai{
+  position:fixed!important;
+  z-index:850;
+  box-sizing:border-box;
+  width:172px;
+  height:64px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  padding:6px 14px 6px 6px;
+  margin:0;
+  border:1px solid #ffffff61;
+  border-radius:999px;
+  background:linear-gradient(125deg,var(--berry,#803651),var(--berry2,#571e38));
+  color:#fff!important;
+  box-shadow:0 14px 38px #35102740,0 4px 10px #32132420,inset 0 1px #ffffff3b;
+  font:inherit;
+  text-align:left;
+  cursor:grab;
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  transition:box-shadow .18s ease,filter .18s ease;
+  overflow:visible;
+}
+#noorFloatingAI:hover{filter:brightness(1.06);box-shadow:0 17px 44px #35102751,0 4px 10px #32132420}
+#noorFloatingAI:active,#noorFloatingAI.is-dragging{cursor:grabbing;filter:none;box-shadow:0 20px 50px #35102755}
+#noorFloatingAI:focus-visible{outline:3px solid var(--gold,#d4ac7d)!important;outline-offset:4px}
+#noorFloatingAI .noor-floating-ai-icon{
+  position:relative;
+  width:50px;
+  height:50px;
+  flex:0 0 50px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#fff;
+  color:var(--berry,#9c4262);
+  box-shadow:inset 0 0 0 1px #ffffffa6,0 4px 12px #25101d22;
+}
+#noorFloatingAI .noor-floating-ai-icon svg{display:block;width:28px;height:28px}
+#noorFloatingAI .noor-floating-ai-indicator{
+  position:absolute;
+  right:0;
+  bottom:0;
+  width:14px;
+  height:14px;
+  border:3px solid #fff;
+  border-radius:50%;
+  background:#18b878;
+  box-sizing:content-box;
+}
+#noorFloatingAI .noor-floating-ai-copy{display:flex;flex-direction:column;align-items:flex-start;min-width:0;gap:1px;white-space:nowrap}
+#noorFloatingAI .noor-floating-ai-copy strong{font:800 13px/1.25 Inter,system-ui,sans-serif;letter-spacing:.1px;color:#fff}
+#noorFloatingAI .noor-floating-ai-copy small{font:500 10px/1.2 Inter,system-ui,sans-serif;color:#fffd}
+@media(max-width:600px){
+  #noorFloatingAI.noor-floating-ai{width:149px;height:56px;padding:5px 10px 5px 5px;gap:8px}
+  #noorFloatingAI .noor-floating-ai-icon{width:45px;height:45px;flex-basis:45px}
+  #noorFloatingAI .noor-floating-ai-icon svg{width:25px;height:25px}
+  #noorFloatingAI .noor-floating-ai-copy strong{font-size:12px}
+  #noorFloatingAI .noor-floating-ai-copy small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){#noorFloatingAI.noor-floating-ai{transition:none}}

@@ -56,3 +56,58 @@ body.noor-ai-open{overflow:hidden}
 .nh-marks-picker::backdrop{background:#17131e65}.nh-marks-picker header{display:flex;align-items:center;justify-content:space-between;gap:12px}.nh-marks-picker h2{font-size:21px}.nh-marks-picker label{display:grid;gap:8px;margin:16px 0}.nh-marks-picker :is(select,button){font:inherit;min-height:46px;padding:10px 14px;border:1px solid var(--line,#e8e2df);border-radius:10px;color:inherit;background:var(--paper,#fffdfb)}.nh-marks-picker button{cursor:pointer}.nh-marks-picker [data-help-students]{display:grid;gap:8px}.nh-marks-picker [data-person]{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:12px}.nh-marks-picker [data-person] small{color:var(--muted,#776f78)}
 .nh-record-dialog{width:min(920px,96vw);max-height:92dvh;overflow:auto;border:1px solid var(--line,#e8e2df);border-radius:18px;padding:24px;background:var(--paper,#fffdfb);color:var(--ink,#29262b);font:14px/1.6 system-ui}
 .nh-record-dialog::backdrop{background:#17131e65}.nh-record-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:16px}.nh-record-dialog h2{font-size:23px;margin:0}.nh-record-dialog :is(button,select){font:inherit;min-height:46px;border:1px solid var(--line,#e8e2df);border-radius:10px;padding:10px 14px;color:inherit;background:var(--paper,#fffdfb)}.nh-record-dialog button{cursor:pointer}.nh-record-choice{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;text-align:left}.nh-student-identity{display:flex;align-items:center;gap:22px;margin:22px 0}.nh-student-identity img,.nh-initials{width:128px;height:144px;border-radius:12px;object-fit:cover}.nh-initials{display:grid;place-items:center;font-size:40px;background:var(--canvas,#f7f5f3)}.nh-student-profile dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.nh-student-profile dl>div{background:var(--canvas,#f7f5f3);padding:16px;border-radius:12px}.nh-student-profile dt{font-size:12px;color:var(--muted,#776f78)}.nh-student-profile dd{font-size:20px;font-weight:650;margin:6px 0 0}.nh-subjects article{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line,#e8e2df)}.nh-record-dialog .nh-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}@media(max-width:600px){.nh-record-dialog{padding:16px}.nh-student-identity{gap:14px}.nh-student-identity img,.nh-initials{width:88px;height:99px}.nh-record-dialog h2{font-size:20px}}
+
+/* White-label assistant: warm, lightly colorful, clean conversation surface. */
+#noorAIModal{
+ --nh-paper:var(--paper,#fffaf8);
+ --nh-ink:var(--ink,#402438);
+ --nh-soft:var(--canvas,#fff6f4);
+ border-color:color-mix(in srgb,var(--berry,#77354e) 20%,#f9e8e5);
+ box-shadow:0 28px 100px #4a183941,0 0 0 1px #fff9f2;
+}
+#noorAIModal .nh-main{
+ background:radial-gradient(ellipse at 94% 0%,#ffe7e981,transparent 46%),radial-gradient(ellipse at 10% 100%,#f2e8ff83,transparent 44%),var(--nh-paper);
+}
+#noorAIModal .nh-top{
+ background:linear-gradient(115deg,#fff9f4,#ffe9ef88 54%,#f3edff88);
+ border-bottom-color:#ead2de;min-height:78px;
+}
+#noorAIModal .nh-assistant-identity{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+#noorAIModal .nh-assistant-identity>img{width:44px;height:44px;flex:none;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 2px 12px #69294124}
+#noorAIModal .nh-assistant-identity span{min-width:0}
+#noorAIModal .nh-assistant-identity b{display:block;font-size:15px;line-height:1.35;letter-spacing:-.2px;color:var(--berry,#723049)}
+#noorAIModal .nh-top .nh-assistant-identity small{max-width:100%;font-size:11px}
+#noorAIModal .nh-welcome{margin:clamp(12px,4vh,46px) auto 26px}
+#noorAIModal .nh-welcome .nh-welcome-avatar{
+ display:grid;place-items:center;width:116px;height:116px;margin:0 auto 14px;
+ border:3px solid #fff;border-radius:50%;background:linear-gradient(135deg,#ffeaef,#fff9f5);
+ box-shadow:0 12px 35px #843d5426,0 0 0 3px #f5dadd;
+ overflow:hidden;
+}
+#noorAIModal .nh-welcome-avatar img{width:100%;height:100%;display:block;object-fit:cover}
+#noorAIModal .nh-welcome h2{margin:8px 0 7px;font-size:clamp(23px,3vw,30px);color:var(--berry,#723049)}
+#noorAIModal .nh-welcome p{max-width:450px;margin:0 auto;color:var(--muted,#7c6876);line-height:1.75}
+#noorAIModal .nh-starters{gap:12px;margin-top:24px}
+#noorAIModal .nh-starters button{
+ border:1px solid #eddae2;border-radius:16px;
+ background:linear-gradient(115deg,#fff9fb,#ffedf3);box-shadow:0 5px 18px #77314c12;
+ font-weight:600;min-height:58px;transition:transform .15s ease,box-shadow .15s ease;
+}
+#noorAIModal .nh-starters button:nth-child(4n+2){background:linear-gradient(115deg,#f5fff9,#e5f4e8);border-color:#dcebdd}
+#noorAIModal .nh-starters button:nth-child(4n+3){background:linear-gradient(115deg,#f9f5ff,#ece8fa);border-color:#e7def6}
+#noorAIModal .nh-starters button:nth-child(4n){background:linear-gradient(115deg,#fffaf1,#fff0d8);border-color:#f5e4ce}
+#noorAIModal .nh-starters button:hover{transform:translateY(-2px);box-shadow:0 8px 20px #77314c22}
+#noorAIModal .nh-user{background:linear-gradient(135deg,var(--rose-soft,#faeaf1),#fff3f4);border:1px solid #f0dae2}
+#noorAIModal .nh-assistant p{background:linear-gradient(120deg,#fffaf8,#fff3f9);border:1px solid #f0e3e9;border-radius:15px;padding:12px 14px}
+#noorAIModal .nh-composer>div{border:1px solid #e7cdd8;background:var(--nh-paper);box-shadow:0 8px 28px #67324914;border-radius:21px}
+#noorAIModal [data-send]{border-radius:14px;background:var(--berry,#77354e);color:#fff}
+#noorAIModal .nh-sidebar{background:linear-gradient(170deg,var(--nh-soft),#f8eef4)}
+@media(max-width:700px){
+ #noorAIModal .nh-top{min-height:70px}
+ #noorAIModal .nh-assistant-identity>img{width:39px;height:39px}
+ #noorAIModal .nh-assistant-identity b{font-size:13px}
+ #noorAIModal .nh-welcome .nh-welcome-avatar{width:88px;height:88px}
+ #noorAIModal .nh-welcome{margin-top:18px}
+ #noorAIModal .nh-starters{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){#noorAIModal .nh-starters button{transition:none}}

@@ -26,6 +26,7 @@ test('floating assistant is the same draggable launcher with image and only AI v
  assert.match(code,/pointermove/);
  assert.match(code,/NOOR_SECURE_AI\.open\(\)/);
  assert.match(style,/noorAssistantFloat/);
+ assert.match(style,/#noorFloatingAI\.noor-floating-ai\[hidden\]\{display:none!important\}/);
  assert.match(style,/prefers-reduced-motion:reduce/);
 });
 test('chat is white labelled Your School Assistant and retains app access verification',()=>{

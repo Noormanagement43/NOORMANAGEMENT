@@ -1,5 +1,5 @@
 /* The existing draggable floating launcher, restyled using the school's own assistant illustration. */
-#noorFloatingAI[hidden]{display:none!important}
+#noorFloatingAI.noor-floating-ai[hidden]{display:none!important}
 #noorFloatingAI.noor-floating-ai{
  position:fixed!important;z-index:850!important;box-sizing:border-box;
  display:flex!important;flex-direction:column;align-items:center;justify-content:center;

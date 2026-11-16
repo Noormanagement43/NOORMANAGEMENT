@@ -8,15 +8,11 @@
   button.id=ID;
   button.hidden=true;
   button.className='noor-floating-ai';
-  button.setAttribute('aria-label','Open NOOR AI assistant. Drag this button to reposition it.');
+  button.setAttribute('aria-label','Open Your School Assistant');
   button.setAttribute('aria-haspopup','dialog');
-  button.title='Ask NOOR AI · Drag to move';
-  button.innerHTML='<span class="noor-floating-ai-icon" aria-hidden="true">'+
-    '<svg viewBox="0 0 32 32" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">'+
-    '<path d="M7.2 5.5h17.6a4.7 4.7 0 0 1 4.7 4.7v10.3a4.7 4.7 0 0 1-4.7 4.7H15l-7.7 4v-4.2a4.7 4.7 0 0 1-4.8-4.5V10.2a4.7 4.7 0 0 1 4.7-4.7Z" fill="currentColor"/>'+
-    '<path d="m16 9.3 1.8 4.6 4.6 1.8-4.6 1.8L16 22l-1.8-4.5-4.6-1.8 4.6-1.8L16 9.3Z" fill="#fff"/>'+
-    '</svg><i class="noor-floating-ai-indicator"></i></span>'+
-    '<span class="noor-floating-ai-copy"><strong>Ask NOOR AI</strong><small>Drag to move</small></span>';
+  button.title='Your School Assistant';
+  button.innerHTML='<span class="noor-floating-ai-icon" aria-hidden="true"><img src="./assets/school-assistant-avatar.webp?v=20261116-portrait-1" alt="" width="128" height="128"><i class="noor-floating-ai-indicator"></i></span>'+ 
+    '<span class="noor-floating-ai-copy"><strong>AI</strong></span>';
   document.body.appendChild(button);
 
   let stored=null;

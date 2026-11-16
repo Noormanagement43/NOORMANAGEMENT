@@ -3,6 +3,19 @@
 const A=()=>window.NOOR_AI_APP||{},E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const eligible=()=>['owner','principal','manager'].includes(A().profile?.role)&&A().profile?.status==='active';
 const identity=()=>[A().user?.id,A().schoolId].join('|');
+const featureIcon=f=>{
+ const k=(String(f.feature_key||'')+' '+String(f.label||'')).toLowerCase();
+ const name=/calendar|holiday|event/.test(k)?'calendar':/attend/.test(k)?'attendance':/mark|exam|test|grade|assessment/.test(k)?'marks':/analytic|insight|report/.test(k)?'analytics':/parent|notice|message|communicat/.test(k)?'message':'feature';
+ const paths={
+  calendar:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+  attendance:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M15 17l3 3 4-5"/>',
+  marks:'<path d="M6 2h9l4 4v16H6zM15 2v5h4M9 12h7M9 16h5"/>',
+  analytics:'<path d="M4 20V12M9 20V8M14 20V11M19 20V4"/>',
+  message:'<path d="M4 5h16v12H9l-5 4zM8 10h8M8 13h6"/>',
+  feature:'<path d="m12 2 2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/>'
+ };
+ return '<span class="nfc-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+paths[name]+'</svg></span>';
+};
 let request=0;
 async function mount(root){
  if(!root)return;const key=identity(),version=++request;
@@ -18,7 +31,7 @@ async function mount(root){
   let category='All Features',query='';const section=root.querySelector('.nfc');
   section.innerHTML='<header><div><small>'+E(A().school?.name||'My school')+'</small><h1>Feature Controls</h1><p>Choose the features available in your school. Changes save immediately.</p></div><span class="nfc-badge">School controls</span></header><div class="nfc-toolbar"><label>Find a feature<input type="search" placeholder="Search Calendar, Attendance…" maxlength="100" data-search></label><label>Category<select data-category>'+['All Features',...new Set(catalog.map(f=>f.category))].map(c=>'<option>'+E(c)+'</option>').join('')+'</select></label></div><p class="nfc-note">Only features allowed by NOOR Management can be switched on or off. Saved school records are preserved.</p><p role="status" aria-live="polite" data-status></p><div data-feature-list></div>';
   const list=section.querySelector('[data-feature-list]'),status=section.querySelector('[data-status]');
-  function render(){const shown=catalog.filter(f=>(category==='All Features'||category===f.category)&&(f.label+' '+f.description).toLowerCase().includes(query));list.innerHTML=shown.length?shown.map(f=>'<article class="nfc-row"><div><span class="nfc-category">'+E(f.category)+'</span><h2>'+E(f.label)+'</h2><p>'+E(f.description)+'</p>'+(!f.creator_allowed?'<small class="nfc-locked">Disabled by NOOR Management</small>':f.school_enabled&&!f.enabled?'<small class="nfc-locked">Enable '+(f.feature_key==='smart_notes'?'Learning Library':'Report Cards')+' to use this feature.</small>':'')+'</div><button type="button" class="nfc-switch" role="switch" aria-label="'+E(f.label)+'" aria-checked="'+(f.creator_allowed&&f.school_enabled)+'" data-school-feature="'+E(f.feature_key)+'" '+(!f.creator_allowed?'disabled':'')+'>'+(f.creator_allowed&&f.school_enabled?'ON':'OFF')+'</button></article>').join(''):'<p>No matching features.</p>';}
+  function render(){const shown=catalog.filter(f=>(category==='All Features'||category===f.category)&&(f.label+' '+f.description).toLowerCase().includes(query));list.innerHTML=shown.length?shown.map(f=>'<article class="nfc-row">'+featureIcon(f)+'<div class="nfc-row-copy"><span class="nfc-category">'+E(f.category)+'</span><h2>'+E(f.label)+'</h2><p>'+E(f.description)+'</p>'+(!f.creator_allowed?'<small class="nfc-locked">Disabled by NOOR Management</small>':f.school_enabled&&!f.enabled?'<small class="nfc-locked">Enable '+(f.feature_key==='smart_notes'?'Learning Library':'Report Cards')+' to use this feature.</small>':'')+'</div><button type="button" class="nfc-switch" role="switch" aria-label="'+E(f.label)+'" aria-checked="'+(f.creator_allowed&&f.school_enabled)+'" data-school-feature="'+E(f.feature_key)+'" '+(!f.creator_allowed?'disabled':'')+'>'+(f.creator_allowed&&f.school_enabled?'ON':'OFF')+'</button></article>').join(''):'<p>No matching features.</p>';}
   section.querySelector('[data-search]').oninput=e=>{query=e.target.value.trim().toLowerCase();render();};
   section.querySelector('[data-category]').onchange=e=>{category=e.target.value;render();};
   let saving=false;

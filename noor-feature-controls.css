@@ -7,3 +7,65 @@
 .nfc-switch[aria-checked=true]::after{transform:translateX(40px)}
 .nfc-switch:disabled{opacity:.5}
 @media(max-width:560px){.nfc-switch{min-width:78px}}
+
+/* Reference-match within Feature Controls only: untouched site navigation. */
+#workspace .nfc{
+ border:1px solid #f1dce2;
+ background:linear-gradient(155deg,var(--paper,#fffcfa),var(--canvas,#fff7f4));
+ box-shadow:0 12px 38px #7d314b0c;
+}
+#workspace .nfc [data-feature-list]{display:grid;gap:10px;margin-top:18px}
+#workspace .nfc .nfc-row{
+ display:flex;gap:15px;align-items:center;min-height:92px;padding:16px 18px;
+ background:linear-gradient(112deg,var(--paper,#fffdfb),var(--rose-soft,#fff4f5));
+ border:1px solid #f0dbe2;border-radius:16px;
+ box-shadow:0 4px 15px #69263c10;
+}
+#workspace .nfc .nfc-feature-icon{
+ flex:none;display:grid;place-items:center;width:54px;height:54px;
+ border:1px solid #f1dbdf;border-radius:15px;
+ background:linear-gradient(145deg,#fff0f1,#f8e0e5);
+ color:var(--berry,#832f51);
+}
+#workspace .nfc .nfc-row-copy{min-width:0;flex:1}
+#workspace .nfc .nfc-row h2{font-size:16px;color:var(--ink,#51243b);margin:3px 0}
+#workspace .nfc .nfc-row p{margin:3px 0;font-size:13px}
+#workspace .nfc [data-feature-list] .nfc-switch{
+ box-sizing:border-box;flex:none;position:relative;
+ width:96px!important;min-width:96px!important;height:43px!important;min-height:43px!important;
+ border:0!important;border-radius:999px!important;display:flex!important;
+ align-items:center!important;padding:0 14px!important;
+ font:bold 13px/1 system-ui,sans-serif!important;color:#fff!important;
+ transition:background-color .18s ease!important;
+ text-shadow:0 1px 1px #0002;white-space:nowrap;
+}
+#workspace .nfc [data-feature-list] .nfc-switch[aria-checked="false"]{
+ background:#ee2541!important;background-color:#ee2541!important;
+ justify-content:flex-end!important;color:#fff!important;
+}
+#workspace .nfc [data-feature-list] .nfc-switch[aria-checked="true"]{
+ background:#08a838!important;background-color:#08a838!important;
+ justify-content:flex-start!important;color:#fff!important;
+}
+#workspace .nfc [data-feature-list] .nfc-switch::after{
+ content:"";position:absolute;top:5px;left:5px;width:33px;height:33px;
+ border-radius:50%;background:#fff!important;
+ box-shadow:0 2px 6px #35112734;transition:transform .18s ease;
+}
+#workspace .nfc [data-feature-list] .nfc-switch[aria-checked="true"]::after{transform:translateX(53px)}
+#workspace .nfc [data-feature-list] .nfc-switch[aria-checked="false"]::after{transform:translateX(0)}
+#workspace .nfc [data-feature-list] .nfc-switch:disabled{opacity:.86!important;cursor:not-allowed}
+#workspace .nfc [data-feature-list] .nfc-switch:focus-visible{outline:3px solid var(--gold,#d6b174)!important;outline-offset:3px}
+@media(max-width:560px){
+ #workspace .nfc .nfc-row{padding:12px 10px;min-height:82px;gap:10px}
+ #workspace .nfc .nfc-feature-icon{width:40px;height:40px;border-radius:12px}
+ #workspace .nfc .nfc-feature-icon svg{width:21px;height:21px}
+ #workspace .nfc .nfc-row h2{font-size:14px}
+ #workspace .nfc .nfc-row p{font-size:11px}
+ #workspace .nfc [data-feature-list] .nfc-switch{
+  width:82px!important;min-width:82px!important;height:38px!important;min-height:38px!important;padding:0 10px!important;font-size:12px!important;
+ }
+ #workspace .nfc [data-feature-list] .nfc-switch::after{width:28px;height:28px}
+ #workspace .nfc [data-feature-list] .nfc-switch[aria-checked="true"]::after{transform:translateX(44px)}
+}
+@media(prefers-reduced-motion:reduce){#workspace .nfc [data-feature-list] .nfc-switch,#workspace .nfc [data-feature-list] .nfc-switch::after{transition:none!important}}

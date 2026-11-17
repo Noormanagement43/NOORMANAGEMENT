@@ -63,7 +63,7 @@ async function providerCall(provider:{name:string;model:string;key:string},promp
  const url=provider.name==='gemini'?
  'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(provider.model)+':generateContent':
  provider.name==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.openai.com/v1/responses';
- const headers=provider.name==='gemini'?{'content-type':'application/json','x-goog-api-key':provider.key}:{'content-type':'application/json',authorization:'Bearer '+provider.key};
+ const headers:Record<string,string>=provider.name==='gemini'?{'content-type':'application/json','x-goog-api-key':provider.key}:{'content-type':'application/json',authorization:'Bearer '+provider.key};
  const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(18000)});
  if(!response.ok){await response.body?.cancel();throw Error('Provider unavailable');}
  const obj=await response.json();return provider.name==='gemini'?

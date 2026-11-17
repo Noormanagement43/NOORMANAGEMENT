@@ -562,7 +562,7 @@ begin
   values(inst,new_concept_id,p_prerequisite,auth.uid()) on conflict(concept_id,prerequisite_concept_id) do nothing;
  end if;
  return new_concept_id;
-end $;
+end $$;
 create function public.noor_lg_add_concept(
  p_group uuid,p_subject text,p_title text,p_curriculum_version text default 'school-v1',p_prerequisite uuid default null)
 returns uuid language sql security invoker set search_path='' as $$

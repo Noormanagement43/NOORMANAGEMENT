@@ -216,22 +216,23 @@ returns boolean language sql stable security definer set search_path='' as $$
  and (gm.group_id=p_class or g.parent_group_id=p_class) and p.user_id=(select auth.uid()));
 $$;
 revoke all on function private.noor_lg_can_teach(uuid,uuid),private.noor_lg_can_read(uuid,uuid),private.noor_lg_can_see_class(uuid,uuid) from public,anon;
+grant execute on function private.noor_lg_can_teach(uuid,uuid),private.noor_lg_can_read(uuid,uuid),private.noor_lg_can_see_class(uuid,uuid) to authenticated;
 
 create policy lg_concept_read on public.learning_concepts for select to authenticated
- using(private.noor_lg_can_see_class(institution_id,class_group_id));
+ using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_see_class(institution_id,class_group_id));
 create policy lg_dependency_read on public.concept_dependencies for select to authenticated
- using(exists(select 1 from public.learning_concepts c where c.id=concept_id and c.institution_id=concept_dependencies.institution_id));
+ using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and exists(select 1 from public.learning_concepts c where c.id=concept_id and c.institution_id=concept_dependencies.institution_id));
 create policy lg_mapping_read on public.assessment_concept_mapping for select to authenticated
- using(exists(select 1 from public.learning_concepts c where c.id=concept_id and c.institution_id=assessment_concept_mapping.institution_id));
-create policy lg_evidence_read on public.student_concept_evidence for select to authenticated using(private.noor_lg_can_read(institution_id,student_membership_id));
-create policy lg_mastery_read on public.student_concept_mastery for select to authenticated using(private.noor_lg_can_read(institution_id,student_membership_id));
-create policy lg_finding_read on public.learning_gap_findings for select to authenticated using(private.noor_lg_can_read(institution_id,student_membership_id));
-create policy lg_plan_read on public.learning_recovery_plans for select to authenticated using(private.noor_lg_can_read(institution_id,student_membership_id));
+ using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and exists(select 1 from public.learning_concepts c where c.id=concept_id and c.institution_id=assessment_concept_mapping.institution_id));
+create policy lg_evidence_read on public.student_concept_evidence for select to authenticated using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_read(institution_id,student_membership_id));
+create policy lg_mastery_read on public.student_concept_mastery for select to authenticated using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_read(institution_id,student_membership_id));
+create policy lg_finding_read on public.learning_gap_findings for select to authenticated using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_read(institution_id,student_membership_id));
+create policy lg_plan_read on public.learning_recovery_plans for select to authenticated using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_read(institution_id,student_membership_id));
 create policy lg_activity_read on public.learning_recovery_activities for select to authenticated
- using(exists(select 1 from public.learning_recovery_plans p where p.id=plan_id and p.institution_id=learning_recovery_activities.institution_id));
+ using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and exists(select 1 from public.learning_recovery_plans p where p.id=plan_id and p.institution_id=learning_recovery_activities.institution_id));
 create policy lg_reassess_read on public.learning_reassessments for select to authenticated
- using(exists(select 1 from public.learning_recovery_plans p where p.id=plan_id and p.institution_id=learning_reassessments.institution_id));
-create policy lg_timeline_read on public.learning_timeline_events for select to authenticated using(private.noor_lg_can_read(institution_id,student_membership_id));
+ using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and exists(select 1 from public.learning_recovery_plans p where p.id=plan_id and p.institution_id=learning_reassessments.institution_id));
+create policy lg_timeline_read on public.learning_timeline_events for select to authenticated using(private.noor_feature_enabled(institution_id,'learning_gap_time_machine') and private.noor_lg_can_read(institution_id,student_membership_id));
 -- Audit logs remain backend-only: no SELECT policy.
 
 create function private.noor_lg_recompute(p_inst uuid,p_student uuid,p_concept uuid)
@@ -295,6 +296,7 @@ declare inst uuid; nm text; titles text[]:=array['Place Value','Regrouping','Mul
 begin
  select institution_id,name into inst,nm from public.academic_groups where id=p_class and group_type='class' and is_active;
  if inst is null or lower(regexp_replace(nm,'[^a-z0-9]','','g')) not in('3','class3','grade3','3rd','third') then raise exception 'Choose an active Class 3 group';end if;
+ if not private.noor_feature_enabled(inst,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not (private.can_manage_academics(inst) or private.noor_quiz_group_access(inst,p_class,true)) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  for i in 1..4 loop
   insert into public.learning_concepts(institution_id,class_group_id,concept_title)
@@ -314,13 +316,18 @@ begin
  select * into strict q from public.noor_weekly_quizzes where id=p_quiz;
  select * into strict c from public.learning_concepts where id=p_concept and institution_id=q.institution_id;
  select coalesce(g.parent_group_id,g.id) into cls from public.academic_groups g where g.id=q.academic_group_id and g.institution_id=q.institution_id;
+ if not private.noor_feature_enabled(q.institution_id,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if c.class_group_id<>cls or lower(q.subject_name) not like '%math%'
  or p_index<0 or p_index>=jsonb_array_length(q.questions) then raise exception 'Class, subject or question mismatch';end if;
  if not (private.can_manage_academics(q.institution_id) or private.noor_quiz_group_access(q.institution_id,q.academic_group_id,true)) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  update public.learning_concepts set status='approved',approved_by=auth.uid() where id=c.id;
  insert into public.assessment_concept_mapping(institution_id,assessment_id,question_index,concept_id,approved_by)
  values(q.institution_id,p_quiz,p_index,p_concept,auth.uid())
- on conflict(assessment_id,question_index) do update set concept_id=excluded.concept_id,approved_by=excluded.approved_by,approved_at=now();
+ on conflict(assessment_id,question_index) do update set concept_id=excluded.concept_id,approved_by=excluded.approved_by,approved_at=now()
+ where public.assessment_concept_mapping.concept_id=excluded.concept_id or not exists
+ (select 1 from public.student_concept_evidence ev where ev.source_type='approved_quiz' and ev.concept_id=public.assessment_concept_mapping.concept_id and ev.question_index=excluded.question_index and ev.source_id in
+ (select id from public.noor_quiz_attempts where quiz_id=p_quiz));
+ if not found then raise exception 'Historical evidence exists. Mapping cannot be changed';end if;
  -- Do not rewrite historic evidence when mapping changes: mapping edits require a deliberate migration.
  for a in select id from public.noor_quiz_attempts where quiz_id=q.id and reviewed_at is not null loop
   perform private.noor_lg_ingest_attempt(a.id);
@@ -331,10 +338,12 @@ returns uuid language plpgsql security definer set search_path='' as $$
 declare c public.learning_concepts; n int; k int; v uuid:=gen_random_uuid(); student_class uuid;
 begin
  select * into strict c from public.learning_concepts where id=p_concept and status='approved';
+ if not private.noor_feature_enabled(c.institution_id,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not private.noor_lg_can_teach(c.institution_id,p_student) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  if not exists(select 1 from public.academic_group_memberships gm join public.academic_groups g on g.id=gm.group_id and g.institution_id=gm.institution_id
  where gm.institution_id=c.institution_id and gm.membership_id=p_student and gm.status='active' and (gm.group_id=c.class_group_id or g.parent_group_id=c.class_group_id)) then raise exception 'Student class mismatch';end if;
  if jsonb_typeof(p_questions)<>'array' or jsonb_typeof(p_scores)<>'array' then raise exception 'Questions and scores must be arrays';end if;
+ if (select count(distinct source_id) from public.student_concept_evidence where institution_id=c.institution_id and student_membership_id=p_student and concept_id=p_concept and source_type='teacher_diagnostic' and assessed_at>now()-interval '7 days')>=3 then raise exception 'Review recent diagnostics before adding another';end if;
  n:=jsonb_array_length(p_questions);
  if n<3 or n>5 or jsonb_array_length(p_scores)<>n then raise exception 'Use 3 to 5 teacher-reviewed questions';end if;
  for k in 0..n-1 loop
@@ -354,6 +363,7 @@ declare m public.student_concept_mastery; f public.learning_gap_findings; pid uu
 begin
  select * into strict m from public.student_concept_mastery where student_membership_id=p_student and concept_id=p_concept;
  pinst:=m.institution_id;
+ if not private.noor_feature_enabled(pinst,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not private.noor_lg_can_teach(pinst,p_student) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  select * into strict f from public.learning_gap_findings where institution_id=pinst and student_membership_id=p_student and concept_id=p_concept and finding_type='observed_gap' for update;
  select concept_title into ctitle from public.learning_concepts where id=p_concept;
@@ -388,6 +398,7 @@ returns boolean language plpgsql security definer set search_path='' as $$
 declare p public.learning_recovery_plans;
 begin
  select * into strict p from public.learning_recovery_plans where id=p_plan and teacher_status='assigned' for update;
+ if not private.noor_feature_enabled(p.institution_id,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not exists(select 1 from public.institution_memberships m where m.id=p.student_membership_id and m.institution_id=p.institution_id and m.user_id=auth.uid() and m.status='active' and m.role in('student','university_student'))
  then raise exception 'Only assigned student may complete practice' using errcode='42501';end if;
  update public.learning_recovery_activities set completion_status='completed',completed_at=now() where plan_id=p.id and institution_id=p.institution_id and completion_status='pending';

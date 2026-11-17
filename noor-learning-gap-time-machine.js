@@ -156,44 +156,90 @@ async function teacher(c,groupId,studentId,subjectInput=''){
   catch(error){status(error.message||String(error));btn.disabled=false;}
  };
 }
+function observationPanel(c,concept,member){
+ const examples=[
+ 'Show or point to an example of '+concept.concept_title+'.',
+ 'Use a picture, toy or classroom object to demonstrate '+concept.concept_title+'.',
+ 'Repeat the concept with different concrete objects.'
+ ];
+ layout('Playful Teacher Observation',box('Age-appropriate competency check',
+ '<p>Observe three short activities without requiring the child to read or type. Review each observation before saving. One observation session is not enough to confirm a learning gap.</p>'+
+ '<form data-lgt-observation>'+examples.map((x,i)=>field('a'+i,'Activity '+(i+1),x)+
+ '<label>Observed outcome '+(i+1)+'<select name="s'+i+'"><option value="">Choose after observing</option><option value="true">Demonstrated</option><option value="false">More practice helpful</option></select></label>').join('')+
+ '<button type="submit">Save teacher observations</button></form>'));
+ const form=dlg.querySelector('[data-lgt-observation]');
+ form.onsubmit=async e=>{
+  e.preventDefault();const v=new FormData(form);
+  const activities=examples.map((_,i)=>({activity:txt(v.get('a'+i)),demonstrated:v.get('s'+i)==='true'}));
+  if(examples.some((_,i)=>!['true','false'].includes(v.get('s'+i)))){status('Choose an observed result for each activity.');return;}
+  const btn=form.querySelector('[type=submit]');btn.disabled=true;
+  try{await rpc(c,'noor_lg_observe',{p_student:member,p_concept:concept.id,p_activities:activities});
+    status('Teacher observations recorded with real dates. Review further evidence before confirming any gap.');
+  }catch(error){status(error.message||String(error));}finally{btn.disabled=false;}
+ };
+}
 function diagnosticPanel(c,concept,member,planId=null){
- const names={'Place Value':['What is the value of 5 in 352?','Write 423 in hundreds, tens and ones.','Which is greater: 309 or 390?'],
- 'Regrouping':['Show one ten as ten ones using blocks.','Explain 42 - 18 using tens and ones.','How many tens are left after regrouping in 63 - 27?'],
- 'Multi-digit Subtraction':['Work out 321 - 105.','Work out 403 - 178.','Explain your first regrouping step in 532 - 276.'],
- 'Complex Arithmetic':['Solve 310 - 145.','Solve 240 + 175.','Explain how regrouping helps in multi-step arithmetic.']};
- const samples=names[concept.concept_title]||['Explain this concept in your own words.','Solve a simple example using this concept.','Show the steps and explain why they work.'];
- layout(planId?'Recovery reassessment':'Micro-diagnostic review',box('Teacher-reviewed questions','<p>Review or edit each Class 3 Maths question. Score each answer after assessing the student. Do not treat these examples as verified student responses.</p><form data-lgt-diagnostic>'+samples.map((q,i)=>field('q'+i,'Question '+(i+1),q)+ '<label>Result '+(i+1)+'<select name="s'+i+'"><option value="0">Needs more practice</option><option value="1">Correct / demonstrated</option></select></label>').join('')+'<button type="submit">Save diagnostic evidence</button></form>'));
- dlg.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.target,v=new FormData(f);const questions=samples.map((_,i)=>txt(v.get('q'+i))),scores=samples.map((_,i)=>Number(v.get('s'+i)));
-  try{f.querySelector('button').disabled=true;await (planId?rpc(c,'noor_lg_reassess',{p_plan:planId,p_questions:questions,p_scores:scores}):rpc(c,'noor_lg_diagnostic',{p_student:member,p_concept:concept.id,p_questions:questions,p_scores:scores}));status(planId?'Reassessment saved with before/after evidence. Teacher must confirm any resolution.':'Diagnostic saved with current timestamp; refresh learning overview to review all evidence.');}
-  catch(ex){status(ex.message||String(ex));}finally{f.querySelector('button').disabled=false;}
+ const examples=['Explain '+concept.concept_title+' in your own words or with an example.',
+ 'Show the steps or give a worked example of '+concept.concept_title+'.',
+ 'Apply '+concept.concept_title+' to a new real-life or class-related example.'];
+ layout(planId?'Recovery Reassessment':'Teacher-reviewed Micro-diagnostic',box('3 targeted questions',
+ '<p>These are editable draft prompts, not verified student results. Ask one concept per question and record actual responses after review.</p>'+
+ '<form data-lgt-diagnostic>'+examples.map((x,i)=>field('q'+i,'Question '+(i+1),x)+
+ '<label>Observed answer '+(i+1)+'<select name="s'+i+'"><option value="">Choose after assessment</option><option value="0">Not yet demonstrated</option><option value="1">Demonstrated</option></select></label>').join('')+
+ '<button type="submit">Record checked evidence</button></form>'));
+ const form=dlg.querySelector('[data-lgt-diagnostic]');
+ form.onsubmit=async e=>{
+  e.preventDefault();const v=new FormData(form),questions=examples.map((_,i)=>txt(v.get('q'+i)));
+  if(examples.some((_,i)=>!['0','1'].includes(v.get('s'+i)))){status('Score each question after assessing the learner.');return;}
+  const scores=examples.map((_,i)=>Number(v.get('s'+i))),btn=form.querySelector('[type=submit]');btn.disabled=true;
+  try{await (planId?rpc(c,'noor_lg_reassess',{p_plan:planId,p_questions:questions,p_scores:scores}):
+    rpc(c,'noor_lg_diagnostic',{p_student:member,p_concept:concept.id,p_questions:questions,p_scores:scores}));
+   status(planId?'Reassessment saved. Teacher must review improvement before resolution.':'Diagnostic evidence saved. Further independent evidence may be needed.');
+  }catch(error){status(error.message||String(error));}finally{btn.disabled=false;}
  };
 }
 function planPanel(c,concept,member){
- layout('Recovery Plan Review',box('Teacher-approved 5–10 minute activity','<p>Use a short visual explanation, a guided example and one independent practice. Edit before assigning.</p><form data-lgt-plan>'+field('lesson','5–10 minute micro-lesson','Use counters or place-value blocks to explain '+concept.concept_title+'. Model one example with the learner.','textarea')+
- field('practice','One short independent activity','Try one new '+concept.concept_title+' problem with a visual model. Explain each step.','textarea')+field('followup','Follow-up date (optional)','')+
+ layout('Recovery Plan Review',box('Teacher-approved 5–10 minute activity','<p>Use a short visual explanation, a guided example and one independent practice. Edit before assigning.</p><form data-lgt-plan>'+field('lesson','5–10 minute micro-lesson','Explain '+concept.concept_title+' using a visual, example or hands-on activity appropriate to the learner. Model one simple example.','textarea')+
+ field('practice','One short independent activity','Practice one short '+concept.concept_title+' activity. Explain or demonstrate the reasoning.','textarea')+field('followup','Follow-up date (optional)','')+
  '<label><input type="checkbox" name="approve" required> I checked the lesson and practice against the school syllabus.</label><button type="submit">Approve & assign to student</button></form>'));
  dlg.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.target,v=new FormData(f);try{f.querySelector('button').disabled=true;await rpc(c,'noor_lg_review',{p_student:member,p_concept:concept.id,p_action:'assign_plan',p_plan:{lesson:txt(v.get('lesson')),practice:txt(v.get('practice')),follow_up:txt(v.get('followup'))}});status('Teacher-approved recovery activity assigned.');}catch(ex){status(ex.message||String(ex));}finally{f.querySelector('button').disabled=false;}};
 }
 async function student(c){
  const [all,m,p,t]=await Promise.all([
-  qry(c,'learning_concepts','id,concept_title,status,class_group_id'),
+  qry(c,'learning_concepts','id,concept_title,status,class_group_id,subject_name'),
   qry(c,'student_concept_mastery','student_membership_id,concept_id,mastery_state,evidence_count,estimated_mastery'),
   qry(c,'learning_recovery_plans','id,student_membership_id,concept_id,teacher_status,generated_plan,assigned_at'),
   qry(c,'learning_timeline_events','student_membership_id,concept_id,event_type,occurred_at')
  ]);
- const by=conceptsById(all),mine=m.filter(x=>studentOwn(c,x.student_membership_id)),plans=p.filter(x=>studentOwn(c,x.student_membership_id)&&['assigned','completed'].includes(x.teacher_status));
+ const by=conceptsById(all.filter(x=>x.status==='approved')),mine=m.filter(x=>studentOwn(c,x.student_membership_id)),plans=p.filter(x=>studentOwn(c,x.student_membership_id)&&['assigned','completed'].includes(x.teacher_status));
  const milestones=t.filter(x=>studentOwn(c,x.student_membership_id)).sort((a,b)=>String(b.occurred_at).localeCompare(String(a.occurred_at))).slice(0,8);
  layout('My Learning Journey',box('Topics I understand',mine.filter(x=>x.mastery_state==='Demonstrated Mastery').map(x=>'<p>✓ '+E(by.get(x.concept_id)?.concept_title)+'</p>').join('')||empty)+
  box('Topics I am practising',mine.filter(x=>x.mastery_state!=='Demonstrated Mastery'&&x.mastery_state!=='Not Enough Evidence').map(x=>'<p>'+E(by.get(x.concept_id)?.concept_title)+' · '+E(x.mastery_state)+'</p>').join('')||empty)+
- box('My next learning activity',plans.map(x=>'<article class="lgt-concept"><h4>'+E(by.get(x.concept_id)?.concept_title||'Maths practice')+'</h4><p>'+E(x.generated_plan?.lesson)+'</p><p><b>Try:</b> '+E(x.generated_plan?.practice)+'</p><small>'+E(x.teacher_status)+'</small>'+(x.teacher_status==='assigned'?button('I have completed this practice','complete:'+x.id):'')+'</article>').join('')||'<p>Your teacher has not assigned a recovery activity yet.</p>')+
+ box('My next learning activity',plans.map(x=>'<article class="lgt-concept"><h4>'+E(by.get(x.concept_id)?.concept_title||'Your practice')+'</h4><p>'+E(x.generated_plan?.lesson)+'</p><p><b>Try:</b> '+E(x.generated_plan?.practice)+'</p><small>'+E(x.teacher_status)+'</small>'+(x.teacher_status==='assigned'?button('I have completed this practice','complete:'+x.id):'')+'</article>').join('')||'<p>Your teacher has not assigned a recovery activity yet.</p>')+
  box('My improvement milestones',milestones.map(x=>'<p>'+E(time(x.occurred_at))+' · '+E(x.event_type.replaceAll('_',' '))+'</p>').join('')||'<p>New milestones will appear as you practise.</p>'));
 }
 async function parent(c){
+ const preferred=String(A().profile?.preferred_language||'en').toLowerCase();
+ const lang=preferred.includes('urdu')||preferred==='ur'?'ur':
+   preferred.includes('telugu')||preferred==='te'?'te':
+   preferred.includes('hindi')||preferred==='hi'?'hi':'en';
+ const words={
+ en:{heading:'Family Learning Summary',home:'Support at home',none:'Teacher-approved progress appears when your school verifies your child link.',activity:'Try a calm, ten-minute learning activity using examples at home.',foot:'Only your linked child and approved learning guidance are visible.'},
+ ur:{heading:'بچے کی تعلیمی پیش رفت',home:'گھر میں مدد',none:'اسکول کے تصدیق شدہ رابطے کے بعد ہی بچے کی تعلیمی معلومات دکھائی جائیں گی۔',activity:'گھر میں مثالوں کے ذریعے دس منٹ کی آسان مشق کریں۔',foot:'صرف آپ کے منسلک بچے کی منظور شدہ تعلیمی رہنمائی دکھائی جاتی ہے۔'},
+ te:{heading:'పిల్లల అభ్యాస పురోగతి',home:'ఇంట్లో అభ్యాస సహాయం',none:'పాఠశాల మీ పిల్లల అనుబంధాన్ని నిర్ధారించిన తర్వాతే సమాచారం కనిపిస్తుంది.',activity:'ఇంట్లో ఉదాహరణలతో పది నిమిషాలు సరదాగా సాధన చేయండి.',foot:'మీతో అనుసంధానమైన పిల్లల ఆమోదించిన విద్యా సమాచారం మాత్రమే కనిపిస్తుంది.'},
+ hi:{heading:'बच्चे की सीखने की प्रगति',home:'घर पर सहायता',none:'विद्यालय द्वारा बच्चे का संबंध सत्यापित करने पर ही जानकारी दिखेगी।',activity:'घर पर उदाहरणों के साथ दस मिनट का सरल अभ्यास करें।',foot:'केवल आपके जुड़े हुए बच्चे की स्वीकृत शैक्षिक जानकारी दिखाई जाती है।'}
+ }[lang];
  const links=await qry(c,'noor_guardian_links','guardian_membership_id,student_membership_id');
  const ids=links.filter(x=>x.guardian_membership_id===c.membership.id).map(x=>x.student_membership_id);
- if(!ids.length){layout('Family Learning Summary',box('Read-only','<p>Teacher-approved progress appears here only when the school has verified your child link.</p>'));return;}
- const [mastery,concepts]=await Promise.all([qry(c,'student_concept_mastery','student_membership_id,concept_id,mastery_state'),qry(c,'learning_concepts','id,concept_title')]);const by=conceptsById(concepts);
- layout('Family Learning Summary',box('Support at home',mastery.filter(x=>ids.includes(x.student_membership_id)).slice(0,10).map(x=>'<p>'+E(by.get(x.concept_id)?.concept_title||'Maths')+' · '+E(x.mastery_state)+'. Try a 10-minute counting or place-value activity together.</p>').join('')||empty)+'<p class="lgt-foot">This read-only summary never shows other students or private teacher notes.</p>');
+ if(!ids.length){layout(words.heading,box(words.home,'<p>'+E(words.none)+'</p>'));return;}
+ const [mastery,concepts]=await Promise.all([
+  qry(c,'student_concept_mastery','student_membership_id,concept_id,mastery_state'),
+  qry(c,'learning_concepts','id,concept_title,subject_name,status')]);
+ const by=conceptsById(concepts.filter(x=>x.status==='approved'));
+ const visible=mastery.filter(x=>ids.includes(x.student_membership_id)&&by.has(x.concept_id)).slice(0,20);
+ layout(words.heading,box(words.home,visible.map(x=>
+ '<p><b>'+E(by.get(x.concept_id).subject_name+' · '+by.get(x.concept_id).concept_title)+'</b> · '+E(x.mastery_state)+'. '+E(words.activity)+'</p>').join('')||empty)+
+ '<p class="lgt-foot">'+E(words.foot)+'</p>');
 }
 async function principal(c){
  const data=await rpc(c,'noor_lg_principal_summary',{p_institution:c.school.id});

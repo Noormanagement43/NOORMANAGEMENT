@@ -21,13 +21,13 @@ function validOutput(raw:unknown,ctx:Json,action:string){
  if(typeof o.explanation!=='string'||o.explanation.trim().length<15||o.explanation.length>1200)throw Error('Explanation invalid');
  if(typeof o.confidence!=='number'||!Number.isFinite(o.confidence)||o.confidence<0||o.confidence>1)throw Error('Confidence invalid');
  const evidence=Array.isArray(ctx.evidence)?ctx.evidence as Json[]:[];
- const indices=new Map(evidence.map((e,i)=>['E'+(i+1),e.id]));
+ const indices=new Map<string,unknown>(evidence.map((e,i)=>['E'+(i+1),e.id] as [string,unknown]));
  if(!Array.isArray(o.evidence_ids)||o.evidence_ids.some(x=>typeof x!=='string'||!indices.has(x))||new Set(o.evidence_ids).size!==o.evidence_ids.length)throw Error('AI evidence references not in saved records');
  if(!o.suggested_activity||typeof o.suggested_activity!=='object'||Array.isArray(o.suggested_activity))throw Error('Activity invalid');
  const a=o.suggested_activity as Json;
  if(Object.keys(a).some(x=>!['lesson','practice','duration_minutes','questions'].includes(x)))throw Error('Unknown lesson field');
  if(typeof a.lesson!=='string'||a.lesson.length<10||a.lesson.length>1800||typeof a.practice!=='string'||a.practice.length<5||a.practice.length>1800)throw Error('Activity content invalid');
- if(!Number.isInteger(a.duration_minutes)||Number(a.duration_minutes)<5||Number(a.duration_minutes)>10)throw Error('Duration invalid');
+ if(!Number.isInteger(Number(a.duration_minutes))||Number(a.duration_minutes)<5||Number(a.duration_minutes)>10)throw Error('Duration invalid');
  if(!Array.isArray(a.questions)||a.questions.length!==3||a.questions.some(q=>typeof q!=='string'||q.length<5||q.length>300))throw Error('Three short teacher review questions required');
  const prereqs=Array.isArray(ctx.prerequisites)?ctx.prerequisites as Json[]:[];
  const allowedPrereqs=new Set(prereqs.map(x=>x.concept_id));
@@ -35,7 +35,7 @@ function validOutput(raw:unknown,ctx:Json,action:string){
   !x||typeof x!=='object'||Array.isArray(x)||!allowedPrereqs.has((x as Json).concept_id)||
   typeof (x as Json).explanation!=='string'||((x as Json).explanation as string).length>500))
  throw Error('Unapproved prerequisite reference');
- const sources=new Set(evidence.map(x=>x.source_type+':'+String(x.id)));
+ const sources=new Set(evidence.map(x=>x.source_type+':'+String(x.source_id)));
  const insufficient=evidence.length<3||sources.size<2;
  const output={
   concept_id:ctx.concept_id,
@@ -115,7 +115,7 @@ export async function handle(req:Request):Promise<Response>{
    return send(200,{output});
   }catch(err){
    // Never return provider details, keys, raw untrusted output or student records.
-   await db.rpc('noor_lg_ai_audit',{p_inst:inst,p_action:action,p_provider:provider.name,p_outcome:'invalid_output'}).catch(()=>null);
+   try{await db.rpc('noor_lg_ai_audit',{p_inst:inst,p_action:action,p_provider:provider.name,p_outcome:'invalid_output'});}catch{}
   }
  }
  return send(503,{error:'AI suggestions are temporarily unavailable. Teacher can review and assign activities manually.'});

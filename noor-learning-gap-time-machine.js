@@ -4,7 +4,7 @@ const A=()=>window.NOOR_AI_APP||{};
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ID=v=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(v||''));
 const class3=v=>/^(?:3|3rd|class\s*3|grade\s*3|third)$/i.test(String(v||'').trim());
-let dlg=null,session=null,serial=0;
+let dlg=null,session=null,serial=0,featureKey='',featureAllowed=null,featureLoading=false;
 const title='Learning Gap Time Machine';
 const empty='<p class="lgt-empty">Not Enough Evidence. Learning findings appear only after real teacher-reviewed assessments.</p>';
 function button(text,action,extra=''){return '<button type="button" data-lgt="'+E(action)+'" '+extra+'>'+E(text)+'</button>';}
@@ -20,9 +20,23 @@ function field(name,label,value='',kind='text'){return '<label class="lgt-field"
 function studentOwn(c,member){return c.membership.id===member;}
 function conceptsById(items){return new Map(items.map(x=>[x.id,x]));}
 async function base(){const c=await window.NOOR_SHARED_TIMETABLE.context();if(!c?.school?.id||!ID(c.school.id))throw Error('Verified institution required');return c;}
+async function verifyFeature(a,key){
+ if(featureLoading)return;
+ featureLoading=true;
+ try{
+  const access=await a.db.rpc('noor_feature_access',{p_institution:a.schoolId});
+  if(featureKey!==key)return;
+  featureAllowed=!access.error&&!access.data?.paused&&access.data?.features?.learning_gap_time_machine===true;
+ }catch{if(featureKey===key)featureAllowed=false;}
+ finally{featureLoading=false;if(featureKey===key&&featureAllowed)attach();}
+}
 function attach(){
  const a=A(),p=a.profile,root=document.querySelector('#workspace:not(.hidden)');
  if(!root||!p||p.status!=='active'||!a.user||!a.schoolId||!window.NOOR_SHARED_TIMETABLE?.context)return;
+ const key=a.user.id+':'+a.schoolId;
+ if(featureKey!==key){featureKey=key;featureAllowed=null;root.querySelectorAll('[data-lgt-launcher]').forEach(x=>x.remove());}
+ if(featureAllowed===null){void verifyFeature(a,key);return;}
+ if(!featureAllowed)return;
  const role=p.role,scope=role==='student'?'#view-student-progress':role==='teacher'?'#view-teacher-classroom':role==='parent'?'#view-overview':role==='principal'||role==='manager'?'#view-overview':null;
  if(!scope)return;
  const host=document.querySelector(scope)||document.querySelector('#view-overview');
@@ -37,7 +51,7 @@ async function open(){
  dlg.innerHTML='<div class="lgt-bar"><strong>'+E(title)+'</strong>'+button('Close','close')+'</div><div data-lgt-main class="lgt-main">Checking your school and classroom access…</div><p class="lgt-status" data-lgt-status role="status"></p>';
  document.body.append(dlg);dlg.addEventListener('close',()=>{dlg.remove();dlg=null;session=null;serial++;});dlg.showModal();const n=++serial;
  try {
-  const c=await base();if(n!==serial)return;session=c;
+  const c=await base();if(n!==serial)return;const access=await c.db.rpc('noor_feature_access',{p_institution:c.school.id});if(access.error||access.data?.features?.learning_gap_time_machine!==true||access.data?.paused)throw Error('This pilot is not enabled for your school.');session=c;
   const role=A().profile.role;
   if(role==='teacher')await teacher(c);
   else if(role==='student')await student(c);

@@ -269,6 +269,7 @@ begin
  select * into a from public.noor_quiz_attempts where id=p_attempt and reviewed_at is not null;
  if not found then return;end if;
  select * into q from public.noor_weekly_quizzes where id=a.quiz_id;
+ if not private.noor_feature_enabled(q.institution_id,'learning_gap_time_machine') then return;end if;
  select answer_key into k from private.noor_quiz_keys where quiz_id=q.id;
  for m in select * from public.assessment_concept_mapping where assessment_id=q.id and institution_id=q.institution_id loop
   item:=q.questions->m.question_index;total:=(item->>'marks')::numeric;
@@ -295,7 +296,7 @@ returns integer language plpgsql security definer set search_path='' as $$
 declare inst uuid; nm text; titles text[]:=array['Place Value','Regrouping','Multi-digit Subtraction','Complex Arithmetic']; ids uuid[]:=array[]::uuid[]; i integer; cid uuid;
 begin
  select institution_id,name into inst,nm from public.academic_groups where id=p_class and group_type='class' and is_active;
- if inst is null or lower(regexp_replace(nm,'[^a-z0-9]','','g')) not in('3','class3','grade3','3rd','third') then raise exception 'Choose an active Class 3 group';end if;
+ if inst is null or regexp_replace(lower(nm),'[^a-z0-9]','','g') not in('3','class3','grade3','3rd','third') then raise exception 'Choose an active Class 3 group';end if;
  if not private.noor_feature_enabled(inst,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not (private.can_manage_academics(inst) or private.noor_quiz_group_access(inst,p_class,true)) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  for i in 1..4 loop
@@ -424,3 +425,49 @@ grant execute on function private.noor_lg_start_pilot(uuid),private.noor_lg_map_
  to authenticated;
 grant execute on function public.noor_lg_start_pilot(uuid),public.noor_lg_map_question(uuid,integer,uuid),
  public.noor_lg_diagnostic(uuid,uuid,jsonb,jsonb),public.noor_lg_review(uuid,uuid,text,jsonb),public.noor_lg_complete(uuid) to authenticated;
+
+-- Teacher-scored recheck after actual practice: no automatic mastery certification.
+create function private.noor_lg_reassess(p_plan uuid,p_questions jsonb,p_scores jsonb)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare p public.learning_recovery_plans; c public.learning_concepts; m public.student_concept_mastery;
+ n integer; i integer; v uuid:=gen_random_uuid(); before_pct numeric; after_pct numeric; outcome text;
+begin
+ select * into strict p from public.learning_recovery_plans where id=p_plan and teacher_status in('assigned','completed');
+ select * into strict c from public.learning_concepts where id=p.concept_id and institution_id=p.institution_id;
+ if not private.noor_feature_enabled(p.institution_id,'learning_gap_time_machine') then
+  raise exception 'Feature is disabled' using errcode='42501';end if;
+ if not private.noor_lg_can_teach(p.institution_id,p.student_membership_id) then
+  raise exception 'Assigned teacher required' using errcode='42501';end if;
+ if jsonb_typeof(p_questions) is distinct from 'array' or jsonb_typeof(p_scores) is distinct from 'array'
+ then raise exception 'Review 3 to 5 questions and scores';end if;
+ n:=jsonb_array_length(p_questions);
+ if n<3 or n>5 or jsonb_array_length(p_scores)<>n then raise exception 'Review 3 to 5 questions and scores';end if;
+ if (select count(*) from public.learning_reassessments where plan_id=p_plan and assessed_at>now()-interval '7 days')>=3
+ then raise exception 'Review recent rechecks before adding another';end if;
+ select estimated_mastery into before_pct from public.student_concept_mastery
+ where institution_id=p.institution_id and student_membership_id=p.student_membership_id and concept_id=p.concept_id;
+ for i in 0..n-1 loop
+  if jsonb_typeof(p_questions->i) is distinct from 'string' or length(btrim(p_questions->>i)) not between 5 and 300
+   or p_scores->>i not in('0','1') then raise exception 'Invalid reassessment question or score';end if;
+  insert into public.student_concept_evidence(institution_id,student_membership_id,concept_id,source_type,source_id,question_index,earned,possible,assessed_at,recorded_by)
+  values(p.institution_id,p.student_membership_id,p.concept_id,'reassessment',v,i,(p_scores->>i)::numeric,1,now(),auth.uid());
+ end loop;
+ perform private.noor_lg_recompute(p.institution_id,p.student_membership_id,p.concept_id);
+ select * into m from public.student_concept_mastery where institution_id=p.institution_id and student_membership_id=p.student_membership_id and concept_id=p.concept_id;
+ after_pct:=m.estimated_mastery;
+ outcome:=case when after_pct is null then 'not_enough_evidence'
+   when before_pct is null then 'baseline_established'
+   when after_pct>before_pct then 'improving'
+   else 'teacher_followup_recommended' end;
+ insert into public.learning_reassessments(institution_id,plan_id,source_id,prior_mastery,updated_mastery,result)
+ values(p.institution_id,p_plan,v,before_pct,after_pct,outcome);
+ insert into public.learning_timeline_events(institution_id,student_membership_id,concept_id,event_type,actor_id,details)
+ values(p.institution_id,p.student_membership_id,p.concept_id,'reassessment_completed',auth.uid(),jsonb_build_object('plan_id',p_plan,'result',outcome,'question_count',n));
+ return v;
+end $$;
+create function public.noor_lg_reassess(p_plan uuid,p_questions jsonb,p_scores jsonb)
+returns uuid language sql security invoker set search_path='' as $$
+ select private.noor_lg_reassess(p_plan,p_questions,p_scores)
+$$;
+revoke all on function private.noor_lg_reassess(uuid,jsonb,jsonb),public.noor_lg_reassess(uuid,jsonb,jsonb) from public,anon;
+grant execute on function private.noor_lg_reassess(uuid,jsonb,jsonb),public.noor_lg_reassess(uuid,jsonb,jsonb) to authenticated;

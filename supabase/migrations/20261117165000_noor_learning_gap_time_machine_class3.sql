@@ -163,6 +163,7 @@ create index lg_concept_class_idx on public.learning_concepts(institution_id,cla
 create index lg_mapping_quiz_idx on public.assessment_concept_mapping(assessment_id,question_index);
 create index lg_evidence_student_idx on public.student_concept_evidence(institution_id,student_membership_id,concept_id,assessed_at desc);
 create index lg_evidence_source_idx on public.student_concept_evidence(source_id,source_type);
+create index lg_mastery_concept_aggregate_idx on public.student_concept_mastery(institution_id,concept_id,mastery_state);
 create index lg_findings_status_idx on public.learning_gap_findings(institution_id,status,updated_at desc);
 create index lg_plans_student_idx on public.learning_recovery_plans(institution_id,student_membership_id,teacher_status);
 create index lg_timeline_student_idx on public.learning_timeline_events(institution_id,student_membership_id,occurred_at desc);
@@ -376,7 +377,12 @@ begin
  elsif p_action='dismiss' then
   update public.learning_gap_findings set status='dismissed',reviewed_by=auth.uid(),reviewed_at=now(),updated_at=now() where id=f.id;
  elsif p_action='resolve' then
-  if m.estimated_mastery is null or m.estimated_mastery<75 or m.evidence_count<4 or m.source_count<2 then raise exception 'Recent verified improvement is required';end if;
+  if m.estimated_mastery is null or m.estimated_mastery<75 or m.evidence_count<4 or m.source_count<2
+ or not exists (select 1 from public.learning_recovery_plans plan
+  join public.learning_reassessments recheck on recheck.plan_id=plan.id and recheck.institution_id=plan.institution_id
+  where plan.institution_id=pinst and plan.student_membership_id=p_student and plan.concept_id=p_concept
+  and plan.teacher_status='completed' and recheck.updated_mastery>=75)
+ then raise exception 'Completed practice and a verified reassessment are required';end if;
   update public.learning_gap_findings set status='resolved',reviewed_by=auth.uid(),reviewed_at=now(),updated_at=now() where id=f.id;
   insert into public.learning_timeline_events(institution_id,student_membership_id,concept_id,event_type,actor_id)
   values(pinst,p_student,p_concept,'concept_resolved',auth.uid());
@@ -471,3 +477,49 @@ returns uuid language sql security invoker set search_path='' as $$
 $$;
 revoke all on function private.noor_lg_reassess(uuid,jsonb,jsonb),public.noor_lg_reassess(uuid,jsonb,jsonb) from public,anon;
 grant execute on function private.noor_lg_reassess(uuid,jsonb,jsonb),public.noor_lg_reassess(uuid,jsonb,jsonb) to authenticated;
+
+
+-- Server-side aggregated principal view: no default student identities returned.
+create function private.noor_lg_principal_summary(p_inst uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare response jsonb;
+begin
+ if not private.noor_feature_enabled(p_inst,'learning_gap_time_machine')
+   or not private.can_manage_academics(p_inst) then raise exception 'Leadership access required' using errcode='42501';end if;
+ select jsonb_build_object(
+ 'assessed_students',(select count(distinct m.student_membership_id) from public.student_concept_mastery m
+   join public.learning_concepts c on c.id=m.concept_id and c.institution_id=m.institution_id
+   join public.academic_groups gr on gr.id=c.class_group_id and gr.institution_id=c.institution_id
+   where m.institution_id=p_inst and m.mastery_state<>'Not Enough Evidence'
+     and regexp_replace(lower(gr.name),'[^a-z0-9]','','g') in('3','class3','grade3','3rd','third')
+     and c.subject_name='Mathematics'),
+ 'findings_to_review',(select count(*) from public.learning_gap_findings f
+   join public.learning_concepts c on c.id=f.concept_id and c.institution_id=f.institution_id
+   join public.academic_groups gr on gr.id=c.class_group_id and gr.institution_id=c.institution_id
+   where f.institution_id=p_inst and f.status in('needs_review','confirmed')
+     and regexp_replace(lower(gr.name),'[^a-z0-9]','','g') in('3','class3','grade3','3rd','third')
+     and c.subject_name='Mathematics'),
+ 'completed_plans',(select count(*) from public.learning_recovery_plans p
+   join public.learning_concepts c on c.id=p.concept_id and c.institution_id=p.institution_id
+   join public.academic_groups gr on gr.id=c.class_group_id and gr.institution_id=c.institution_id
+   where p.institution_id=p_inst and p.teacher_status='completed'
+     and regexp_replace(lower(gr.name),'[^a-z0-9]','','g') in('3','class3','grade3','3rd','third')
+     and c.subject_name='Mathematics'),
+ 'concepts',coalesce((select jsonb_agg(jsonb_build_object(
+   'concept_title',c.concept_title,
+   'recheck_count',(select count(*) from public.student_concept_mastery m
+      where m.institution_id=c.institution_id and m.concept_id=c.id and m.mastery_state='Recheck Recommended'),
+   'insufficient_count',(select count(*) from public.student_concept_mastery m
+      where m.institution_id=c.institution_id and m.concept_id=c.id and m.mastery_state='Not Enough Evidence')
+ ) order by c.concept_title)
+  from public.learning_concepts c
+  join public.academic_groups gr on gr.id=c.class_group_id and gr.institution_id=c.institution_id
+  where c.institution_id=p_inst and c.subject_name='Mathematics'
+     and regexp_replace(lower(gr.name),'[^a-z0-9]','','g') in('3','class3','grade3','3rd','third')),'[]'::jsonb)
+ ) into response;
+ return response;
+end $$;
+create function public.noor_lg_principal_summary(p_institution uuid)
+returns jsonb language sql stable security invoker set search_path='' as $$ select private.noor_lg_principal_summary(p_institution) $$;
+revoke all on function private.noor_lg_principal_summary(uuid),public.noor_lg_principal_summary(uuid) from public,anon;
+grant execute on function private.noor_lg_principal_summary(uuid),public.noor_lg_principal_summary(uuid) to authenticated;

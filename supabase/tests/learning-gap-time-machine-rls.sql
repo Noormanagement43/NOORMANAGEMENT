@@ -10,7 +10,7 @@ do $fixture$
 declare users uuid[]; inst_a uuid:=gen_random_uuid();inst_b uuid:=gen_random_uuid();
  class_a uuid:=gen_random_uuid();class_b uuid:=gen_random_uuid();group_x uuid:=gen_random_uuid();group_y uuid:=gen_random_uuid();group_b uuid:=gen_random_uuid();
  student_a uuid:=gen_random_uuid();student_y uuid:=gen_random_uuid();student_b uuid:=gen_random_uuid();
- teacher_a uuid:=gen_random_uuid();parent_a uuid:=gen_random_uuid();concept_a uuid:=gen_random_uuid();concept_b uuid:=gen_random_uuid();
+ teacher_a uuid:=gen_random_uuid();parent_a uuid:=gen_random_uuid();concept_a uuid:=gen_random_uuid();concept_b uuid:=gen_random_uuid(); quiz_a uuid:=gen_random_uuid();attempt_a uuid:=gen_random_uuid();items integer;
 begin
  select array_agg(id) into users from (select id from auth.users where id not in (select user_id from public.platform_roles) order by id limit 4)x;
  if array_length(users,1)<4 then raise exception 'Requires four non-platform test identities';end if;
@@ -44,6 +44,22 @@ begin
  values(inst_a,student_a,concept_a,'teacher_diagnostic',gen_random_uuid(),0,0,1,now()),
        (inst_a,student_y,concept_a,'teacher_diagnostic',gen_random_uuid(),0,1,1,now()),
        (inst_b,student_b,concept_b,'teacher_diagnostic',gen_random_uuid(),0,0,1,now());
+ -- Realistic review event and exact question mapping, still rollback-only.
+ insert into public.noor_weekly_quizzes(id,institution_id,academic_group_id,teacher_membership_id,created_by,title,subject_name,quiz_date,questions,max_marks)
+ values(quiz_a,inst_a,group_x,teacher_a,users[2],'LG rollback concept quiz','Mathematics',
+ current_date+(6-extract(dow from current_date)::int+7)%7,
+ '[{"type":"mcq","prompt":"Which digit is tens?","options":["2","4"],"marks":1}]'::jsonb,1);
+ insert into private.noor_quiz_keys(quiz_id,answer_key) values(quiz_a,'[{"answer":"0"}]'::jsonb);
+ insert into public.assessment_concept_mapping(institution_id,assessment_id,question_index,concept_id,approved_by)
+ values(inst_a,quiz_a,0,concept_a,users[2]);
+ insert into public.noor_quiz_attempts(id,quiz_id,institution_id,student_membership_id,answers,objective_marks,correct_count,wrong_count,unanswered_count,pending_count,reviewed_at,reviewed_by,short_scores,final_marks)
+ values(attempt_a,quiz_a,inst_a,student_a,'["1"]'::jsonb,0,0,1,0,0,now(),users[2],'[]'::jsonb,0);
+ select count(*) into items from public.student_concept_evidence where source_type='approved_quiz' and source_id=attempt_a;
+ if items<>1 then raise exception 'Approved quiz trigger did not ingest concept evidence';end if;
+ perform private.noor_lg_ingest_attempt(attempt_a);
+ perform private.noor_lg_ingest_attempt(attempt_a);
+ select count(*) into items from public.student_concept_evidence where source_type='approved_quiz' and source_id=attempt_a;
+ if items<>1 then raise exception 'Repeated review created duplicate evidence';end if;
  perform private.noor_lg_recompute(inst_a,student_a,concept_a);
  perform private.noor_lg_recompute(inst_a,student_y,concept_a);
  perform private.noor_lg_recompute(inst_b,student_b,concept_b);
@@ -146,6 +162,18 @@ begin
  exception when insufficient_privilege then blocked:=true;end;
  if not blocked then raise exception 'Teacher authored an unauthorized school concept';end if;
 end $curriculum$;
+
+do $ai_context$
+declare ctx jsonb; denied boolean:=false;
+begin
+ ctx:=public.noor_lg_ai_context(current_setting('lg.audit.student_a')::uuid,current_setting('lg.audit.concept_a')::uuid);
+ if ctx->>'concept_title'<>'Place Value' or jsonb_array_length(ctx->'evidence')<2
+ then raise exception 'Authorized teacher AI context missing checked evidence';end if;
+ begin
+  perform public.noor_lg_ai_context(current_setting('lg.audit.student_y')::uuid,current_setting('lg.audit.concept_a')::uuid);
+ exception when insufficient_privilege then denied:=true;end;
+ if not denied then raise exception 'AI context leaked another section';end if;
+end $ai_context$;
 
 do $diagnostic$
 declare sid uuid;plan uuid;current_pct numeric;total int; i int;

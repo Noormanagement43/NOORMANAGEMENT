@@ -689,9 +689,9 @@ begin
  'institution_id',c.institution_id,'concept_id',c.id,'concept_title',c.concept_title,'subject_name',c.subject_name,
  'class_name',label,'curriculum_version',c.curriculum_version,
  'evidence',coalesce((select jsonb_agg(jsonb_build_object(
-   'id',e.id,'source_type',e.source_type,'earned',e.earned,'possible',e.possible,
+   'id',e.id,'source_type',e.source_type,'source_id',e.source_id,'earned',e.earned,'possible',e.possible,
    'assessed_at',e.assessed_at) order by e.assessed_at desc)
-   from (select id,source_type,earned,possible,assessed_at
+   from (select id,source_type,source_id,earned,possible,assessed_at
     from public.student_concept_evidence where institution_id=c.institution_id
       and student_membership_id=p_student and concept_id=c.id
     order by assessed_at desc limit 20)e),'[]'::jsonb),

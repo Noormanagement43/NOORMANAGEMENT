@@ -368,7 +368,7 @@ returns boolean language sql stable security definer set search_path='' as $$
   join public.academic_group_memberships gm on gm.membership_id=m.id and gm.institution_id=m.institution_id and gm.status='active' and gm.group_role='student'
   join public.academic_groups g on g.id=gm.group_id and g.institution_id=gm.institution_id and g.is_active
   where c.id=p_concept and c.status='approved' and (g.id=c.class_group_id or g.parent_group_id=c.class_group_id));
-$;
+$$;
 revoke all on function private.noor_lg_student_concept_allowed(uuid,uuid) from public,anon;
 grant execute on function private.noor_lg_student_concept_allowed(uuid,uuid) to authenticated;
 

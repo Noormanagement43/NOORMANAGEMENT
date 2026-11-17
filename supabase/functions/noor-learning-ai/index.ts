@@ -13,7 +13,7 @@ function cfg():Array<{name:string;model:string;key:string}>{
  ];
  return providers.filter(x=>x.model&&x.key);
 }
-function validOutput(raw:unknown,ctx:Json,action:string){
+export function validOutput(raw:unknown,ctx:Json,action:string){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid AI JSON');
  const o=raw as Json;const allowed=new Set(['concept_id','evidence_ids','explanation','confidence','suggested_activity','teacher_review_status','possible_root_causes']);
  if(Object.keys(o).some(k=>!allowed.has(k)))throw Error('Unexpected AI field');

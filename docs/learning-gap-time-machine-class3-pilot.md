@@ -31,3 +31,9 @@ The migration creates a school-scoped concept map, teacher-approved quiz-questio
 - Confirm no existing teacher quiz, student progress, creator controls, mobile layout or attendance functionality regresses.
 - To disable without data loss: turn the Creator/school feature key OFF. To roll back UI: revert the PR's HTML hook and the two client assets. **Never drop evidence or historical tables automatically**; only use a reviewed migration rollback after export/retention approval.
 - Supabase migrations are additive; record migration history carefully and review environment readiness before applying to production.
+
+## Additional guardrails completed in PR
+- The UI checks effective Creator/school feature access and remains hidden while OFF; every write RPC is independently blocked when OFF.
+- Teacher reassessment is a separate, dated evidence source with before/after mastery, idempotent historical quiz ingestion, and a dedicated teacher action. Resolving a gap requires completed practice and a scored reassessment, not simply marking an item complete.
+- Principal insights use a school-scoped aggregate RPC (no student details in default response).
+- Rollback-only staging test script: `supabase/tests/learning-gap-time-machine-rls.sql` checks wrong-school and wrong-section access, self-only student access, linked-only guardian access, no client evidence inserts, and the insufficient-evidence rule. This test **has been committed but not executed on a staging database**.

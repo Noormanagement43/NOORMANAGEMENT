@@ -19,7 +19,7 @@ Deno.test('accept only linked evidence and approved prerequisite concepts',()=>{
  expect(output.possible_root_causes[0].confirmed===false,'unconfirmed cause');
 });
 Deno.test('single assessment remains Not Enough Evidence',()=>{
- const output=validOutput(draft,{...context,evidence:context.evidence.slice(0,2)},'diagnostic');
+ const output=validOutput({...draft,evidence_ids:['E1','E2']},{...context,evidence:context.evidence.slice(0,2)},'diagnostic');
  expect(output.confidence===0&&output.evidence_state==='Not Enough Evidence','single-source confidence');
 });
 Deno.test('hallucinated concept and evidence references are rejected',()=>{

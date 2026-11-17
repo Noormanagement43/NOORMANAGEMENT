@@ -50,6 +50,9 @@ begin
  if not exists (select 1 from public.student_concept_mastery where institution_id=inst_a and student_membership_id=student_a
  and concept_id=concept_a and estimated_mastery is null and mastery_state='Not Enough Evidence')
  then raise exception 'Single wrong answer incorrectly confirmed';end if;
+ perform set_config('lg.audit.group_x',group_x::text,true);
+ perform set_config('lg.audit.group_b',group_b::text,true);
+ perform set_config('lg.audit.concept_a',concept_a::text,true);
  perform set_config('lg.audit.inst_a',inst_a::text,true);
  perform set_config('lg.audit.inst_b',inst_b::text,true);
  perform set_config('lg.audit.student_a',student_a::text,true);
@@ -123,4 +126,70 @@ begin
  select count(*) into log_policy from pg_policies where schemaname='public' and tablename='learning_ai_audit_logs' and cmd='SELECT';
  if log_policy<>0 then raise exception 'AI audit logs are exposed to clients';end if;
 end $check_catalog$;
+
+-- Verified learning lifecycle and curriculum authoring for school and College subjects.
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('lg.audit.user_teacher'),true);
+do $curriculum$
+declare x uuid; y uuid; blocked boolean:=false;
+begin
+ x:=public.noor_lg_add_concept(current_setting('lg.audit.group_x')::uuid,'Biology','Cell Structure','college-stream-v1',null);
+ y:=public.noor_lg_add_concept(current_setting('lg.audit.group_x')::uuid,'Biology','Cell Processes','college-stream-v1',x);
+ if not exists(select 1 from public.concept_dependencies where concept_id=y and prerequisite_concept_id=x)
+ then raise exception 'Configurable college prerequisites missing';end if;
+ begin
+ perform public.noor_lg_add_concept(current_setting('lg.audit.group_x')::uuid,'Biology','Cell Structure','college-stream-v1',y);
+ exception when others then blocked:=true;end;
+ if not blocked then raise exception 'Circular prerequisite relationship accepted';end if;
+ blocked:=false;
+ begin perform public.noor_lg_add_concept(current_setting('lg.audit.group_b')::uuid,'Maths','Unauthorized Topic','school-v1',null);
+ exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'Teacher authored an unauthorized school concept';end if;
+end $curriculum$;
+
+do $diagnostic$
+declare sid uuid;plan uuid;current_pct numeric;total int; i int;
+ questions jsonb:='["Explain place value using blocks.","Find the tens in a number.","Show three hundreds and two tens."]'::jsonb;
+ recheck jsonb:='["Apply the idea correctly in example one.","Apply the idea correctly in example two.","Apply the idea correctly in example three.","Apply the idea correctly in example four.","Apply the idea correctly in example five."]'::jsonb;
+begin
+ perform public.noor_lg_diagnostic(current_setting('lg.audit.student_a')::uuid,current_setting('lg.audit.concept_a')::uuid,
+  questions,'[0,0,0]'::jsonb);
+ if not exists(select 1 from public.learning_gap_findings where student_membership_id=current_setting('lg.audit.student_a')::uuid
+  and concept_id=current_setting('lg.audit.concept_a')::uuid and status='needs_review')
+ then raise exception 'Independent diagnostic failed to trigger teacher review';end if;
+ perform public.noor_lg_review(current_setting('lg.audit.student_a')::uuid,current_setting('lg.audit.concept_a')::uuid,'confirm',null);
+ plan:=public.noor_lg_review(current_setting('lg.audit.student_a')::uuid,current_setting('lg.audit.concept_a')::uuid,'assign_plan',
+  jsonb_build_object('lesson','Use physical objects to model place value during a short explanation.','practice','Show another example using blocks.'));
+ perform set_config('lg.audit.recovery_plan',plan::text,true);
+ if not exists(select 1 from public.learning_recovery_plans where id=plan and teacher_status='assigned')
+ then raise exception 'Teacher plan not assigned';end if;
+end $diagnostic$;
+
+select set_config('request.jwt.claim.sub',current_setting('lg.audit.user_student'),true);
+do $practice$
+begin
+ if not public.noor_lg_complete(current_setting('lg.audit.recovery_plan')::uuid)
+ then raise exception 'Assigned learner could not complete practice';end if;
+end $practice$;
+
+select set_config('request.jwt.claim.sub',current_setting('lg.audit.user_teacher'),true);
+do $reassess$
+declare i int; score numeric; n int;
+ questions jsonb:='["Show place value example one.","Show place value example two.","Show place value example three.","Show place value example four.","Show place value example five."]'::jsonb;
+begin
+ for i in 1..3 loop
+  perform public.noor_lg_reassess(current_setting('lg.audit.recovery_plan')::uuid,questions,'[1,1,1,1,1]'::jsonb);
+ end loop;
+ select estimated_mastery into score from public.student_concept_mastery where student_membership_id=current_setting('lg.audit.student_a')::uuid
+  and concept_id=current_setting('lg.audit.concept_a')::uuid;
+ if score<75 then raise exception 'Reassessment did not update demonstrated progress: %',score;end if;
+ perform public.noor_lg_review(current_setting('lg.audit.student_a')::uuid,current_setting('lg.audit.concept_a')::uuid,'resolve',null);
+ if not exists(select 1 from public.learning_gap_findings where student_membership_id=current_setting('lg.audit.student_a')::uuid
+  and concept_id=current_setting('lg.audit.concept_a')::uuid and status='resolved')
+ then raise exception 'Teacher did not resolve verified learning progress';end if;
+ select count(*) into n from public.learning_reassessments where plan_id=current_setting('lg.audit.recovery_plan')::uuid;
+ if n<>3 then raise exception 'Reassessments not recorded independently';end if;
+end $reassess$;
+reset role;
+
 rollback;

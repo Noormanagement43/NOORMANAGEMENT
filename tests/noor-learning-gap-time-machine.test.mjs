@@ -43,3 +43,11 @@ test('teacher approves interventions; student activity is self-scoped and audite
   assert.match(js,/I have completed this practice/);
   assert.doesNotMatch(js,/Groq|Gemini|OpenAI/);
 });
+test('teacher rechecks follow assigned practice and never auto-certify mastery',()=>{
+ assert.match(sql,/create function private\\.noor_lg_reassess/);
+ assert.match(sql,/Completed practice and a verified reassessment are required/);
+ assert.match(js,/noor_lg_reassess/);
+ assert.match(js,/noor_lg_principal_summary/);
+ assert.match(js,/features\\?\\.learning_gap_time_machine===true/);
+ assert.match(js,/Possible prerequisite causes/);
+});

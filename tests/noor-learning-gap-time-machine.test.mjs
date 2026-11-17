@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const js=readFileSync(new URL('../noor-learning-gap-time-machine.js',import.meta.url),'utf8');
-const sql=readFileSync(new URL('../supabase/migrations/20261117165000_noor_learning_gap_time_machine_class3.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../supabase/migrations/20261117121344_noor_learning_gap_time_machine_universal.sql',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('learning module parses and is attached without changing existing sidebar',()=>{
   assert.doesNotThrow(()=>new vm.Script(js));

@@ -3,7 +3,7 @@
 const A=()=>window.NOOR_AI_APP||{};
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ID=v=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(v||''));
-const class3=v=>/^(?:3|3rd|class\\s*3|grade\\s*3|third)$/i.test(String(v||'').trim());
+const class3=v=>/^(?:3|3rd|class\s*3|grade\s*3|third)$/i.test(String(v||'').trim());
 let dlg=null,session=null,serial=0;
 const title='Learning Gap Time Machine';
 const empty='<p class="lgt-empty">Not Enough Evidence. Learning findings appear only after real teacher-reviewed assessments.</p>';

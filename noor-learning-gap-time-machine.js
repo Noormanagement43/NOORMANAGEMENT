@@ -12,6 +12,7 @@ function status(text){const el=dlg?.querySelector('[data-lgt-status]');if(el)el.
 function check(c){if(!c||A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Your school session changed. Reopen this page.');}
 async function qry(c,table,cols='*',filter={}){check(c);let q=c.db.from(table).select(cols).eq('institution_id',c.school.id);for(const [key,val] of Object.entries(filter))q=q.eq(key,val);const r=await q.limit(500);if(r.error)throw r.error;check(c);return r.data||[];}
 async function rpc(c,name,params){check(c);const r=await c.db.rpc(name,params);if(r.error)throw r.error;check(c);return r.data;}
+async function aiProposal(c,member,concept,action){check(c);const response=await c.db.functions.invoke('noor-learning-ai',{body:{institution_id:c.school.id,student_membership_id:member,concept_id:concept.id,action,language:A().profile?.preferred_language||'English'}});check(c);if(response.error||!response.data?.output)throw Error('AI suggestion unavailable. Continue with the editable teacher workflow.');const output=response.data.output;if(output.concept_id!==concept.id||output.teacher_review_status!=='pending')throw Error('The suggestion did not match this concept.');return output;}
 const time=v=>v?new Date(v).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
 const txt=v=>String(v??'').trim();
 function box(head,content){return '<section class="lgt-card"><h3>'+E(head)+'</h3>'+content+'</section>';}
@@ -130,7 +131,7 @@ async function teacher(c,groupId,studentId,subjectInput=''){
     '<small>Confidence: '+(verified?Math.round(m.confidence*100)+'%':'Not Enough Evidence')+' · Last: '+E(time(m?.last_checked_at))+'</small>'+
     '<details><summary>Why might this student need extra support?</summary><p>Verified responses: '+E(ev.map(x=>x.earned+'/'+x.possible+' ('+x.source_type+')').join(', ')||'No saved assessment evidence')+'</p>'+
     '<p>Possible prerequisites (not confirmed): '+E(related.join('; ')||'No prerequisite mapped')+'</p>'+
-    '<p>Recovery plans: '+p.length+'</p>'+
+    '<p>Recovery plans: '+p.length+'</p>'+button('Suggest root-cause explanation','ai-root:'+k.id+':'+target.membership_id)+button('Explore next-topic risk','ai-forecast:'+k.id+':'+target.membership_id)+'<div data-lgt-ai-result></div>'+
     (early(selected.class_name)?button('Record playful observation','observe:'+k.id+':'+target.membership_id):
       button('Record micro-diagnostic','diagnostic:'+k.id+':'+target.membership_id))+
     (f?.status==='needs_review'?button('Confirm observed gap','confirm:'+k.id+':'+target.membership_id)+button('Dismiss suggestion','dismiss:'+k.id+':'+target.membership_id):'')+
@@ -188,6 +189,9 @@ function diagnosticPanel(c,concept,member,planId=null){
  '<label>Observed answer '+(i+1)+'<select name="s'+i+'"><option value="">Choose after assessment</option><option value="0">Not yet demonstrated</option><option value="1">Demonstrated</option></select></label>').join('')+
  '<button type="submit">Record checked evidence</button></form>'));
  const form=dlg.querySelector('[data-lgt-diagnostic]');
+ form.insertAdjacentHTML('beforebegin',button('Suggest 3 targeted questions','ai-questions'));
+ const aiBtn=dlg.querySelector('[data-lgt="ai-questions"]');
+ aiBtn.onclick=async()=>{aiBtn.disabled=true;try{const output=await aiProposal(c,member,concept,'diagnostic');output.suggested_activity.questions.forEach((q,i)=>{if(form.elements['q'+i])form.elements['q'+i].value=q;});status('AI questions are a draft. Review and edit before observing actual answers.');}catch(error){status(error.message||String(error));}finally{aiBtn.disabled=false;}};
  form.onsubmit=async e=>{
   e.preventDefault();const v=new FormData(form),questions=examples.map((_,i)=>txt(v.get('q'+i)));
   if(examples.some((_,i)=>!['0','1'].includes(v.get('s'+i)))){status('Score each question after assessing the learner.');return;}
@@ -202,6 +206,10 @@ function planPanel(c,concept,member){
  layout('Recovery Plan Review',box('Teacher-approved 5–10 minute activity','<p>Use a short visual explanation, a guided example and one independent practice. Edit before assigning.</p><form data-lgt-plan>'+field('lesson','5–10 minute micro-lesson','Explain '+concept.concept_title+' using a visual, example or hands-on activity appropriate to the learner. Model one simple example.','textarea')+
  field('practice','One short independent activity','Practice one short '+concept.concept_title+' activity. Explain or demonstrate the reasoning.','textarea')+field('followup','Follow-up date (optional)','')+
  '<label><input type="checkbox" name="approve" required> I checked the lesson and practice against the school syllabus.</label><button type="submit">Approve & assign to student</button></form>'));
+ const form=dlg.querySelector('[data-lgt-plan]');
+ form.insertAdjacentHTML('beforebegin',button('Generate editable lesson suggestion','ai-lesson'));
+ const suggestBtn=dlg.querySelector('[data-lgt="ai-lesson"]');
+ suggestBtn.onclick=async()=>{suggestBtn.disabled=true;try{const output=await aiProposal(c,member,concept,'recovery');form.elements.lesson.value=output.suggested_activity.lesson;form.elements.practice.value=output.suggested_activity.practice;status('Generated lesson is a draft. Review and approve before assigning.');}catch(error){status(error.message||String(error));}finally{suggestBtn.disabled=false;}};
  dlg.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.target,v=new FormData(f);try{f.querySelector('button').disabled=true;await rpc(c,'noor_lg_review',{p_student:member,p_concept:concept.id,p_action:'assign_plan',p_plan:{lesson:txt(v.get('lesson')),practice:txt(v.get('practice')),follow_up:txt(v.get('followup'))}});status('Teacher-approved recovery activity assigned.');}catch(ex){status(ex.message||String(ex));}finally{f.querySelector('button').disabled=false;}};
 }
 async function student(c){
@@ -256,7 +264,8 @@ document.addEventListener('click',async e=>{
  const act=b.dataset.lgt;if(act==='open'){await open();return;}if(act==='close'){dlg?.close();return;}
  const c=session;if(!c||!dlg)return;
  try{
-    if(act==='load-subject'){const el=dlg.querySelector('[data-lgt-subject]'),group=dlg.querySelector('[data-lgt-group]'),student=dlg.querySelector('[data-lgt-student]');await teacher(c,group.value,student?.value||null,el.value);return;}
+    if(act.startsWith('ai-root:')||act.startsWith('ai-forecast:')){const [which,id,member]=act.split(':');const all=await qry(c,'learning_concepts','id,concept_title,status',{id});const concept=all.find(x=>x.id===id&&x.status==='approved');if(!concept)throw Error('Approved concept unavailable.');b.disabled=true;try{const output=await aiProposal(c,member,concept,which==='ai-root'?'root_cause':'forecast');const dest=b.parentElement.querySelector('[data-lgt-ai-result]');if(dest)dest.innerHTML='<p><b>Teacher-review suggestion:</b> '+E(output.explanation)+'</p><small>Evidence state: '+E(output.evidence_state)+' · Confidence: '+E(Math.round(100*output.confidence))+'% · Not a confirmed diagnosis</small>';}finally{b.disabled=false;}return;}
+  if(act==='load-subject'){const el=dlg.querySelector('[data-lgt-subject]'),group=dlg.querySelector('[data-lgt-group]'),student=dlg.querySelector('[data-lgt-student]');await teacher(c,group.value,student?.value||null,el.value);return;}
   if(act.startsWith('confirm:')||act.startsWith('resolve:')||act.startsWith('dismiss:')){const [action,concept,member]=act.split(':');await rpc(c,'noor_lg_review',{p_student:member,p_concept:concept,p_action:action});status('Teacher review saved.');return;}
   if(act.startsWith('complete:')){await rpc(c,'noor_lg_complete',{p_plan:act.split(':')[1]});await student(c);return;}
   if(act.startsWith('diagnostic:')||act.startsWith('plan:')||act.startsWith('reassess:')||act.startsWith('observe:')){const parts=act.split(':');const action=parts[0],id=action==='reassess'?parts[2]:parts[1],member=action==='reassess'?parts[3]:parts[2],planId=action==='reassess'?parts[1]:null;const all=await qry(c,'learning_concepts','id,concept_title,status');const concept=all.find(x=>x.id===id);if(!concept)throw Error('Concept no longer available.');if(action==='observe')observationPanel(c,concept,member);else if(action==='diagnostic'||action==='reassess')diagnosticPanel(c,concept,member,planId);else planPanel(c,concept,member);return;}

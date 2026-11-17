@@ -1,9 +1,9 @@
-/* Class 3 Maths Learning Gap Time Machine. Existing navigation and branding remain unchanged. */
+/* School & College Learning Gap Time Machine: teacher-reviewed evidence, no synthetic outcomes. */
 (()=>{'use strict';
 const A=()=>window.NOOR_AI_APP||{};
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ID=v=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(v||''));
-const class3=v=>/^(?:3|3rd|class\s*3|grade\s*3|third)$/i.test(String(v||'').trim());
+const early=v=>/^(nursery|lkg|ukg|kg|kg ?1|kg ?2|kindergarten|pre.?kg)$/i.test(String(v||'').trim());
 let dlg=null,session=null,serial=0,featureKey='',featureAllowed=null,featureLoading=false;
 const title='Learning Gap Time Machine';
 const empty='<p class="lgt-empty">Not Enough Evidence. Learning findings appear only after real teacher-reviewed assessments.</p>';
@@ -15,7 +15,7 @@ async function rpc(c,name,params){check(c);const r=await c.db.rpc(name,params);i
 const time=v=>v?new Date(v).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
 const txt=v=>String(v??'').trim();
 function box(head,content){return '<section class="lgt-card"><h3>'+E(head)+'</h3>'+content+'</section>';}
-function layout(head,content){dlg.querySelector('[data-lgt-main]').innerHTML='<header class="lgt-head"><span>CLASS 3 · MATHEMATICS PILOT</span><h2>'+E(head)+'</h2></header>'+content;}
+function layout(head,content){dlg.querySelector('[data-lgt-main]').innerHTML='<header class="lgt-head"><span>SCHOOL & COLLEGE · LEARNING INTELLIGENCE</span><h2>'+E(head)+'</h2></header>'+content;}
 function field(name,label,value='',kind='text'){return '<label class="lgt-field">'+E(label)+(kind==='textarea'?'<textarea name="'+E(name)+'" maxlength="1800">'+E(value)+'</textarea>':'<input name="'+E(name)+'" value="'+E(value)+'" maxlength="1800">')+'</label>';}
 function studentOwn(c,member){return c.membership.id===member;}
 function conceptsById(items){return new Map(items.map(x=>[x.id,x]));}
@@ -41,7 +41,7 @@ function attach(){
  if(!scope)return;
  const host=document.querySelector(scope)||document.querySelector('#view-overview');
  if(!host||host.querySelector('[data-lgt-launcher]'))return;
- const strip=document.createElement('section');strip.className='lgt-launcher';strip.dataset.lgtLauncher='';strip.innerHTML='<div><b>'+E(role==='student'?'My Learning Journey':role==='parent'?'Learning at home':title)+'</b><small>Class 3 Maths · concept evidence & supportive practice</small></div>'+button('Open learning journey','open');
+ const strip=document.createElement('section');strip.className='lgt-launcher';strip.dataset.lgtLauncher='';strip.innerHTML='<div><b>'+E(role==='student'?'My Learning Journey':role==='parent'?'Learning at home':title)+'</b><small>Curriculum-based progress, practice and improvement</small></div>'+button('Open learning journey','open');
  host.append(strip);
 }
 function observe(){const root=document.getElementById('workspace');if(!root)return;new MutationObserver(()=>attach()).observe(root,{subtree:true,childList:true,attributes:false});attach();}
@@ -51,7 +51,7 @@ async function open(){
  dlg.innerHTML='<div class="lgt-bar"><strong>'+E(title)+'</strong>'+button('Close','close')+'</div><div data-lgt-main class="lgt-main">Checking your school and classroom access…</div><p class="lgt-status" data-lgt-status role="status"></p>';
  document.body.append(dlg);dlg.addEventListener('close',()=>{dlg.remove();dlg=null;session=null;serial++;});dlg.showModal();const n=++serial;
  try {
-  const c=await base();if(n!==serial)return;const access=await c.db.rpc('noor_feature_access',{p_institution:c.school.id});if(access.error||access.data?.features?.learning_gap_time_machine!==true||access.data?.paused)throw Error('This pilot is not enabled for your school.');session=c;
+  const c=await base();if(n!==serial)return;const access=await c.db.rpc('noor_feature_access',{p_institution:c.school.id});if(access.error||access.data?.features?.learning_gap_time_machine!==true||access.data?.paused)throw Error('Learning intelligence is not enabled for your school.');session=c;
   const role=A().profile.role;
   if(role==='teacher')await teacher(c);
   else if(role==='student')await student(c);
@@ -60,28 +60,54 @@ async function open(){
   else layout(title,empty);
  }catch(e){if(n===serial&&dlg)layout('Cannot open learning journey',box('Access check', '<p>'+E(e.message||e)+'</p>'));}
 }
-async function teacher(c,groupId,studentId){
- const groups=(await window.NOOR_TEACHER_DATA.assignments(c)).filter(g=>class3(g.class_name));
- if(!groups.length){layout('Teacher Learning Overview',box('Class 3 required','<p>The pilot is limited to your assigned Class 3 sections. No eligible section is assigned to this account.</p>'));return;}
+async function teacher(c,groupId,studentId,subjectInput=''){
+ const groups=await window.NOOR_TEACHER_DATA.assignments(c);
+ if(!groups.length){layout('Teacher Learning Overview',box('Assigned classes','<p>No active teaching group assigned. School leadership can assign your class and section.</p>'));return;}
  const selected=groups.find(g=>g.group_id===groupId)||groups[0],cls=selected.class_id;
- const all=await qry(c,'learning_concepts','id,class_group_id,concept_title,status,created_at');
- const concepts=all.filter(x=>x.class_group_id===cls);
- const dependencies=(await qry(c,'concept_dependencies','concept_id,prerequisite_concept_id')).filter(x=>concepts.some(k=>k.id===x.concept_id));
+ const [all,qs,periods,deps]=await Promise.all([
+  qry(c,'learning_concepts','id,class_group_id,subject_name,concept_title,status,created_at,curriculum_version'),
+  c.db.from('noor_weekly_quizzes').select('id,academic_group_id,title,subject_name,questions,quiz_date').eq('institution_id',c.school.id).eq('academic_group_id',selected.group_id).order('quiz_date',{ascending:false}).limit(40),
+  c.db.from('teacher_timetable_periods').select('subject_name').eq('institution_id',c.school.id).eq('academic_group_id',selected.group_id).limit(100),
+  qry(c,'concept_dependencies','concept_id,prerequisite_concept_id')]);
+ if(qs.error)throw qs.error;if(periods.error)throw periods.error;check(c);
+ const groupConcepts=all.filter(x=>x.class_group_id===cls&&x.status!=='archived');
+ const options=[...new Set([...groupConcepts.map(x=>x.subject_name),...(qs.data||[]).map(q=>q.subject_name),...(periods.data||[]).map(q=>q.subject_name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ const subject=(subjectInput?.trim()||options[0]||'Mathematics').slice(0,140);
+ const versions=[...new Set(groupConcepts.filter(x=>x.subject_name.toLowerCase()===subject.toLowerCase()).map(x=>x.curriculum_version))];
+ const concepts=groupConcepts.filter(x=>x.subject_name.toLowerCase()===subject.toLowerCase());
  const conceptMap=conceptsById(concepts);
- const [raw,quizzes]=await Promise.all([
- c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:selected.group_id,p_from:'2025-01-01',p_to:'2027-12-31'}),
- c.db.from('noor_weekly_quizzes').select('id,academic_group_id,title,subject_name,questions,quiz_date').eq('institution_id',c.school.id).eq('academic_group_id',selected.group_id).order('quiz_date',{ascending:false}).limit(20)]);
- if(raw.error)throw raw.error;if(quizzes.error)throw quizzes.error;check(c);
- const roster=(raw.data?.students||[]).filter(x=>ID(x.membership_id));
- const target=roster.find(x=>x.membership_id===studentId)||roster[0]||null;
- const filter='<div class="lgt-filters"><label>Class / Section<select data-lgt-group>'+groups.map(g=>'<option value="'+E(g.group_id)+'" '+(selected.group_id===g.group_id?'selected':'')+'>'+E(g.class_label)+'</option>').join('')+'</select></label><label>Student<select data-lgt-student><option value="">Choose student</option>'+roster.map(s=>'<option value="'+E(s.membership_id)+'" '+(target?.membership_id===s.membership_id?'selected':'')+'>'+E(s.name)+'</option>').join('')+'</select></label></div>';
- let html=filter+'<div class="lgt-stats">'+box('Students assessed',String(roster.filter(s=>s.assessments>0).length))+
- box('Approved concepts',String(concepts.filter(x=>x.status==='approved').length))+
- box('Pilot',E(selected.class_label))+'</div>';
- if(!concepts.length)html+=box('Start the concept map','<p>Place Value → Regrouping → Multi-digit Subtraction → Complex Arithmetic. Teacher approval is required before quiz mapping.</p>'+button('Create Class 3 concept map','pilot'));
- else html+=box('Prerequisite concept map','<div class="lgt-graph">'+dependencies.map(d=>'<p>'+E(conceptMap.get(d.prerequisite_concept_id)?.concept_title||'Earlier concept')+' → '+E(conceptMap.get(d.concept_id)?.concept_title||'Next concept')+'</p>').join('')+'</div><small>These links are curriculum suggestions, not confirmed root causes.</small>');
- if(concepts.length&&(quizzes.data||[]).length)html+=box('Map approved quiz questions','<p>Choose a teacher-reviewed concept for each actual quiz question.</p>'+quizzes.data.filter(q=>/math/i.test(q.subject_name)).slice(0,5).map(q=>(q.questions||[]).map((x,i)=>'<div class="lgt-map-line"><small>'+E(time(q.quiz_date))+' · '+E(q.title)+'</small><p>Q'+(i+1)+'. '+E(x.prompt)+'</p><select data-lgt-map-quiz="'+E(q.id)+'" data-lgt-map-index="'+i+'"><option value="">Choose concept</option>'+concepts.map(k=>'<option value="'+E(k.id)+'">'+E(k.concept_title)+'</option>').join('')+'</select></div>').join('')).join(''));
- else html+=box('Real quiz evidence','<p>No teacher-approved Class 3 Maths quiz is available for this section yet. Existing quiz marks are never invented.</p>');
+ const dependencies=deps.filter(x=>conceptMap.has(x.concept_id)&&conceptMap.has(x.prerequisite_concept_id));
+ const iso=d=>new Date(d).toISOString().slice(0,10);
+ const now=new Date(),previous=new Date(now.getTime()-365*86400000);
+ const r=await c.db.rpc('noor_class_performance',{p_institution:c.school.id,p_group:selected.group_id,p_from:iso(previous),p_to:iso(now)});
+ if(r.error)throw r.error;check(c);
+ const roster=(r.data?.students||[]).filter(x=>ID(x.membership_id)).slice(0,500);
+ const target=roster.find(x=>x.membership_id===studentId)||null;
+ const quizRows=(qs.data||[]).filter(q=>String(q.subject_name).toLowerCase()===subject.toLowerCase());
+ const input='<div class="lgt-filters"><label>Class / Section<select data-lgt-group>'+
+ groups.map(g=>'<option value="'+E(g.group_id)+'" '+(selected.group_id===g.group_id?'selected':'')+'>'+E(g.class_label)+'</option>').join('')+
+ '</select></label><label>Subject<input data-lgt-subject list="lgtSubjects" value="'+E(subject)+'" maxlength="140"><datalist id="lgtSubjects">'+options.map(v=>'<option value="'+E(v)+'">').join('')+'</datalist></label>'+
+ '<div class="lgt-inline">'+button('Load subject','load-subject')+'</div><label>Student<select data-lgt-student><option value="">Select a student</option>'+
+ roster.map(x=>'<option value="'+E(x.membership_id)+'" '+(target?.membership_id===x.membership_id?'selected':'')+'>'+E(x.name)+'</option>').join('')+'</select></label></div>';
+ let html=input+'<div class="lgt-stats">'+box('Students assessed',String(roster.filter(x=>x.assessments>0).length))+
+ box('Teacher-approved concepts',String(concepts.filter(x=>x.status==='approved').length))+
+ box('Class / Stream',E(selected.class_label))+'</div>';
+ html+=box('Curriculum concept map','<p>Build each subject with your school or college syllabus. Teacher must review every concept and prerequisite.</p>'+
+ '<form data-lgt-create-concept><div class="lgt-filters"><label>Concept title<input name="title" required minlength="2" maxlength="120" placeholder="e.g. Place Value / Fractions / Thermodynamics"></label>'+
+ '<label>Curriculum version<input name="version" required maxlength="40" value="'+E(versions[0]||'school-v1')+'"></label>'+
+ '<label>Prerequisite (optional)<select name="prerequisite"><option value="">No prerequisite</option>'+concepts.filter(x=>x.status==='approved').map(k=>'<option value="'+E(k.id)+'">'+E(k.concept_title)+' · '+E(k.curriculum_version)+'</option>').join('')+'</select></label></div>'+
+ '<label><input type="checkbox" name="approve" required> I checked this concept against the school syllabus.</label>'+
+ '<button type="submit">Approve & add concept</button></form>'+
+ '<div class="lgt-graph">'+dependencies.map(d=>'<p>'+E(conceptMap.get(d.prerequisite_concept_id)?.concept_title||'Prerequisite')+' → '+E(conceptMap.get(d.concept_id)?.concept_title||'Topic')+'</p>').join('')+
+ '</div>'+(concepts.length?'<p>'+concepts.map(x=>E(x.concept_title)+' ('+E(x.curriculum_version)+')').join(' · ')+'</p>':'<p>No concepts configured for this subject yet.</p>')+
+ '<small>Prerequisite links identify possibilities, not verified root causes.</small>');
+ if(concepts.length&&quizRows.length)html+=box('Map real assessment questions','<p>Mapping is teacher-approved. Only checked, saved results contribute evidence.</p>'+
+ quizRows.slice(0,8).map(q=>(q.questions||[]).slice(0,30).map((item,i)=>
+ '<div class="lgt-map-line"><small>'+E(time(q.quiz_date))+' · '+E(q.title)+'</small><p>Q'+(i+1)+'. '+E(item.prompt)+'</p>'+
+ '<select data-lgt-map-quiz="'+E(q.id)+'" data-lgt-map-index="'+i+'"><option value="">Choose concept</option>'+
+ concepts.filter(k=>k.status==='approved').map(k=>'<option value="'+E(k.id)+'">'+E(k.concept_title)+'</option>').join('')+
+ '</select></div>').join('')).join(''));
+ else html+=box('Assessment evidence','<p>No mapped, teacher-approved '+E(subject)+' test available in this section yet. For younger learners, use teacher competency observations instead.</p>');
  if(target&&concepts.length){
   const [mastery,findings,evidence,plans,timeline]=await Promise.all([
     qry(c,'student_concept_mastery','student_membership_id,concept_id,evidence_count,source_count,confidence,estimated_mastery,mastery_state,last_checked_at',{student_membership_id:target.membership_id}),
@@ -89,19 +115,46 @@ async function teacher(c,groupId,studentId){
     qry(c,'student_concept_evidence','student_membership_id,concept_id,source_type,earned,possible,assessed_at',{student_membership_id:target.membership_id}),
     qry(c,'learning_recovery_plans','id,student_membership_id,concept_id,teacher_status,generated_plan,assigned_at',{student_membership_id:target.membership_id}),
     qry(c,'learning_timeline_events','student_membership_id,concept_id,event_type,occurred_at',{student_membership_id:target.membership_id})]);
-  const mine=x=>x.filter(v=>v.student_membership_id===target.membership_id);
+  const selectedRows=items=>items.filter(x=>x.student_membership_id===target.membership_id);
   html+=box('Student Learning Detail · '+target.name,concepts.map(k=>{
-    const m=mine(mastery).find(x=>x.concept_id===k.id),f=mine(findings).find(x=>x.concept_id===k.id),ev=mine(evidence).filter(x=>x.concept_id===k.id),p=mine(plans).filter(x=>x.concept_id===k.id);
-    const prerequisites=dependencies.filter(d=>d.concept_id===k.id).map(d=>conceptMap.get(d.prerequisite_concept_id)).filter(Boolean);
-    const related=prerequisites.map(pr=>{const source=mine(mastery).find(x=>x.concept_id===pr.id);return pr.concept_title+': '+(source?.mastery_state||'Not Enough Evidence')+' ('+(source?.evidence_count||0)+' evidence items)';});
+    const m=selectedRows(mastery).find(x=>x.concept_id===k.id),f=selectedRows(findings).find(x=>x.concept_id===k.id);
+    const ev=selectedRows(evidence).filter(x=>x.concept_id===k.id),p=selectedRows(plans).filter(x=>x.concept_id===k.id);
+    const related=dependencies.filter(d=>d.concept_id===k.id).map(d=>{
+     const name=conceptMap.get(d.prerequisite_concept_id)?.concept_title||'Earlier concept';
+     const mastery=selectedRows(mastery).find(x=>x.concept_id===d.prerequisite_concept_id);
+     return name+': '+(mastery?.mastery_state||'Not Enough Evidence');
+    });
     const verified=m?.evidence_count>=3&&m?.source_count>=2;
-    return '<article class="lgt-concept"><h4>'+E(k.concept_title)+'</h4><p><b>'+E(verified?m.mastery_state:'Not Enough Evidence')+'</b> · '+(m?.evidence_count||0)+' evidence items · '+(m?.source_count||0)+' assessment sources</p><small>Confidence: '+(verified?Math.round(m.confidence*100)+'%':'Not Enough Evidence')+' · Last: '+E(time(m?.last_checked_at))+'</small>'+
-    '<details><summary>Why is this student struggling? · Evidence</summary><p>Observed answers: '+E(ev.map(x=>x.earned+'/'+x.possible+' ('+x.source_type+')').join(', ')||'No saved evidence')+'</p><p>' +E('Possible prerequisite causes (not confirmed): '+(related.join('; ')||'No prerequisite mapped yet'))+'</p><p>Teacher should confirm understanding using separate diagnostic questions.</p><p>Recovery plans: '+p.length+'; latest '+E(p[p.length-1]?.teacher_status||'none')+'</p>'+button('Record 3-question diagnostic','diagnostic:'+k.id+':'+target.membership_id)+(f?.status==='needs_review'?button('Confirm observed gap','confirm:'+k.id+':'+target.membership_id)+button('Dismiss suggestion','dismiss:'+k.id+':'+target.membership_id):'')+(f?.status==='confirmed'?button('Prepare recovery plan','plan:'+k.id+':'+target.membership_id):'')+(f?.status==='confirmed'&&m?.estimated_mastery>=75?button('Mark resolved','resolve:'+k.id+':'+target.membership_id):'')+(p.some(x=>x.teacher_status==='completed')?button('Reassess learning','reassess:'+p.find(x=>x.teacher_status==='completed').id+':'+k.id+':'+target.membership_id):'')+'</details></article>';
-  }).join('')+'<p class="lgt-foot">A single incorrect answer cannot confirm a learning gap. Teacher approval is mandatory.</p>');
-  html+=box('Learning timeline',mine(timeline).sort((a,b)=>String(b.occurred_at).localeCompare(String(a.occurred_at))).slice(0,12).map(t=>'<p>'+E(time(t.occurred_at))+' · '+E(t.event_type.replaceAll('_',' '))+'</p>').join('')||empty);
+    return '<article class="lgt-concept"><h4>'+E(k.concept_title)+'</h4><p><b>'+E(verified?m.mastery_state:'Not Enough Evidence')+
+    '</b> · '+(m?.evidence_count||0)+' evidence items · '+(m?.source_count||0)+' assessment sources</p>'+
+    '<small>Confidence: '+(verified?Math.round(m.confidence*100)+'%':'Not Enough Evidence')+' · Last: '+E(time(m?.last_checked_at))+'</small>'+
+    '<details><summary>Why might this student need extra support?</summary><p>Verified responses: '+E(ev.map(x=>x.earned+'/'+x.possible+' ('+x.source_type+')').join(', ')||'No saved assessment evidence')+'</p>'+
+    '<p>Possible prerequisites (not confirmed): '+E(related.join('; ')||'No prerequisite mapped')+'</p>'+
+    '<p>Recovery plans: '+p.length+'</p>'+
+    (early(selected.class_name)?button('Record playful observation','observe:'+k.id+':'+target.membership_id):
+      button('Record micro-diagnostic','diagnostic:'+k.id+':'+target.membership_id))+
+    (f?.status==='needs_review'?button('Confirm observed gap','confirm:'+k.id+':'+target.membership_id)+button('Dismiss suggestion','dismiss:'+k.id+':'+target.membership_id):'')+
+    (f?.status==='confirmed'?button('Prepare recovery plan','plan:'+k.id+':'+target.membership_id):'')+
+    (p.some(x=>x.teacher_status==='completed')?button('Reassess learning','reassess:'+p.find(x=>x.teacher_status==='completed').id+':'+k.id+':'+target.membership_id):'')+
+    (f?.status==='confirmed'&&m?.estimated_mastery>=75?button('Mark resolved','resolve:'+k.id+':'+target.membership_id):'')+
+    '</details></article>';
+  }).join('')+'<p class="lgt-foot">One wrong answer cannot confirm a learning gap. All decisions can be reviewed by the teacher.</p>');
+  html+=box('Historical learning timeline',selectedRows(timeline).sort((a,b)=>String(b.occurred_at).localeCompare(String(a.occurred_at))).slice(0,20).map(x=>'<p>'+E(time(x.occurred_at))+' · '+E(x.event_type.replaceAll('_',' '))+'</p>').join('')||empty);
  }
- layout('Class Learning Overview',html);dlg.querySelector('[data-lgt-group]').onchange=e=>teacher(c,e.target.value);
- dlg.querySelector('[data-lgt-student]').onchange=e=>teacher(c,selected.group_id,e.target.value);
+ layout('Class Learning Overview',html);
+ const groupControl=dlg.querySelector('[data-lgt-group]');
+ if(groupControl)groupControl.onchange=e=>teacher(c,e.target.value,null,'');
+ const studentControl=dlg.querySelector('[data-lgt-student]');
+ if(studentControl)studentControl.onchange=e=>teacher(c,selected.group_id,e.target.value,subject);
+ const form=dlg.querySelector('[data-lgt-create-concept]');
+ if(form)form.onsubmit=async e=>{
+  e.preventDefault();const values=new FormData(form);const title=txt(values.get('title'));const version=txt(values.get('version'));
+  const prereq=txt(values.get('prerequisite'))||null;if(values.get('approve')!=='on')return;
+  const btn=form.querySelector('[type=submit]');btn.disabled=true;
+  try{await rpc(c,'noor_lg_add_concept',{p_group:selected.group_id,p_subject:subject,p_title:title,p_curriculum_version:version,p_prerequisite:prereq});
+   await teacher(c,selected.group_id,target?.membership_id||null,subject);status('Teacher-reviewed concept saved to this school.');}
+  catch(error){status(error.message||String(error));btn.disabled=false;}
+ };
 }
 function diagnosticPanel(c,concept,member,planId=null){
  const names={'Place Value':['What is the value of 5 in 352?','Write 423 in hundreds, tens and ones.','Which is greater: 309 or 390?'],
@@ -144,23 +197,23 @@ async function parent(c){
 }
 async function principal(c){
  const data=await rpc(c,'noor_lg_principal_summary',{p_institution:c.school.id});
- if(!data)throw Error('Leadership summary is not available.');
  layout('Principal Learning Intelligence','<div class="lgt-stats">'+
- box('Students with sufficient evidence',String(data.assessed_students||0))+
- box('Concept findings to review',String(data.findings_to_review||0))+
- box('Completed recovery activities',String(data.completed_plans||0))+'</div>'+
- box('Class 3 Maths concept support', (data.concepts||[]).map(x=>'<p>'+E(x.concept_title)+' · '+E(x.recheck_count)+' rechecks recommended · '+E(x.insufficient_count)+' without enough evidence</p>').join('')||empty)+
- '<p class="lgt-foot">Only school-level aggregates are shown. Educational risk estimates are suggestions, not guarantees.</p>');
+ box('Students with sufficient evidence',String(data?.assessed_students||0))+
+ box('Findings awaiting teacher review',String(data?.findings_to_review||0))+
+ box('Completed recovery activities',String(data?.completed_plans||0))+'</div>'+
+ box('Class, Stream & Subject support', (data?.scopes||[]).map(x=>
+ '<p><b>'+E(x.group_name)+' · '+E(x.subject_name)+'</b> · '+E(x.concept_count)+' concepts · '+E(x.recheck_count)+' need recheck · '+E(x.evidence_pending)+' without enough evidence</p>').join('')||empty)+
+ '<p class="lgt-foot">School-wide aggregate only. No private student or teacher notes are displayed.</p>');
 }
 document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-lgt]');if(!b)return;
  const act=b.dataset.lgt;if(act==='open'){await open();return;}if(act==='close'){dlg?.close();return;}
  const c=session;if(!c||!dlg)return;
  try{
-  if(act==='pilot'){const groups=(await window.NOOR_TEACHER_DATA.assignments(c)).filter(g=>class3(g.class_name));if(!groups.length)return;await rpc(c,'noor_lg_start_pilot',{p_class:groups[0].class_id});status('Class 3 concept map created; approve via question mapping.');await teacher(c,groups[0].group_id);return;}
+    if(act==='load-subject'){const el=dlg.querySelector('[data-lgt-subject]'),group=dlg.querySelector('[data-lgt-group]'),student=dlg.querySelector('[data-lgt-student]');await teacher(c,group.value,student?.value||null,el.value);return;}
   if(act.startsWith('confirm:')||act.startsWith('resolve:')||act.startsWith('dismiss:')){const [action,concept,member]=act.split(':');await rpc(c,'noor_lg_review',{p_student:member,p_concept:concept,p_action:action});status('Teacher review saved.');return;}
   if(act.startsWith('complete:')){await rpc(c,'noor_lg_complete',{p_plan:act.split(':')[1]});await student(c);return;}
-  if(act.startsWith('diagnostic:')||act.startsWith('plan:')||act.startsWith('reassess:')){const parts=act.split(':');const action=parts[0],id=action==='reassess'?parts[2]:parts[1],member=action==='reassess'?parts[3]:parts[2],planId=action==='reassess'?parts[1]:null;const all=await qry(c,'learning_concepts','id,concept_title,status');const concept=all.find(x=>x.id===id);if(!concept)throw Error('Concept no longer available.');if(action==='diagnostic'||action==='reassess')diagnosticPanel(c,concept,member,planId);else planPanel(c,concept,member);return;}
+  if(act.startsWith('diagnostic:')||act.startsWith('plan:')||act.startsWith('reassess:')||act.startsWith('observe:')){const parts=act.split(':');const action=parts[0],id=action==='reassess'?parts[2]:parts[1],member=action==='reassess'?parts[3]:parts[2],planId=action==='reassess'?parts[1]:null;const all=await qry(c,'learning_concepts','id,concept_title,status');const concept=all.find(x=>x.id===id);if(!concept)throw Error('Concept no longer available.');if(action==='observe')observationPanel(c,concept,member);else if(action==='diagnostic'||action==='reassess')diagnosticPanel(c,concept,member,planId);else planPanel(c,concept,member);return;}
  }catch(ex){status(ex.message||String(ex));}
 });
 document.addEventListener('change',async e=>{

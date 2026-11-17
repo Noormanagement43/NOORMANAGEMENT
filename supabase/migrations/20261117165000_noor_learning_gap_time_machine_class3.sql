@@ -359,12 +359,26 @@ begin
  values(c.institution_id,p_student,p_concept,'diagnostic_completed',auth.uid(),jsonb_build_object('question_count',n));
  return v;
 end $$;
+-- Cross-class binding used by all teacher review and AI context entrypoints.
+create function private.noor_lg_student_concept_allowed(p_student uuid,p_concept uuid)
+returns boolean language sql stable security definer set search_path='' as $
+ select exists(
+  select 1 from public.learning_concepts c
+  join public.institution_memberships m on m.id=p_student and m.institution_id=c.institution_id and m.status='active'
+  join public.academic_group_memberships gm on gm.membership_id=m.id and gm.institution_id=m.institution_id and gm.status='active' and gm.group_role='student'
+  join public.academic_groups g on g.id=gm.group_id and g.institution_id=gm.institution_id and g.is_active
+  where c.id=p_concept and c.status='approved' and (g.id=c.class_group_id or g.parent_group_id=c.class_group_id));
+$;
+revoke all on function private.noor_lg_student_concept_allowed(uuid,uuid) from public,anon;
+grant execute on function private.noor_lg_student_concept_allowed(uuid,uuid) to authenticated;
+
 create function private.noor_lg_review(p_student uuid,p_concept uuid,p_action text,p_plan jsonb default null)
 returns uuid language plpgsql security definer set search_path='' as $$
 declare m public.student_concept_mastery; f public.learning_gap_findings; pid uuid; pinst uuid; ctitle text;
 begin
  select * into strict m from public.student_concept_mastery where student_membership_id=p_student and concept_id=p_concept;
  pinst:=m.institution_id;
+ if not private.noor_lg_student_concept_allowed(p_student,p_concept) then raise exception 'Student class and concept mismatch' using errcode='42501';end if;
  if not private.noor_feature_enabled(pinst,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
  if not private.noor_lg_can_teach(pinst,p_student) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  select * into strict f from public.learning_gap_findings where institution_id=pinst and student_membership_id=p_student and concept_id=p_concept and finding_type='observed_gap' for update;
@@ -657,3 +671,69 @@ begin
  ) into response;
  return response;
 end $$;
+
+
+-- Teacher-only verified context for secure AI generation. No names, contact details, or private notes.
+create function private.noor_lg_ai_context(p_student uuid,p_concept uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare c public.learning_concepts; label text; data jsonb;
+begin
+ select * into strict c from public.learning_concepts where id=p_concept and status='approved';
+ if not private.noor_feature_enabled(c.institution_id,'learning_gap_time_machine')
+   or not private.noor_lg_can_teach(c.institution_id,p_student)
+   or not private.noor_lg_student_concept_allowed(p_student,p_concept)
+ then raise exception 'No authorized student/concept access' using errcode='42501';end if;
+ select name into label from public.academic_groups
+ where id=c.class_group_id and institution_id=c.institution_id;
+ select jsonb_build_object(
+ 'concept_id',c.id,'concept_title',c.concept_title,'subject_name',c.subject_name,
+ 'class_name',label,'curriculum_version',c.curriculum_version,
+ 'evidence',coalesce((select jsonb_agg(jsonb_build_object(
+   'id',e.id,'source_type',e.source_type,'earned',e.earned,'possible',e.possible,
+   'assessed_at',e.assessed_at) order by e.assessed_at desc)
+   from (select id,source_type,earned,possible,assessed_at
+    from public.student_concept_evidence where institution_id=c.institution_id
+      and student_membership_id=p_student and concept_id=c.id
+    order by assessed_at desc limit 20)e),'[]'::jsonb),
+ 'prerequisites',coalesce((select jsonb_agg(jsonb_build_object(
+    'concept_id',pr.id,'title',pr.concept_title,
+    'mastery_state',coalesce(m.mastery_state,'Not Enough Evidence'))
+    order by pr.concept_title)
+    from public.concept_dependencies d
+    join public.learning_concepts pr on pr.id=d.prerequisite_concept_id and pr.institution_id=d.institution_id
+    left join public.student_concept_mastery m on m.institution_id=d.institution_id
+     and m.student_membership_id=p_student and m.concept_id=pr.id
+    where d.institution_id=c.institution_id and d.concept_id=c.id),'[]'::jsonb)
+ ) into data;
+ return data;
+end $$;
+create function public.noor_lg_ai_context(p_student uuid,p_concept uuid)
+returns jsonb language sql stable security invoker set search_path='' as $$
+select private.noor_lg_ai_context(p_student,p_concept)
+$$;
+revoke all on function private.noor_lg_ai_context(uuid,uuid),public.noor_lg_ai_context(uuid,uuid) from public,anon;
+grant execute on function private.noor_lg_ai_context(uuid,uuid),public.noor_lg_ai_context(uuid,uuid) to authenticated;
+
+create function private.noor_lg_ai_audit(p_inst uuid,p_action text,p_provider text,p_outcome text)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not private.noor_feature_enabled(p_inst,'learning_gap_time_machine')
+    or not exists(select 1 from public.institution_memberships m where m.institution_id=p_inst
+     and m.user_id=auth.uid() and m.status='active' and m.role in
+      ('principal','school_admin','university_admin','academic_admin','teacher','faculty'))
+ then raise exception 'Staff authorization required' using errcode='42501';end if;
+ if p_action not in('diagnostic','recovery','root_cause','forecast')
+  or p_provider not in('groq','gemini','openai','none')
+  or p_outcome not in('generated','rejected','unavailable','invalid_output')
+ then raise exception 'Invalid AI audit category';end if;
+ insert into public.learning_ai_audit_logs(institution_id,request_type,model_provider,outcome)
+ values(p_inst,p_action,p_provider,p_outcome);
+end $$;
+create function public.noor_lg_ai_audit(p_inst uuid,p_action text,p_provider text,p_outcome text)
+returns void language sql security invoker set search_path='' as $$
+ select private.noor_lg_ai_audit(p_inst,p_action,p_provider,p_outcome)
+$$;
+revoke all on function private.noor_lg_ai_audit(uuid,text,text,text),
+ public.noor_lg_ai_audit(uuid,text,text,text) from public,anon;
+grant execute on function private.noor_lg_ai_audit(uuid,text,text,text),
+ public.noor_lg_ai_audit(uuid,text,text,text) to authenticated;

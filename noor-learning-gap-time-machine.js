@@ -10,7 +10,7 @@ const empty='<p class="lgt-empty">Not Enough Evidence. Learning findings appear 
 function button(text,action,extra=''){return '<button type="button" data-lgt="'+E(action)+'" '+extra+'>'+E(text)+'</button>';}
 function status(text){const el=dlg?.querySelector('[data-lgt-status]');if(el)el.textContent=text||'';}
 function check(c){if(!c||A().user?.id!==c.userId||A().schoolId!==c.school.id)throw Error('Your school session changed. Reopen this page.');}
-async function qry(c,table,cols='*'){check(c);const r=await c.db.from(table).select(cols).eq('institution_id',c.school.id);if(r.error)throw r.error;check(c);return r.data||[];}
+async function qry(c,table,cols='*',filter={}){check(c);let q=c.db.from(table).select(cols).eq('institution_id',c.school.id);for(const [key,val] of Object.entries(filter))q=q.eq(key,val);const r=await q.limit(500);if(r.error)throw r.error;check(c);return r.data||[];}
 async function rpc(c,name,params){check(c);const r=await c.db.rpc(name,params);if(r.error)throw r.error;check(c);return r.data;}
 const time=v=>v?new Date(v).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
 const txt=v=>String(v??'').trim();
@@ -70,11 +70,11 @@ async function teacher(c,groupId,studentId){
  else html+=box('Real quiz evidence','<p>No teacher-approved Class 3 Maths quiz is available for this section yet. Existing quiz marks are never invented.</p>');
  if(target&&concepts.length){
   const [mastery,findings,evidence,plans,timeline]=await Promise.all([
-    qry(c,'student_concept_mastery','student_membership_id,concept_id,evidence_count,source_count,confidence,estimated_mastery,mastery_state,last_checked_at'),
-    qry(c,'learning_gap_findings','student_membership_id,concept_id,status,evidence_summary,confidence'),
-    qry(c,'student_concept_evidence','student_membership_id,concept_id,source_type,earned,possible,assessed_at'),
-    qry(c,'learning_recovery_plans','id,student_membership_id,concept_id,teacher_status,generated_plan,assigned_at'),
-    qry(c,'learning_timeline_events','student_membership_id,concept_id,event_type,occurred_at')]);
+    qry(c,'student_concept_mastery','student_membership_id,concept_id,evidence_count,source_count,confidence,estimated_mastery,mastery_state,last_checked_at',{student_membership_id:target.membership_id}),
+    qry(c,'learning_gap_findings','student_membership_id,concept_id,status,evidence_summary,confidence',{student_membership_id:target.membership_id}),
+    qry(c,'student_concept_evidence','student_membership_id,concept_id,source_type,earned,possible,assessed_at',{student_membership_id:target.membership_id}),
+    qry(c,'learning_recovery_plans','id,student_membership_id,concept_id,teacher_status,generated_plan,assigned_at',{student_membership_id:target.membership_id}),
+    qry(c,'learning_timeline_events','student_membership_id,concept_id,event_type,occurred_at',{student_membership_id:target.membership_id})]);
   const mine=x=>x.filter(v=>v.student_membership_id===target.membership_id);
   html+=box('Student Learning Detail · '+target.name,concepts.map(k=>{
     const m=mine(mastery).find(x=>x.concept_id===k.id),f=mine(findings).find(x=>x.concept_id===k.id),ev=mine(evidence).filter(x=>x.concept_id===k.id),p=mine(plans).filter(x=>x.concept_id===k.id);
@@ -129,18 +129,14 @@ async function parent(c){
  layout('Family Learning Summary',box('Support at home',mastery.filter(x=>ids.includes(x.student_membership_id)).slice(0,10).map(x=>'<p>'+E(by.get(x.concept_id)?.concept_title||'Maths')+' · '+E(x.mastery_state)+'. Try a 10-minute counting or place-value activity together.</p>').join('')||empty)+'<p class="lgt-foot">This read-only summary never shows other students or private teacher notes.</p>');
 }
 async function principal(c){
- const [concepts,mastery,findings,plans]=await Promise.all([
-  qry(c,'learning_concepts','id,class_group_id,concept_title'),
-  qry(c,'student_concept_mastery','concept_id,student_membership_id,mastery_state'),
-  qry(c,'learning_gap_findings','concept_id,status'),
-  qry(c,'learning_recovery_plans','concept_id,teacher_status')]);
- const ids=new Set(concepts.map(x=>x.id));const relevant=mastery.filter(x=>ids.has(x.concept_id));
- const totals={assessed:new Set(relevant.filter(x=>x.mastery_state!=='Not Enough Evidence').map(x=>x.student_membership_id)).size,
- review:findings.filter(x=>ids.has(x.concept_id)&&['needs_review','confirmed'].includes(x.status)).length,
- completed:plans.filter(x=>ids.has(x.concept_id)&&x.teacher_status==='completed').length};
- layout('Principal Learning Intelligence', '<div class="lgt-stats">'+box('Students with sufficient evidence',totals.assessed)+box('Concept findings to review',totals.review)+box('Completed practice plans',totals.completed)+'</div>'+
- box('School-wide concept support',concepts.map(x=>'<p>'+E(x.concept_title)+' · '+relevant.filter(m=>m.concept_id===x.id&&m.mastery_state==='Recheck Recommended').length+' rechecks recommended</p>').join('')||empty)+
- '<p class="lgt-foot">Aggregated Class 3 Maths evidence only. Educational risk estimates are not diagnoses or guaranteed predictions.</p>');
+ const data=await rpc(c,'noor_lg_principal_summary',{p_institution:c.school.id});
+ if(!data)throw Error('Leadership summary is not available.');
+ layout('Principal Learning Intelligence','<div class="lgt-stats">'+
+ box('Students with sufficient evidence',String(data.assessed_students||0))+
+ box('Concept findings to review',String(data.findings_to_review||0))+
+ box('Completed recovery activities',String(data.completed_plans||0))+'</div>'+
+ box('Class 3 Maths concept support', (data.concepts||[]).map(x=>'<p>'+E(x.concept_title)+' · '+E(x.recheck_count)+' rechecks recommended · '+E(x.insufficient_count)+' without enough evidence</p>').join('')||empty)+
+ '<p class="lgt-foot">Only school-level aggregates are shown. Educational risk estimates are suggestions, not guarantees.</p>');
 }
 document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-lgt]');if(!b)return;

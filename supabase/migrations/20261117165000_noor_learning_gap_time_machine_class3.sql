@@ -361,7 +361,7 @@ begin
 end $$;
 -- Cross-class binding used by all teacher review and AI context entrypoints.
 create function private.noor_lg_student_concept_allowed(p_student uuid,p_concept uuid)
-returns boolean language sql stable security definer set search_path='' as $
+returns boolean language sql stable security definer set search_path='' as $$
  select exists(
   select 1 from public.learning_concepts c
   join public.institution_memberships m on m.id=p_student and m.institution_id=c.institution_id and m.status='active'

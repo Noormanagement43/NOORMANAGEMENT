@@ -49,5 +49,10 @@ test('teacher rechecks follow assigned practice and never auto-certify mastery',
  assert.match(js,/noor_lg_reassess/);
  assert.match(js,/noor_lg_principal_summary/);
  assert.match(js,/features\?\.learning_gap_time_machine===true/);
- assert.match(js,/Possible prerequisite causes/);
+ assert.match(js,/Possible prerequisites/);
+ assert.match(js,/noor_lg_add_concept/);
+ assert.match(js,/noor_lg_observe/);
+ assert.match(sql,/create function private\.noor_lg_add_concept/);
+ assert.match(sql,/create function private\.noor_lg_observe/);
+ assert.match(sql,/create or replace function private\.noor_lg_principal_summary/);
 });

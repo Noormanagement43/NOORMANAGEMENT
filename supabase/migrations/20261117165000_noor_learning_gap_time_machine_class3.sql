@@ -1,4 +1,4 @@
--- NOOR Learning Gap Time Machine: additive Class 3 Mathematics pilot.
+-- NOOR Learning Gap Time Machine: configurable school (Nursery–Class 10) and college curricula.
 -- No example student data is inserted. All learning evidence is historical/immutable.
 set local lock_timeout='5s';
 set local statement_timeout='60s';
@@ -319,7 +319,7 @@ begin
  select * into strict c from public.learning_concepts where id=p_concept and institution_id=q.institution_id;
  select coalesce(g.parent_group_id,g.id) into cls from public.academic_groups g where g.id=q.academic_group_id and g.institution_id=q.institution_id;
  if not private.noor_feature_enabled(q.institution_id,'learning_gap_time_machine') then raise exception 'Feature is disabled' using errcode='42501';end if;
- if c.class_group_id<>cls or lower(q.subject_name) not like '%math%'
+ if c.class_group_id<>cls or lower(btrim(q.subject_name))<>lower(btrim(c.subject_name))
  or p_index<0 or p_index>=jsonb_array_length(q.questions) then raise exception 'Class, subject or question mismatch';end if;
  if not (private.can_manage_academics(q.institution_id) or private.noor_quiz_group_access(q.institution_id,q.academic_group_id,true)) then raise exception 'Assigned teacher required' using errcode='42501';end if;
  update public.learning_concepts set status='approved',approved_by=auth.uid() where id=c.id;
@@ -356,7 +356,7 @@ begin
  end loop;
  perform private.noor_lg_recompute(c.institution_id,p_student,p_concept);
  insert into public.learning_timeline_events(institution_id,student_membership_id,concept_id,event_type,actor_id,details)
- values(c.institution_id,p_student,p_concept,'diagnostic_completed',auth.uid(),jsonb_build_object('question_count',n,'questions',p_questions));
+ values(c.institution_id,p_student,p_concept,'diagnostic_completed',auth.uid(),jsonb_build_object('question_count',n));
  return v;
 end $$;
 create function private.noor_lg_review(p_student uuid,p_concept uuid,p_action text,p_plan jsonb default null)
@@ -392,7 +392,7 @@ begin
    or length(btrim(coalesce(p_plan->>'practice',''))) not between 5 and 2000
    then raise exception 'Teacher-approved lesson and practice required';end if;
   insert into public.learning_recovery_plans(institution_id,student_membership_id,concept_id,generated_plan,teacher_status,approved_by,assigned_at)
-  values(pinst,p_student,p_concept,p_plan,'assigned',auth.uid(),now()) returning id into pid;
+  values(pinst,p_student,p_concept,jsonb_build_object('lesson',left(p_plan->>'lesson',2000),'practice',left(p_plan->>'practice',2000),'follow_up',left(coalesce(p_plan->>'follow_up',''),24)),'assigned',auth.uid(),now()) returning id into pid;
   insert into public.learning_recovery_activities(institution_id,plan_id,content)
   values(pinst,pid,jsonb_build_object('practice',p_plan->>'practice','concept',ctitle));
   insert into public.learning_timeline_events(institution_id,student_membership_id,concept_id,event_type,actor_id,details)
@@ -523,3 +523,137 @@ create function public.noor_lg_principal_summary(p_institution uuid)
 returns jsonb language sql stable security invoker set search_path='' as $$ select private.noor_lg_principal_summary(p_institution) $$;
 revoke all on function private.noor_lg_principal_summary(uuid),public.noor_lg_principal_summary(uuid) from public,anon;
 grant execute on function private.noor_lg_principal_summary(uuid),public.noor_lg_principal_summary(uuid) to authenticated;
+
+
+-- Generic curriculum authoring: all schools and college streams, no synthetic lessons.
+create function private.noor_lg_add_concept(
+ p_group uuid,p_subject text,p_title text,p_curriculum_version text default 'school-v1',p_prerequisite uuid default null)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare g public.academic_groups; canonical uuid; inst uuid; subject_clean text; concept_title_clean text;
+ version_clean text; new_concept_id uuid; predecessor public.learning_concepts;
+begin
+ select * into strict g from public.academic_groups where id=p_group and is_active and group_type in('class','section');
+ inst:=g.institution_id;canonical:=coalesce(g.parent_group_id,g.id);
+ if not private.noor_feature_enabled(inst,'learning_gap_time_machine') then raise exception 'Feature disabled' using errcode='42501';end if;
+ if not (private.can_manage_academics(inst) or private.noor_quiz_group_access(inst,p_group,true)) then
+  raise exception 'Assigned teacher or school leadership required' using errcode='42501';end if;
+ subject_clean:=btrim(p_subject);concept_title_clean:=btrim(p_title);version_clean:=btrim(p_curriculum_version);
+ if length(subject_clean) not between 2 and 140 or length(concept_title_clean) not between 2 and 120
+  or length(version_clean) not between 1 and 40 then raise exception 'Valid subject, concept and curriculum version required';end if;
+ if p_prerequisite is not null then
+  select * into strict predecessor from public.learning_concepts
+   where id=p_prerequisite and institution_id=inst and class_group_id=canonical
+     and lower(subject_name)=lower(subject_clean) and curriculum_version=version_clean and status<>'archived';
+ end if;
+ insert into public.learning_concepts(institution_id,class_group_id,subject_name,concept_title,curriculum_version,status,approved_by)
+ values(inst,canonical,subject_clean,concept_title_clean,version_clean,'approved',auth.uid())
+ on conflict(institution_id,class_group_id,subject_name,curriculum_version,concept_title)
+ do update set status='approved',approved_by=auth.uid() returning id into new_concept_id;
+ if p_prerequisite is not null then
+  if new_concept_id=p_prerequisite then raise exception 'A concept cannot depend on itself';end if;
+  -- Reject cycle via recursive closure, using the already stored dependency graph.
+  if exists(with recursive prerequisites(cid) as(
+     select prerequisite_concept_id from public.concept_dependencies where concept_id=p_prerequisite
+     union
+     select cd.prerequisite_concept_id from public.concept_dependencies cd join prerequisites p on cd.concept_id=p.cid
+   ) select 1 from prerequisites where prerequisites.cid=new_concept_id) then
+   raise exception 'Circular prerequisite relationship';end if;
+  insert into public.concept_dependencies(institution_id,concept_id,prerequisite_concept_id,approved_by)
+  values(inst,new_concept_id,p_prerequisite,auth.uid()) on conflict(concept_id,prerequisite_concept_id) do nothing;
+ end if;
+ return new_concept_id;
+end $;
+create function public.noor_lg_add_concept(
+ p_group uuid,p_subject text,p_title text,p_curriculum_version text default 'school-v1',p_prerequisite uuid default null)
+returns uuid language sql security invoker set search_path='' as $$
+ select private.noor_lg_add_concept(p_group,p_subject,p_title,p_curriculum_version,p_prerequisite)
+$$;
+revoke all on function private.noor_lg_add_concept(uuid,text,text,text,uuid),
+ public.noor_lg_add_concept(uuid,text,text,text,uuid) from public,anon;
+grant execute on function private.noor_lg_add_concept(uuid,text,text,text,uuid),
+ public.noor_lg_add_concept(uuid,text,text,text,uuid) to authenticated;
+
+-- Ages 3–6: teacher-observed competencies; no text-heavy student exams.
+alter table public.student_concept_evidence drop constraint student_concept_evidence_source_type_check;
+alter table public.student_concept_evidence add constraint student_concept_evidence_source_type_check
+ check(source_type in('approved_quiz','teacher_diagnostic','reassessment','teacher_observation'));
+
+create function private.noor_lg_observe(p_student uuid,p_concept uuid,p_activities jsonb)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare c public.learning_concepts; n integer; i integer; item jsonb; sid uuid:=gen_random_uuid(); class_id uuid;
+begin
+ select * into strict c from public.learning_concepts where id=p_concept and status='approved';
+ if not private.noor_feature_enabled(c.institution_id,'learning_gap_time_machine')
+ or not private.noor_lg_can_teach(c.institution_id,p_student) then
+  raise exception 'Teaching access or feature disabled' using errcode='42501';end if;
+ if not exists(select 1 from public.academic_group_memberships gm join public.academic_groups g
+   on g.id=gm.group_id and g.institution_id=gm.institution_id
+  where gm.institution_id=c.institution_id and gm.membership_id=p_student and gm.status='active'
+   and (gm.group_id=c.class_group_id or g.parent_group_id=c.class_group_id))
+ then raise exception 'Student class mismatch';end if;
+ if jsonb_typeof(p_activities) is distinct from 'array' then raise exception 'Observation array required';end if;
+ n:=jsonb_array_length(p_activities);
+ if n not between 3 and 5 then raise exception 'Record 3 to 5 short competency observations';end if;
+ if (select count(distinct source_id) from public.student_concept_evidence
+    where institution_id=c.institution_id and student_membership_id=p_student and concept_id=p_concept
+    and source_type='teacher_observation' and assessed_at>now()-interval '7 days')>=3
+ then raise exception 'Review existing observations before adding more';end if;
+ for i in 0..n-1 loop
+  item:=p_activities->i;
+  if jsonb_typeof(item) is distinct from 'object' or
+    length(btrim(coalesce(item->>'activity',''))) not between 5 and 300 or
+    jsonb_typeof(item->'demonstrated') is distinct from 'boolean'
+  then raise exception 'Each activity needs an observation and a demonstrated boolean';end if;
+  insert into public.student_concept_evidence(institution_id,student_membership_id,concept_id,source_type,source_id,
+   question_index,earned,possible,assessed_at,recorded_by)
+  values(c.institution_id,p_student,p_concept,'teacher_observation',sid,i,
+   case when item->>'demonstrated'='true' then 1 else 0 end,1,now(),auth.uid());
+ end loop;
+ perform private.noor_lg_recompute(c.institution_id,p_student,p_concept);
+ insert into public.learning_timeline_events(institution_id,student_membership_id,concept_id,event_type,actor_id,details)
+ values(c.institution_id,p_student,p_concept,'teacher_observation_recorded',auth.uid(),jsonb_build_object('activity_count',n));
+ return sid;
+end $$;
+create function public.noor_lg_observe(p_student uuid,p_concept uuid,p_activities jsonb)
+returns uuid language sql security invoker set search_path='' as $$
+ select private.noor_lg_observe(p_student,p_concept,p_activities)
+$$;
+revoke all on function private.noor_lg_observe(uuid,uuid,jsonb),public.noor_lg_observe(uuid,uuid,jsonb)
+ from public,anon;
+grant execute on function private.noor_lg_observe(uuid,uuid,jsonb),public.noor_lg_observe(uuid,uuid,jsonb)
+ to authenticated;
+
+-- Aggregate without exposing student identities or teacher-only notes.
+create or replace function private.noor_lg_principal_summary(p_inst uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare response jsonb;
+begin
+ if not private.noor_feature_enabled(p_inst,'learning_gap_time_machine')
+   or not private.can_manage_academics(p_inst) then
+   raise exception 'Leadership access required' using errcode='42501';end if;
+ select jsonb_build_object(
+ 'assessed_students',(select count(distinct m.student_membership_id) from public.student_concept_mastery m
+   where m.institution_id=p_inst and m.mastery_state<>'Not Enough Evidence'),
+ 'findings_to_review',(select count(*) from public.learning_gap_findings f
+   where f.institution_id=p_inst and f.status in('needs_review','confirmed')),
+ 'completed_plans',(select count(*) from public.learning_recovery_plans p
+   where p.institution_id=p_inst and p.teacher_status='completed'),
+ 'scopes',coalesce((
+ select jsonb_agg(jsonb_build_object('group_name',a.group_name,'subject_name',a.subject_name,
+ 'concept_count',a.concept_count,'recheck_count',a.recheck_count,'evidence_pending',a.evidence_pending)
+ order by a.group_name,a.subject_name)
+ from (
+ select g.name group_name,c.subject_name,
+  count(distinct c.id) concept_count,
+  count(m.*) filter(where m.mastery_state='Recheck Recommended') recheck_count,
+  count(m.*) filter(where m.mastery_state='Not Enough Evidence') evidence_pending
+ from public.learning_concepts c
+ join public.academic_groups g on g.id=c.class_group_id and g.institution_id=c.institution_id
+ left join public.student_concept_mastery m on m.concept_id=c.id and m.institution_id=c.institution_id
+ where c.institution_id=p_inst and c.status='approved'
+ group by g.name,c.subject_name
+ ) a
+ ),'[]'::jsonb)
+ ) into response;
+ return response;
+end $$;

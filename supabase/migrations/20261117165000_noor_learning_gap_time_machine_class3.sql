@@ -686,7 +686,7 @@ begin
  select name into label from public.academic_groups
  where id=c.class_group_id and institution_id=c.institution_id;
  select jsonb_build_object(
- 'concept_id',c.id,'concept_title',c.concept_title,'subject_name',c.subject_name,
+ 'institution_id',c.institution_id,'concept_id',c.id,'concept_title',c.concept_title,'subject_name',c.subject_name,
  'class_name',label,'curriculum_version',c.curriculum_version,
  'evidence',coalesce((select jsonb_agg(jsonb_build_object(
    'id',e.id,'source_type',e.source_type,'earned',e.earned,'possible',e.possible,

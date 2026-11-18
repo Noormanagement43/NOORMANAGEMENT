@@ -26,11 +26,8 @@ async function periodPortraits(periods,teachers,db,canonical,sid,uid){
  await Promise.all(teachers.filter(t=>ids.has(t.id)).map(async teacher=>{
   let url=null;
   try{
-   if(canonical&&String(teacher.avatar_url||'').startsWith('noor-profile-photos/')){
-    url=await window.NOOR_AVATAR_SAFE?.signedUrl({client:db,storedReference:teacher.avatar_url,userId:teacher.user_id});
-   }else if(!canonical&&teacher.avatar_path&&db.storage){
-    const signed=await db.storage.from('student-photos').createSignedUrl(teacher.avatar_path,900);
-    if(!signed.error)url=signed.data?.signedUrl||null;
+   if(String(teacher.avatar_url||'').startsWith('noor-profile-photos/')){
+    url=await window.NOOR_AVATAR_SAFE?.signedUrl({client:db,storedReference:teacher.avatar_url,userId:teacher.user_id||teacher.id});
    }
   }catch{/* Photos are private. Show initials when storage access is denied. */}
   if(a().user?.id===uid&&a().schoolId===sid)photos[teacher.id]=url;
@@ -573,7 +570,7 @@ async function refresh(){
 
     const spec={
       students:()=>db.from('profiles').select('id,class_id,section_id').eq('school_id',sid).eq('role','student').eq('status','active').order('id'),
-      teachers:()=>db.from('profiles').select('id,full_name,avatar_path').eq('school_id',sid).eq('role','teacher').eq('status','active').order('id'),
+      teachers:()=>db.from('profiles').select('id,full_name,avatar_url').eq('school_id',sid).eq('role','teacher').eq('status','active').order('id'),
       staff:()=>db.from('noor_staff_attendance').select('teacher_id,status').eq('school_id',sid).eq('attendance_date',d.day).order('teacher_id'),
       periods:()=>window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load().then(r=>({...r,data:r.data.filter(p=>p.weekday===d.weekday)})):db.from('noor_teacher_periods').select('id,teacher_id,period_number,start_time,end_time,subject_name,class_label,class_id,section_id,block_type').eq('school_id',sid).eq('weekday',d.weekday).eq('approval_status','approved').order('id'),
       runs:()=>db.from('noor_teacher_period_runs').select('period_id,status').eq('school_id',sid).eq('class_date',d.day).order('period_id'),

@@ -15,7 +15,7 @@ function getSchoolTimezone(){
 }
 const dateParts=d=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:getSchoolTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),g=k=>p.find(x=>x.type===k).value;return g('year')+'-'+g('month')+'-'+g('day')};
 const pad=x=>String(x).padStart(2,'0');
-const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],holidays:[],official:[],dayChanges:[],config:{non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true},source:'',version:0,filter:'all'};
+const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],googleEvents:[],holidays:[],official:[],dayChanges:[],config:{non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true},source:'',version:0,filter:'all'};
 const root=()=>document.getElementById('view-school-calendar');
 const leader=()=>['owner','principal','manager','creator'].includes(A().profile?.role);
 const canAddEvent=()=>['owner','principal','manager','creator','teacher'].includes(A().profile?.role);
@@ -30,7 +30,7 @@ function open(){
  if(st.school!==app.schoolId){st.school=app.schoolId;st.selected=now;st.year=Number(now.slice(0,4));st.month=Number(now.slice(5,7))-1}
  const tz=getSchoolTimezone();const addr=app.school?.name||'My school';
  r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>'+E(app.school?.name||'My school')+' · Year Planner</small><h1>📅 School Calendar</h1><p>Interactive school & university events, exams, meetings, and localized holiday references.</p><div class="nsc-tz-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;font-size:11px;font-weight:700;color:#4338ca;margin-top:6px">📍 '+E(addr)+' · Timezone: '+E(tz)+'</div></div>'+
- '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(leader()?'<button '+btn+' class="btn light" id="nscImportPdf">↑ Upload PDF / Google .ics</button>':'')+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
+ '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(leader()?'<button '+btn+' class="btn light" id="nscImportPdf">↑ Upload PDF / Google .ics</button><button '+btn+' class="btn light" id="nscConnectGoogle">Google Sync</button>':'')+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
  '<section class="nsc-card"><div class="nsc-month"><button '+btn+' id="nscPrev" aria-label="Previous month">‹</button><h2 id="nscMonth"></h2><button '+btn+' id="nscNext" aria-label="Next month">›</button></div>'+
  '<div class="nsc-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;padding:8px 12px;background:#fdf8fa;border-radius:10px;border:1px solid #f1e2ea">'+
   '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#be185d"><span style="width:10px;height:10px;border-radius:50%;background:#be185d"></span> 🏫 School Events</span>'+
@@ -47,7 +47,7 @@ function open(){
 
  $('#nscToday',r).onclick=()=>{const s=dateParts(new Date());st.year=Number(s.slice(0,4));st.month=Number(s.slice(5,7))-1;st.selected=s;load()};
  $('#nscPrev',r).onclick=()=>move(-1);$('#nscNext',r).onclick=()=>move(1);
- if(leader()){$('#nscImportPdf',r).onclick=()=>window.NOOR_CALENDAR_IMPORT?.open?.();}
+ if(leader()){$('#nscImportPdf',r).onclick=()=>window.NOOR_CALENDAR_IMPORT?.open?.();$('#nscConnectGoogle',r).onclick=()=>connectGoogle();}
  if(canAddEvent()){
    const addBtn=$('#nscAdd',r);if(addBtn)addBtn.onclick=()=>showEventModal();
    const addDayBtn=$('#nscAddDay',r);if(addDayBtn)addDayBtn.onclick=()=>showEventModal(st.selected);
@@ -73,13 +73,14 @@ async function load(){
  const first=y+'-'+pad(m+1)+'-01',next=new Date(y,m+1,1),last=next.getFullYear()+'-'+pad(next.getMonth()+1)+'-01';
  const query=canonical()?a.db.from('noor_calendar_events').select('*').eq('institution_id',a.schoolId).gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):a.db.from('calendar_events').select('id,title,description,starts_at,event_type,status,teacher_id,target_roles,created_by').eq('school_id',a.schoolId).gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).neq('status','cancelled').order('starts_at').limit(450);
 
- let holidaysData=[];
+ // School records and public Google references are merged into this one calendar.
 
- const [ev,messages,settings,changes]=await Promise.all([query,canonical()?a.db.from('noor_school_messages').select('id,title,body,starts_at,created_by').eq('institution_id',a.schoolId).eq('kind','meeting').gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):Promise.resolve({data:[]}),canonical()?a.db.from('noor_report_settings').select('non_working_weekdays,region_code,include_official_holidays').eq('institution_id',a.schoolId).maybeSingle():Promise.resolve({data:null}),canonical()?a.db.from('noor_calendar_day_overrides').select('day,is_working,title').eq('institution_id',a.schoolId).gte('day',first).lt('day',last).limit(100):Promise.resolve({data:[]})]);
+ const [ev,messages,settings,changes,google]=await Promise.all([query,canonical()?a.db.from('noor_school_messages').select('id,title,body,starts_at,created_by').eq('institution_id',a.schoolId).eq('kind','meeting').gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):Promise.resolve({data:[]}),canonical()?a.db.from('noor_report_settings').select('non_working_weekdays,region_code,include_official_holidays').eq('institution_id',a.schoolId).maybeSingle():Promise.resolve({data:null}),canonical()?a.db.from('noor_calendar_day_overrides').select('day,is_working,title').eq('institution_id',a.schoolId).gte('day',first).lt('day',last).limit(100):Promise.resolve({data:[]}),canonical()?a.db.from('noor_calendar_google_sources').select('calendar_id').eq('institution_id',a.schoolId).maybeSingle():Promise.resolve({data:null})]);
  if(id!==st.version||!r.isConnected||a.schoolId!==st.school)return;
  const userRole=a.profile?.role||'student',userId=a.user?.id;
  st.events=(ev.data||[]).map(x=>canonical()?{...x,event_type:x.kind==='event'?'school':x.kind}:x).filter(x=>leader()||(!x.teacher_id||x.teacher_id===userId||x.created_by===userId)&&(!x.target_roles?.length||x.target_roles.includes(userRole)||x.target_roles.includes('all')));
  st.events.push(...(messages.data||[]).map(x=>({...x,description:x.body,event_type:'meeting',from_inbox:true})));
+ st.googleEvents=[];
  st.config={non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true,...(settings.data||{})};
  st.dayChanges=changes.data||[];
  st.official=window.NOOR_HOLIDAY_ENGINE?.holidays(st.config.region_code,y,st.config.include_official_holidays)||[];
@@ -88,8 +89,16 @@ async function load(){
  regional.forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
  st.holidays=[...holidayMap.entries()].map(([date,title])=>({date,title}));
  st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+(messages.error?'Meeting inbox could not be loaded. ':'')+
-  (changes.error?'Working-day exceptions could not be loaded. ':'')+(settings.error?'School working-week settings could not be loaded. ':'')+'School dates, approved closures and imported Google .ics events share this calendar. Public festival references do not automatically close your school.';
+  (changes.error?'Working-day exceptions could not be loaded. ':'')+(settings.error?'School working-week settings could not be loaded. ':'')+'School dates and Google references share this calendar. Google references do not automatically close your school.';
  draw();
+ if(google.data?.calendar_id&&canonical()){
+  try{const feed=await a.db.functions.invoke('noor-public-google-calendar',{body:{institution_id:a.schoolId,year:y}});
+   if(id!==st.version||a.schoolId!==st.school||!r.isConnected)return;
+   st.googleEvents=Array.isArray(feed.data?.events)?feed.data.events:[];
+   if(feed.error||feed.data?.error)st.source+=' Google sync unavailable: '+(feed.data?.error||feed.error?.message||'Try later')+'.';
+   draw();
+  }catch(_){if(id===st.version){st.source+=' Google sync temporarily unavailable.';draw();}}
+ }else if(google.error){st.source+=' Google connection settings unavailable.';draw();}
 }
 
 function schoolDayStatus(day){
@@ -116,6 +125,7 @@ function draw(){
    add(dateParts(new Date(e.starts_at)),{label:e.title,type:e.event_type||'school',id:e.id});
  }
 
+ if(st.filter==='all')for(const e of st.googleEvents){if(e.date)add(e.date,{label:e.title,type:'google'});}
  const cells=Array(offset).fill('<span class="nsc-blank"></span>');
  for(let day=1;day<=total;day++){
   const key=y+'-'+pad(m+1)+'-'+pad(day),entries=[...(items.get(key)||[])],status=schoolDayStatus(key);
@@ -145,6 +155,7 @@ function draw(){
    (canDelete?'<button type="button" class="btn danger" style="padding:5px 9px;font-size:10px" data-del-event="'+x.id+'">Delete</button>':'')+
    '</div>';
  }).join('')+
+ (st.filter==='all'?st.googleEvents.filter(x=>x.date===st.selected&&!ev.some(v=>v.title?.toLowerCase()===x.title?.toLowerCase())).map(x=>'<div class="nsc-entry" style="padding:10px 14px;border:1px solid var(--line,#e2d6e0);border-radius:10px;margin:6px 0"><strong>'+E(x.title)+'</strong> <small>Google Calendar · reference only</small></div>').join(''):'')+
  hol.map(x=>'<div class="nsc-entry festival" style="padding:12px 14px;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:12px;background:#fffbeb;margin-bottom:8px"><div><div style="display:flex;align-items:center;gap:6px"><b style="color:#78350f;font-size:13px">'+E(x.title)+'</b><span style="font-size:10px;font-weight:700;color:#d97706;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid #fde68a">🎉 Holiday Reference</span></div><small style="display:block;color:#92400e;margin-top:3px">Regional Telangana & Public Festival Reference (Asia/Kolkata)</small></div></div>').join('')||
  '<p class="nsc-hint">No recorded events for this date.</p>';
 

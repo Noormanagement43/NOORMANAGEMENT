@@ -1,0 +1,24 @@
+name: NOOR Google Calendar backend checks
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/noor-google-oauth/**'
+      - 'supabase/migrations/*google_calendar_oauth*'
+      - '.github/workflows/google-calendar.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/noor-google-oauth/**'
+      - 'supabase/migrations/*google_calendar_oauth*'
+      - '.github/workflows/google-calendar.yml'
+permissions:
+  contents: read
+jobs:
+  deno-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: deno check --node-modules-dir=auto supabase/functions/noor-google-oauth/index.ts

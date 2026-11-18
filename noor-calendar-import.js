@@ -107,7 +107,7 @@ async function persist(rows){
   if(item.kind==='working'){
    const found=await a.db.from('noor_calendar_day_overrides').select('day,created_by').eq('institution_id',school).eq('day',item.date).maybeSingle();
    if(found.error)throw found.error;
-   const payload={is_working:true,title:item.title.trim(),source:'pdf',updated_at:new Date().toISOString()};
+   const payload={is_working:true,title:item.title.trim(),source:item.source==='google'?'google':'pdf',updated_at:new Date().toISOString()};
    const result=found.data?await a.db.from('noor_calendar_day_overrides').update(payload).eq('institution_id',school).eq('day',item.date):await a.db.from('noor_calendar_day_overrides').insert({institution_id:school,day:item.date,created_by:user,...payload});
    if(result.error)throw Error('Working day '+item.date+': '+result.error.message);saved++;continue;
   }
@@ -145,7 +145,7 @@ function open(){
  }
  dlg.querySelector('#nscImportFile').onchange=async e=>{
   const file=e.target.files?.[0];if(!file)return;msg('Reading '+file.name+' …');rows=[];render();
-  try{rows=/\.ics$/i.test(file.name)?parseIcs(await file.text()):await parsePdf(file);
+  try{const googleFile=/\.ics$/i.test(file.name);rows=(googleFile?parseIcs(await file.text()):await parsePdf(file)).map(r=>({...r,source:googleFile?'google':'pdf'}));
    if(!rows.length)throw Error('No reliable dated entries were detected. Try a text-based PDF or add school events manually.');
    msg('Dates extracted. Check each holiday and working-day classification before publishing.');render();
   }catch(err){msg(err.message,true);}

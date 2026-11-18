@@ -9,3 +9,57 @@ body.nexam-mode{overflow:hidden!important}body.nexam-mode>:not(.nexam-overlay):n
 .nexam-instructions ul{padding-left:22px;line-height:1.8;margin:18px 0 24px}
 .nexam-instructions li{margin-bottom:10px}
 .nexam-instructions button{min-height:46px;margin:4px 8px 4px 0;white-space:normal}
+
+
+/* NOV 2026: professional text-only test layout, responsive progress drawer. */
+.nexam-overlay .ntest{max-width:1120px;margin:0 auto;padding:clamp(12px,2.2vw,24px);background:#f9f5f4;color:#392834}
+.nexam-overlay .ntest-header{display:block;background:#fffdfa;border:1px solid #eadce1;box-shadow:0 8px 28px #5a1a3810;border-radius:18px;padding:clamp(14px,2vw,24px)}
+.nexam-overlay .nexam-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nexam-overlay .nexam-school b{color:#51243b}.nexam-overlay .nexam-school h2{color:#694257}
+.nexam-overlay .ntest-meta{background:#fbf3f5;border:1px solid #eddde5;color:#593448}
+.nexam-overlay .nexam-clock{background:#6d2948;color:white;border-radius:13px}
+.nexam-overlay .nexam-progress{background:#fffdfa;border:1px solid #ecdee5;border-radius:14px;padding:12px 16px;margin:14px 0;color:#60314c}
+.nexam-overlay .nexam-progress progress{accent-color:#7d3454}
+.nexam-overlay .nexam-progress progress::-webkit-progress-value{background:#7d3454}
+.nexam-overlay .nexam-progress progress::-moz-progress-bar{background:#7d3454}
+.nexam-overlay .ntest-paper{background:transparent}
+.nexam-overlay [data-question][hidden]{display:none!important}
+.nexam-overlay .nexam-question-content{display:block}
+.nexam-overlay .nexam-response{width:100%}
+.nexam-overlay .nexam-illustration,.nexam-overlay .nq-option svg{display:none!important}
+.nexam-overlay fieldset{background:#fffdfa!important;border-color:#eadce1!important;padding:clamp(16px,2.5vw,32px)!important;box-shadow:0 10px 30px #5520390d}
+.nexam-overlay fieldset legend span{background:#f8e8ee;color:#6d284a}
+.nexam-overlay h3{color:#422135;font-size:clamp(18px,2vw,23px)}
+.nexam-overlay .ntest-options{grid-template-columns:1fr;max-width:920px;gap:9px}
+.nexam-overlay .nq-option{background:#fff;border-color:#e2d3db;font-size:clamp(15px,1.6vw,17px);min-height:56px}
+.nexam-overlay .nq-option:has(input:checked){background:#f9eaf0;border:2px solid #7c3555;color:#4d2538}
+.nexam-overlay .nq-option input{accent-color:#772f50}
+.nexam-overlay .ntest-actions{background:#fffdfaf5;border-color:#ead6df;box-shadow:0 10px 26px #4b1d3410;flex-wrap:wrap}
+.nexam-overlay .ntest-next{background:#702b4b!important}
+.nexam-overlay .ntest-submit{background:#702b4b!important;color:#fff!important}
+.nexam-overlay .ntest-prev,.nexam-overlay .nexam-progress-button{padding:11px 15px;border:1px solid #dec8d3;border-radius:12px;background:#fff8fb;color:#682b49;font-size:14px;font-weight:700;cursor:pointer}
+.nexam-overlay .ntest-prev:disabled{opacity:.42;cursor:not-allowed}
+.nexam-overlay .nexam-school .ntest-logo{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;object-fit:contain!important}
+.nexam-overlay .nexam-progress-shade{position:fixed;inset:0;z-index:24;background:#29162289}
+.nexam-overlay .nexam-progress-shade[hidden]{display:none!important}
+.nexam-overlay .nexam-progress-drawer{position:fixed;right:0;top:0;bottom:0;z-index:25;width:min(370px,90vw);padding:24px 20px;background:#fffdfa;color:#4d243b;box-shadow:-12px 0 38px #27121e33;overflow:auto;transform:translateX(110%);visibility:hidden;transition:transform .24s ease,visibility .24s}
+.nexam-overlay .nexam-progress-drawer.is-open{transform:translateX(0);visibility:visible}
+.nexam-overlay .nexam-drawer-head{display:flex;align-items:start;justify-content:space-between;gap:15px}
+.nexam-overlay .nexam-drawer-head h2{font-size:22px;margin:0;color:#57233f}
+.nexam-overlay .nexam-drawer-head p{font-size:13px;margin:8px 0;color:#705568}
+.nexam-overlay .nexam-drawer-head button{height:37px;width:37px;border:1px solid #e8d9df;border-radius:10px;background:#fff;color:#60334a;font-size:26px;cursor:pointer}
+.nexam-overlay .nexam-question-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:24px}
+.nexam-overlay .nexam-question-grid button{border:1px solid #dbc9d2;border-radius:11px;background:#fff;color:#533348;aspect-ratio:1;font-weight:700;cursor:pointer}
+.nexam-overlay .nexam-question-grid button.is-answered{background:#e7f5eb;border-color:#3b9b60;color:#256d42}
+.nexam-overlay .nexam-question-grid button.is-current{box-shadow:0 0 0 3px #a74c76;border-color:#67294b}
+.nexam-overlay .nexam-drawer-help{font-size:12px;color:#776474;margin-top:25px}
+@media(max-width:700px){
+.nexam-overlay .nexam-toolbar{gap:7px}.nexam-overlay .nexam-progress-button{font-size:12px;padding:8px 10px}
+.nexam-overlay .nexam-progress{padding:10px;font-size:12px;gap:9px}
+.nexam-overlay .ntest-actions{gap:8px;bottom:-8px}
+.nexam-overlay .ntest-prev,.nexam-overlay .ntest-next{flex:1 1 42%;min-height:44px}
+.nexam-overlay .ntest-submit{flex:1 1 100%}
+.nexam-overlay .nq-option{font-size:15px!important;padding:12px!important}
+.nexam-overlay .nexam-question-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){.nexam-overlay .nexam-progress-drawer{transition:none}}

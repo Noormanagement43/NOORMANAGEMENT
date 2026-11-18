@@ -15,7 +15,7 @@ function getSchoolTimezone(){
 }
 const dateParts=d=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:getSchoolTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),g=k=>p.find(x=>x.type===k).value;return g('year')+'-'+g('month')+'-'+g('day')};
 const pad=x=>String(x).padStart(2,'0');
-const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],holidays:[],source:'',version:0,filter:'all'};
+const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],holidays:[],official:[],dayChanges:[],config:{non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true},source:'',version:0,filter:'all'};
 const root=()=>document.getElementById('view-school-calendar');
 const leader=()=>['owner','principal','manager','creator'].includes(A().profile?.role);
 const canAddEvent=()=>['owner','principal','manager','creator','teacher'].includes(A().profile?.role);
@@ -30,7 +30,7 @@ function open(){
  if(st.school!==app.schoolId){st.school=app.schoolId;st.selected=now;st.year=Number(now.slice(0,4));st.month=Number(now.slice(5,7))-1}
  const tz=getSchoolTimezone();const addr=app.school?.name||'My school';
  r.innerHTML='<div class="nsc"><header class="nsc-head"><div><small>'+E(app.school?.name||'My school')+' · Year Planner</small><h1>📅 School Calendar</h1><p>Interactive school & university events, exams, meetings, and localized holiday references.</p><div class="nsc-tz-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;font-size:11px;font-weight:700;color:#4338ca;margin-top:6px">📍 '+E(addr)+' · Timezone: '+E(tz)+'</div></div>'+
- '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
+ '<div class="row" style="gap:8px"><button '+btn+' class="btn light" id="nscToday">Today</button>'+(leader()?'<button '+btn+' class="btn light" id="nscImportPdf">↑ Upload PDF / Google .ics</button>':'')+(canAddEvent()?'<button '+btn+' class="btn" id="nscAdd">+ Add Event</button>':'')+'</div></header>'+
  '<section class="nsc-card"><div class="nsc-month"><button '+btn+' id="nscPrev" aria-label="Previous month">‹</button><h2 id="nscMonth"></h2><button '+btn+' id="nscNext" aria-label="Next month">›</button></div>'+
  '<div class="nsc-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;padding:8px 12px;background:#fdf8fa;border-radius:10px;border:1px solid #f1e2ea">'+
   '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:#be185d"><span style="width:10px;height:10px;border-radius:50%;background:#be185d"></span> 🏫 School Events</span>'+
@@ -43,14 +43,11 @@ function open(){
  '</div>'+
  '<div class="nsc-weekdays">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<b>'+x+'</b>').join('')+'</div><div id="nscGrid" class="nsc-grid"></div><p id="nscSource" class="nsc-hint">Checking current school data…</p></section>'+
  '<section class="nsc-card"><div class="nsc-row"><h2 id="nscDayTitle">Selected day</h2>'+(canAddEvent()?'<button '+btn+' class="btn light" id="nscAddDay">+ Event for this day</button>':'')+'</div><div id="nscDayEvents"></div></section>'+
- '<section class="nsc-card" style="border:1px solid #ebd4de;border-radius:14px;background:#fff;padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><div><h2 style="margin:0;font:800 16px Manrope;color:#5a233c">Public Holidays & Religious Observances</h2><p class="nsc-hint" style="margin:4px 0 0">Google holiday references include Hindu, Muslim and Christian observances. Your principal confirms school closures.</p></div><span class="pill green" style="font-weight:700">Live Google Calendar reference</span></div>'+
- '<div class="nsc-festivals-strip" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:16px">'+
- getRegionalFestivals(st.year).slice(0,8).map(f=>`<div style="padding:8px 10px;background:#fdf8fa;border:1px solid #f1e2ea;border-radius:10px;font-size:11px"><b style="color:#5a233c;display:block">${E(f.title)}</b><small style="color:#815a73">${E(f.date)}</small></div>`).join('')+
- '</div>'+
- '<div id="nscReferenceBox" style="margin-top:10px"><iframe title="Google public Indian and Islamic holiday calendars" loading="lazy" src="https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&src=en.islamic%23holiday%40group.v.calendar.google.com&src=en.christian%23holiday%40group.v.calendar.google.com&ctz='+encodeURIComponent(tz)+'" style="display:block;width:100%;min-height:440px;height:65vh;border:1px solid #f1e2ea;border-radius:12px"></iframe></div></section><p id="nscMessage" role="status"></p></div>';
+ '<p id="nscMessage" role="status"></p></div>';
 
  $('#nscToday',r).onclick=()=>{const s=dateParts(new Date());st.year=Number(s.slice(0,4));st.month=Number(s.slice(5,7))-1;st.selected=s;load()};
  $('#nscPrev',r).onclick=()=>move(-1);$('#nscNext',r).onclick=()=>move(1);
+ if(leader()){$('#nscImportPdf',r).onclick=()=>window.NOOR_CALENDAR_IMPORT?.open?.();}
  if(canAddEvent()){
    const addBtn=$('#nscAdd',r);if(addBtn)addBtn.onclick=()=>showEventModal();
    const addDayBtn=$('#nscAddDay',r);if(addDayBtn)addDayBtn.onclick=()=>showEventModal(st.selected);
@@ -78,19 +75,31 @@ async function load(){
 
  let holidaysData=[];
 
- const [ev,messages]=await Promise.all([query,canonical()?a.db.from('noor_school_messages').select('id,title,body,starts_at,created_by').eq('institution_id',a.schoolId).eq('kind','meeting').gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):Promise.resolve({data:[]})]);
+ const [ev,messages,settings,changes]=await Promise.all([query,canonical()?a.db.from('noor_school_messages').select('id,title,body,starts_at,created_by').eq('institution_id',a.schoolId).eq('kind','meeting').gte('starts_at',new Date(first+'T00:00:00+05:30').toISOString()).lt('starts_at',new Date(last+'T00:00:00+05:30').toISOString()).order('starts_at').limit(450):Promise.resolve({data:[]}),canonical()?a.db.from('noor_report_settings').select('non_working_weekdays,region_code,include_official_holidays').eq('institution_id',a.schoolId).maybeSingle():Promise.resolve({data:null}),canonical()?a.db.from('noor_calendar_day_overrides').select('day,is_working,title').eq('institution_id',a.schoolId).gte('day',first).lt('day',last).limit(100):Promise.resolve({data:[]})]);
  if(id!==st.version||!r.isConnected||a.schoolId!==st.school)return;
  const userRole=a.profile?.role||'student',userId=a.user?.id;
  st.events=(ev.data||[]).map(x=>canonical()?{...x,event_type:x.kind==='event'?'school':x.kind}:x).filter(x=>leader()||(!x.teacher_id||x.teacher_id===userId||x.created_by===userId)&&(!x.target_roles?.length||x.target_roles.includes(userRole)||x.target_roles.includes('all')));
  st.events.push(...(messages.data||[]).map(x=>({...x,description:x.body,event_type:'meeting',from_inbox:true})));
- const apiHolidays=Array.isArray(holidaysData)?holidaysData.filter(x=>x.date&&x.name).map(x=>({date:x.date,title:x.localName||x.name})):[];
+ st.config={non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true,...(settings.data||{})};
+ st.dayChanges=changes.data||[];
+ st.official=window.NOOR_HOLIDAY_ENGINE?.holidays(st.config.region_code,y,st.config.include_official_holidays)||[];
  const regional=getRegionalFestivals(y);
  const holidayMap=new Map();
- [...regional, ...apiHolidays].forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
+ regional.forEach(h=>{if(!holidayMap.has(h.date))holidayMap.set(h.date,h.title);else holidayMap.set(h.date,holidayMap.get(h.date)+' · '+h.title);});
  st.holidays=[...holidayMap.entries()].map(([date,title])=>({date,title}));
  st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+(messages.error?'Meeting inbox could not be loaded. ':'')+
-  (st.holidays.length?'Fixed national dates are shown here. Live religious holiday dates appear in Google Calendar below.':'National holiday reference active.');
+  (changes.error?'Working-day exceptions could not be loaded. ':'')+(settings.error?'School working-week settings could not be loaded. ':'')+'School dates, approved closures and imported Google .ics events share this calendar. Public festival references do not automatically close your school.';
  draw();
+}
+
+function schoolDayStatus(day){
+ const override=st.dayChanges.find(x=>x.day===day);
+ if(override)return {working:override.is_working,label:override.is_working?'Approved working day':'Approved non-working day'};
+ const weekday=new Date(day+'T12:00:00Z').getUTCDay();
+ if((st.config.non_working_weekdays||[0]).includes(weekday))return {working:false,label:'Regular non-working day'};
+ if(st.official.some(x=>x.date===day))return {working:false,label:'Official regional holiday'};
+ if(st.events.some(x=>x.event_type==='holiday'&&dateParts(new Date(x.starts_at))===day))return {working:false,label:'School-approved holiday'};
+ return {working:true,label:'Working day'};
 }
 
 function draw(){
@@ -109,9 +118,9 @@ function draw(){
 
  const cells=Array(offset).fill('<span class="nsc-blank"></span>');
  for(let day=1;day<=total;day++){
-  const key=y+'-'+pad(m+1)+'-'+pad(day),entries=[...(items.get(key)||[])];
+  const key=y+'-'+pad(m+1)+'-'+pad(day),entries=[...(items.get(key)||[])],status=schoolDayStatus(key);
   cells.push('<button '+btn+' class="nsc-day '+(key===st.selected?'selected ':'')+(key===dateParts(new Date())?'today':'')+'" data-day="'+key+'" aria-label="'+key+' · '+entries.length+' events"><b>'+day+'</b>'+
-  '<span class="nsc-mini">'+entries.slice(0,2).map(x=>'<small class="'+E(x.type)+'" title="'+E(x.label)+'">'+E(x.label)+'</small>').join('')+'</span></button>');
+  '<span class="nsc-mini">'+entries.slice(0,2).map(x=>'<small class="'+E(x.type)+'" title="'+E(x.label)+'">'+E(x.label)+'</small>').join('')+(status.working?'':'<small class="holiday" title="'+E(status.label)+'">Closed</small>')+'</span></button>');
  }
  $('#nscGrid',r).innerHTML=cells.join('');
  $('#nscSource',r).textContent=st.source;
@@ -128,7 +137,7 @@ function draw(){
    holiday: { label: '🎉 Holiday / Festival', color: '#d97706', bg: '#fffbeb', border: '#fde68a' }
  };
 
- $('#nscDayEvents',r).innerHTML=ev.map(x=>{
+ $('#nscDayEvents',r).innerHTML='<p class="nsc-hint"><b>'+E(schoolDayStatus(st.selected).label)+'</b> · School timezone: '+E(zone)+'</p>'+ev.map(x=>{
    const canDelete=!x.from_inbox&&(leader()||x.created_by===A().user?.id);
    const tag = TAG_CONFIG[x.event_type] || TAG_CONFIG.school;
    return '<div class="nsc-entry" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid '+tag.border+';border-left:4px solid '+tag.color+';border-radius:12px;background:'+tag.bg+';margin-bottom:8px">'+

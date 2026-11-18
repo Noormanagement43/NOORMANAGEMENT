@@ -15,7 +15,7 @@ function getSchoolTimezone(){
 }
 const dateParts=d=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:getSchoolTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),g=k=>p.find(x=>x.type===k).value;return g('year')+'-'+g('month')+'-'+g('day')};
 const pad=x=>String(x).padStart(2,'0');
-const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],googleEvents:[],holidays:[],official:[],dayChanges:[],config:{non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true},source:'',version:0,filter:'all'};
+const now=dateParts(new Date()),st={year:Number(now.slice(0,4)),month:Number(now.slice(5,7))-1,selected:now,school:null,events:[],googleEvents:[],googleConnected:false,googleOutbound:false,holidays:[],official:[],dayChanges:[],config:{non_working_weekdays:[0],region_code:'UNSET',include_official_holidays:true},source:'',version:0,filter:'all'};
 const root=()=>document.getElementById('view-school-calendar');
 const leader=()=>['owner','principal','manager','creator'].includes(A().profile?.role);
 const canAddEvent=()=>['owner','principal','manager','creator','teacher'].includes(A().profile?.role);
@@ -91,14 +91,29 @@ async function load(){
  st.source=(ev.error?'School events could not be loaded: '+ev.error.message+'. ':'')+(messages.error?'Meeting inbox could not be loaded. ':'')+
   (changes.error?'Working-day exceptions could not be loaded. ':'')+(settings.error?'School working-week settings could not be loaded. ':'')+'School dates and Google references share this calendar. Google references do not automatically close your school.';
  draw();
- if(google.data?.calendar_id&&canonical()){
-  try{const feed=await a.db.functions.invoke('noor-public-google-calendar',{body:{institution_id:a.schoolId,year:y}});
+ if(canonical()){
+  try{
+   const privateFeed=await a.db.functions.invoke('noor-google-oauth',{body:{action:'events',institution_id:a.schoolId,year:y}});
    if(id!==st.version||a.schoolId!==st.school||!r.isConnected)return;
-   st.googleEvents=Array.isArray(feed.data?.events)?feed.data.events:[];
-   if(feed.error||feed.data?.error)st.source+=' Google sync unavailable: '+(feed.data?.error||feed.error?.message||'Try later')+'.';
-   draw();
-  }catch(_){if(id===st.version){st.source+=' Google sync temporarily unavailable.';draw();}}
- }else if(google.error){st.source+=' Google connection settings unavailable.';draw();}
+   if(privateFeed.data?.connected){
+    st.googleConnected=true;st.googleEvents=Array.isArray(privateFeed.data.events)?privateFeed.data.events:[];
+    const status=await a.db.functions.invoke('noor-google-oauth',{body:{action:'status',institution_id:a.schoolId}});
+    if(id!==st.version||a.schoolId!==st.school||!r.isConnected)return;
+    st.googleOutbound=status.data?.outbound_enabled===true;draw();return;
+   }
+   st.googleConnected=false;st.googleOutbound=false;
+  }catch(_){st.googleConnected=false;st.googleOutbound=false;}
+  if(google.data?.calendar_id){
+   try{
+    const feed=await a.db.functions.invoke('noor-public-google-calendar',{body:{institution_id:a.schoolId,year:y}});
+    if(id!==st.version||a.schoolId!==st.school||!r.isConnected)return;
+    st.googleEvents=Array.isArray(feed.data?.events)?feed.data.events:[];
+    if(feed.error||feed.data?.error)st.source+=' Public Google feed unavailable. ';
+   }catch(_){st.source+=' Public Google feed unavailable. ';}
+  }
+  if(google.error)st.source+=' Public Google source settings unavailable.';
+  draw();
+ }
 }
 
 function schoolDayStatus(day){

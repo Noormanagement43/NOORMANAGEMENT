@@ -140,9 +140,14 @@ export async function handle(req:Request):Promise<Response>{
   if(!id||id.length>400)return send(400,{error:'Invalid calendar'});
   const checked=await google(access,'users/me/calendarList/'+encodeURIComponent(id));
   if(!checked.ok)return send(403,{error:'Selected Google calendar is not accessible'});
+  if(id!==record.calendar_id){
+   const linked=await admin.from('noor_google_event_links').select('noor_event_id').eq('institution_id',school).limit(1);
+   if(linked.error)return send(503,{error:'Calendar sync links could not be checked'});
+   if(linked.data?.length)return send(409,{error:'Delete or migrate previously published school events before switching Google calendars.'});
+  }
   const saved=await admin.from('noor_google_oauth_credentials').update({calendar_id:id,outbound_enabled:false,updated_at:new Date().toISOString()}).eq('institution_id',school);
   if(saved.error)return send(503,{error:'Calendar selection failed'});
-  await admin.from('noor_google_event_links').delete().eq('institution_id',school);
+  if(id!==record.calendar_id)await admin.from('noor_google_event_links').delete().eq('institution_id',school);
   return send(200,{connected:true,calendar_id:id});
  }
  if(action==='outbound'){
@@ -171,7 +176,7 @@ export async function handle(req:Request):Promise<Response>{
   return send(200,{connected:true,events:events.slice(0,3000)});
  }
  if(action==='publish'||action==='deletePublished'){
-  if(!record.outbound_enabled)return send(200,{skipped:true});
+  if(action==='publish'&&!record.outbound_enabled)return send(200,{skipped:true});
   const eid=String(body.event_id||'');
   if(!validUuid(eid))return send(400,{error:'Invalid event'});
   const event=await admin.from('noor_calendar_events').select('id,title,academic_group_id,starts_at,ends_at').eq('institution_id',school).eq('id',eid).maybeSingle();

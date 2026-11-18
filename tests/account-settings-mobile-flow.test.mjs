@@ -10,8 +10,8 @@ test('reset email resend follows Forgot password rather than living on login',()
  assert.match(recovery,/<section id="emailStep"/);
  assert.match(recovery,/<section id="codeStep" hidden>/);
  assert.match(recovery,/id="resendRecovery"/);
- assert.match(flow,/\$('resendRecovery'\)\.addEventListener\('click'/);
- assert.match(flow,/\$('emailStep'\)\.hidden=true;\$('codeStep'\)\.hidden=false/);
+ assert.ok(flow.includes("$('resendRecovery').addEventListener('click'"));
+ assert.ok(flow.includes("$('emailStep').hidden=true;$('codeStep').hidden=false"));
 });
 
 test('phone roles use only left drawer and floating AI, with an accessible sign out',()=>{

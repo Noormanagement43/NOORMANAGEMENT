@@ -167,6 +167,33 @@ function draw(){
  });
 }
 
+function connectGoogle(){
+ if(!leader())return;
+ const a=A();document.getElementById('nscGoogleDialog')?.remove();
+ const dlg=document.createElement('dialog');dlg.id='nscGoogleDialog';dlg.style.cssText='width:min(510px,95vw);padding:22px;border:1px solid var(--line,#e8d3dc);border-radius:16px;background:var(--paper,#fff);color:var(--ink,#38212e)';
+ dlg.innerHTML='<h2 style="font-size:19px;margin:0 0 12px">Connect Google Calendar</h2><p style="font-size:12px;line-height:1.7">Connect a school-owned <b>public Google Calendar</b> using its Calendar ID. Events appear in the same shared NOOR calendar for every school role. Google references never change school working days without approval.</p>'+
+ '<div class="field"><label>Public Google Calendar ID</label><input id="nscGoogleId" type="text" maxlength="180" placeholder="school-calendar@group.calendar.google.com" style="width:100%"></div>'+
+ '<p class="nsc-hint">Do not publish private student information. Private Google calendars require separate Google OAuth authorization and are not connected by this option.</p><p id="nscGoogleMessage" role="status"></p>'+
+ '<div class="row" style="justify-content:flex-end;gap:8px"><button type="button" class="btn danger" id="nscGoogleDisconnect">Disconnect</button><button type="button" class="btn light" id="nscGoogleClose">Cancel</button><button type="button" class="btn" id="nscGoogleSave">Connect</button></div>';
+ document.body.append(dlg);dlg.showModal?.();if(!dlg.open)dlg.setAttribute('open','');
+ const msg=dlg.querySelector('#nscGoogleMessage'),field=dlg.querySelector('#nscGoogleId');
+ dlg.querySelector('#nscGoogleClose').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+ a.db.from('noor_calendar_google_sources').select('calendar_id').eq('institution_id',a.schoolId).maybeSingle().then(x=>{if(x.data&&dlg.isConnected)field.value=x.data.calendar_id;});
+ dlg.querySelector('#nscGoogleSave').onclick=async()=>{
+  const id=field.value.trim();if(!/^[A-Za-z0-9._@%#-]{4,180}$/.test(id)){msg.textContent='Enter a valid Google Calendar ID, not a website link.';return;}
+  const b=dlg.querySelector('#nscGoogleSave');b.disabled=true;msg.textContent='Connecting school calendar…';
+  const r=await a.db.from('noor_calendar_google_sources').upsert({institution_id:a.schoolId,calendar_id:id,connected_by:a.user.id,updated_at:new Date().toISOString()},{onConflict:'institution_id'});
+  if(r.error){msg.textContent=r.error.message;b.disabled=false;return;}
+  dlg.close();a.toast?.('Public Google calendar source connected.','success');load();
+ };
+ dlg.querySelector('#nscGoogleDisconnect').onclick=async()=>{
+  if(!confirm('Disconnect Google Calendar from this school?'))return;
+  const r=await a.db.from('noor_calendar_google_sources').delete().eq('institution_id',a.schoolId);
+  if(r.error){msg.textContent=r.error.message;return;}
+  dlg.close();a.toast?.('Google calendar disconnected.','success');load();
+ };
+}
+
 function showEventModal(presetDate=''){
  if(!canAddEvent())return;
  const a=A(),old=document.getElementById('nscModal');old?.remove();

@@ -47,16 +47,21 @@ async function load(c,s){
  if(!enrolled.has(classId)&&!sections.length)throw Error('This student is not enrolled in the chosen class.');
  if(c.group.group_type==='section'&&!enrolled.has(c.group.id))throw Error('This student is not enrolled in the selected section.');
  const ids=[...new Set([classId,...(c.group.group_type==='section'?[c.group.id]:sections)])];
- const [holidays,sessions,marks]=await Promise.all([
+ const [holidays,sessions,marks,overrides]=await Promise.all([
   paged(()=>c.db.from('noor_calendar_events').select('academic_group_id,starts_at,ends_at').eq('institution_id',c.school).eq('kind','holiday').gte('starts_at',plus(year.start_date,-31)+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
   paged(()=>c.db.from('class_sessions').select('id,starts_at,academic_group_id').eq('institution_id',c.school).in('academic_group_id',ids).eq('title','Daily class attendance').neq('session_status','cancelled').gte('starts_at',year.start_date+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
-  paged(()=>c.db.from('noor_assessment_results').select('assessment_title,subject_name,assessed_on,marks,max_marks,feedback,assessment_kind').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('academic_group_id',ids).gte('assessed_on',year.start_date).lte('assessed_on',to).order('assessed_on'))]);
+  paged(()=>c.db.from('noor_assessment_results').select('assessment_title,subject_name,assessed_on,marks,max_marks,feedback,assessment_kind').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('academic_group_id',ids).gte('assessed_on',year.start_date).lte('assessed_on',to).order('assessed_on')),
+  paged(()=>c.db.from('noor_calendar_day_overrides').select('day,is_working').eq('institution_id',c.school).gte('day',year.start_date).lte('day',to).order('day'))]);
  if(!active(c))throw Error('Account changed.');
- const official=window.NOOR_HOLIDAY_ENGINE?.holidays(cfg.region_code,2026,cfg.include_official_holidays)||[];
+ const firstYear=Number(year.start_date.slice(0,4)),lastYear=Number(to.slice(0,4));
+ const official=[];for(let y=firstYear;y<=lastYear;y++)official.push(...(window.NOOR_HOLIDAY_ENGINE?.holidays(cfg.region_code,y,cfg.include_official_holidays)||[]));
  const off=new Set(official.map(x=>x.date).filter(x=>x>=year.start_date&&x<=to));
  for(const h of holidays){if(h.academic_group_id&&!ids.includes(h.academic_group_id))continue;const first=date(h.starts_at,tz),last=date(h.ends_at||h.starts_at,tz);for(let d=first;d<=last&&off.size<600;d=plus(d,1)){if(d>=year.start_date&&d<=to)off.add(d);}}
- const schoolDays=window.NOOR_HOLIDAY_ENGINE?.workingDates(year.start_date,to,cfg.non_working_weekdays||[0],[...off]);
- if(!schoolDays)throw Error('School holiday calendar is unavailable. Refresh NOOR.');
+ const workingOverrides=new Set();
+ for(const x of overrides){if(x.is_working){off.delete(x.day);workingOverrides.add(x.day);}else off.add(x.day);}
+ const calculated=window.NOOR_HOLIDAY_ENGINE?.workingDates(year.start_date,to,cfg.non_working_weekdays||[0],[...off]);
+ if(!calculated)throw Error('School holiday calendar is unavailable. Refresh NOOR.');
+ const schoolDays=[...new Set([...calculated,...workingOverrides])].sort();
  const days=new Map(schoolDays.map(d=>[d,[]]));
  for(const x of sessions){const d=date(x.starts_at,tz);if(days.has(d))days.get(d).push(x.id);}
  const allIDs=[...new Set([...days.values()].flat())],records=[];

@@ -20,7 +20,7 @@ function secondary(classes,sections,students,sessions,records,day){
   if(unassigned.length||!entries.length)entries.push({label:secs.length?'Unassigned':'All',students:unassigned});
   return {name:c.name,entries:entries.map(entry=>{
    const marks=entry.students.map(s=>latest.get(s.id)).filter(Boolean);
-   return {label:entry.label,total:entry.students.length,marked:marks.length,present:marks.filter(r=>r.status==='present').length,absent:marks.filter(r=>r.status==='absent').length,late:marks.filter(r=>r.status==='late').length,leave:marks.filter(r=>['leave','excused'].includes(r.status)).length};
+   return {label:entry.label,axisLabel:entry.axisLabel,total:entry.students.length,marked:marks.length,present:marks.filter(r=>r.status==='present').length,absent:marks.filter(r=>r.status==='absent').length,late:marks.filter(r=>r.status==='late').length,leave:marks.filter(r=>['leave','excused'].includes(r.status)).length};
   })};
  });
  const entries=groups.flatMap(g=>g.entries),top=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));

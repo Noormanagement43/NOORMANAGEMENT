@@ -11,7 +11,7 @@ const principalPage = await readFile(new URL('../principal.html', import.meta.ur
 const configJs = await readFile(new URL('../config.js', import.meta.url), 'utf8');
 const registrationMigration = await readFile(new URL('../supabase/archive/legacy-migrations/20261024040000_register_institution_for_current_user.sql', import.meta.url), 'utf8');
 
-test('authentication system contains all required role portals and registration tabs', () => {
+test('authentication system contains all required role portals and registration tabs', async () => {
   // Tabs: Login, Student sign-up, Create a school, Join school staff
   assert.match(html, /id="loginTab"/);
   assert.match(html, /id="registerTab"/);
@@ -32,7 +32,8 @@ test('authentication system contains all required role portals and registration 
   // Password utilities
   assert.match(html, /id="toggleLoginPassword"/);
   assert.match(html, /id="forgotBtn"/);
-  assert.match(html, /id="resendConfirmBtn"/);
+  const recoveryHtml = await readFile(new URL('../forgot-password.html', import.meta.url), 'utf8');
+  assert.match(recoveryHtml, /id="resendRecovery"/);
 });
 
 test('frontend code only contains publishable keys and no privileged secrets', () => {

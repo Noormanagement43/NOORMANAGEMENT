@@ -47,16 +47,21 @@ async function load(c,s){
  if(!enrolled.has(classId)&&!sections.length)throw Error('This student is not enrolled in the chosen class.');
  if(c.group.group_type==='section'&&!enrolled.has(c.group.id))throw Error('This student is not enrolled in the selected section.');
  const ids=[...new Set([classId,...(c.group.group_type==='section'?[c.group.id]:sections)])];
- const [holidays,sessions,marks]=await Promise.all([
+ const [holidays,sessions,marks,overrides]=await Promise.all([
   paged(()=>c.db.from('noor_calendar_events').select('academic_group_id,starts_at,ends_at').eq('institution_id',c.school).eq('kind','holiday').gte('starts_at',plus(year.start_date,-31)+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
   paged(()=>c.db.from('class_sessions').select('id,starts_at,academic_group_id').eq('institution_id',c.school).in('academic_group_id',ids).eq('title','Daily class attendance').neq('session_status','cancelled').gte('starts_at',year.start_date+'T00:00:00Z').lte('starts_at',plus(to,1)+'T23:59:59Z').order('starts_at')),
-  paged(()=>c.db.from('noor_assessment_results').select('assessment_title,subject_name,assessed_on,marks,max_marks,feedback,assessment_kind').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('academic_group_id',ids).gte('assessed_on',year.start_date).lte('assessed_on',to).order('assessed_on'))]);
+  paged(()=>c.db.from('noor_assessment_results').select('assessment_title,subject_name,assessed_on,marks,max_marks,feedback,assessment_kind').eq('institution_id',c.school).eq('student_membership_id',s.membership_id).in('academic_group_id',ids).gte('assessed_on',year.start_date).lte('assessed_on',to).order('assessed_on')),
+  paged(()=>c.db.from('noor_calendar_day_overrides').select('day,is_working').eq('institution_id',c.school).gte('day',year.start_date).lte('day',to).order('day'))]);
  if(!active(c))throw Error('Account changed.');
- const official=window.NOOR_HOLIDAY_ENGINE?.holidays(cfg.region_code,2026,cfg.include_official_holidays)||[];
+ const firstYear=Number(year.start_date.slice(0,4)),lastYear=Number(to.slice(0,4));
+ const official=[];for(let y=firstYear;y<=lastYear;y++)official.push(...(window.NOOR_HOLIDAY_ENGINE?.holidays(cfg.region_code,y,cfg.include_official_holidays)||[]));
  const off=new Set(official.map(x=>x.date).filter(x=>x>=year.start_date&&x<=to));
  for(const h of holidays){if(h.academic_group_id&&!ids.includes(h.academic_group_id))continue;const first=date(h.starts_at,tz),last=date(h.ends_at||h.starts_at,tz);for(let d=first;d<=last&&off.size<600;d=plus(d,1)){if(d>=year.start_date&&d<=to)off.add(d);}}
- const schoolDays=window.NOOR_HOLIDAY_ENGINE?.workingDates(year.start_date,to,cfg.non_working_weekdays||[0],[...off]);
- if(!schoolDays)throw Error('School holiday calendar is unavailable. Refresh NOOR.');
+ const workingOverrides=new Set();
+ for(const x of overrides){if(x.is_working){off.delete(x.day);workingOverrides.add(x.day);}else off.add(x.day);}
+ const calculated=window.NOOR_HOLIDAY_ENGINE?.workingDates(year.start_date,to,cfg.non_working_weekdays||[0],[...off]);
+ if(!calculated)throw Error('School holiday calendar is unavailable. Refresh NOOR.');
+ const schoolDays=[...new Set([...calculated,...workingOverrides])].sort();
  const days=new Map(schoolDays.map(d=>[d,[]]));
  for(const x of sessions){const d=date(x.starts_at,tz);if(days.has(d))days.get(d).push(x.id);}
  const allIDs=[...new Set([...days.values()].flat())],records=[];
@@ -94,23 +99,11 @@ function reportHTML(d,type){
  const summary=attendance?'Total Working Days: '+d.summary.working+' | Days Present: '+d.summary.present+' | Recorded Attendance: '+(d.summary.pct==null?'—':d.summary.pct+'%')+' | Unmarked: '+d.summary.unmarked:'Final Term Marks: '+(d.final.max?d.final.got+'/'+d.final.max:'Not recorded')+' | Final Term Percentage: '+(d.final.pct==null?'—':d.final.pct+'%')+' | Class Rank: '+(d.annualRank==null?'—':d.annualRank);
  return '<article class="nar-paper"><div class="nar-report-content">'+header+'<h3 class="nar-section-title">'+(attendance?'YEARLY ATTENDANCE SUMMARY':'TERM-WISE & PERIODIC ACADEMIC PERFORMANCE')+'</h3><div class="nar-layout"><main>'+table+(!rows.length?'<p>No marks have been recorded yet.</p>':'')+'</main><aside>'+aside+'</aside></div><div class="nar-summary"><b>'+(attendance?'ATTENDANCE SUMMARY':'PROGRESS SUMMARY')+'</b><p>'+E(summary)+'</p></div><footer>Generated from recorded school data · '+E(d.year.start_date)+' to '+E(d.year.end_date)+'<span>Class Teacher Signature: ______________</span></footer></div></article>';
 }
-function download(text,name,mime){const url=URL.createObjectURL(new Blob([text],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}
-function excel(d,type){const attendance=type==='attendance',cols=attendance?['Month','Working Days','Present','Absent','Late','Leave','Unmarked','Attendance %']:['Subject',...examKeys(d.cfg).map(k=>d.cfg.exam_labels[k]||k),'Grade'];
- const data=attendance?monthRows(d).map(x=>[x.name,x.working,x.present,x.absent,x.late,x.leave,x.unmarked,x.working===x.unmarked?'':per(x.present,x.working-x.unmarked)]):d.subjects.map(x=>[x.name,...examKeys(d.cfg).map(k=>x[k]?(k==='weekly'||k==='monthly'?x[k].pct+'%':x[k].got+'/'+x[k].max):''),grade(x[finalKey(d.cfg)]?.pct??null)]);
- const escape=v=>String(v??'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
- const row=(items,head=false)=>'<Row>'+items.map((v,i)=>'<Cell ss:StyleID="'+(head?'head':i===0?'label':'body')+'"><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+escape(v)+'</Data></Cell>').join('')+'</Row>';
- return '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="head"><Font ss:Bold="1"/><Interior ss:Color="#FFE0A0" ss:Pattern="Solid"/></Style><Style ss:ID="label"><Font ss:Bold="1"/></Style><Style ss:ID="body"/></Styles><Worksheet ss:Name="'+(attendance?'Attendance':'Marks')+'"><Table>'+row([d.c.schoolInfo.name||'School',d.s.name||'Student','Academic Year',d.year.label],true)+row(cols,true)+data.map(x=>row(x)).join('')+'</Table></Worksheet></Workbook>';
-}
 function exportReport(d,type,format){
- if(window.NOOR_PLATFORM_ACCESS&&!window.NOOR_PLATFORM_ACCESS.allowed("annual_cards"))throw Error("Annual cards are disabled by NOOR Management.");
+ if(window.NOOR_PLATFORM_ACCESS&&!window.NOOR_PLATFORM_ACCESS.allowed('annual_cards'))throw Error('Annual reports are disabled.');
  if(!active(d.c))throw Error('Account changed. Sign in again.');
- const style=typeof getComputedStyle==='function'?getComputedStyle(document.documentElement):null;
- const getColor=(key,fallback)=>{const c=(style?.getPropertyValue(key)||'').trim();return /^#[0-9a-f]{3,8}$/i.test(c)?c:fallback;};
- const themeColor=getColor('--berry','#6d6085'),themeSoft=getColor('--rose-soft','#eae6f1'),themeLine=getColor('--rose-line','#d3cadf');
- const basename='NOOR-'+type+'-'+String(d.s.name||'student').replace(/[^a-z0-9]+/gi,'-')+'-'+d.year.label;
- if(format==='excel')return download(excel(d,type).replaceAll('#FFE0A0',themeSoft),basename+'.xls','application/vnd.ms-excel;charset=utf-8');
- if(format==='word')return download(('<html><head><meta charset="utf-8"><style>body{font:13pt Calibri;color:#342824}.nar-paper{padding:15pt}.nar-head{margin:20pt 0}h1{font-size:23pt;color:#58734b}.nar-table{border-collapse:collapse;width:100%}.nar-table th,.nar-table td{padding:7pt;border:1pt solid #dfd1bd}.nar-table th{background:#ffe6b4}.nar-summary{background:#ffd16d;padding:12pt}.nar-brand img,.nar-student img{height:70pt}.nar-layout aside{background:#f7edd9;padding:12pt}</style></head><body>'+reportHTML(d,type)+'</body></html>').replaceAll('#58734b',themeColor).replaceAll('#ffe6b4',themeSoft).replaceAll('#ffd16d',themeSoft).replaceAll('#f7edd9',themeSoft).replaceAll('#dfd1bd',themeLine),basename+'.doc','application/msword;charset=utf-8');
- if(format==='pdf'){const w=window.open('','_blank');if(!w)throw Error('Enable popups to print the PDF.');const css=new URL('./noor-annual-reports.css?v=20261109-1',document.baseURI).href;w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+E(basename)+'</title><link rel="stylesheet" href="'+E(css)+'"></head><body class="nar-print">'+reportHTML(d,type)+'</body></html>');w.document.close();w.addEventListener('load',()=>w.print(),{once:true});return;}
+ if(!window.NOOR_REPORT_FILES)throw Error('Report file service is unavailable. Refresh the page.');
+ return window.NOOR_REPORT_FILES.exportFile(d,type,format);
 }
 async function open(s,group,initialType='attendance',openEditor=false){
  const c=await access(group);
@@ -120,9 +113,9 @@ async function open(s,group,initialType='attendance',openEditor=false){
  try{const d=await load(c,s);if(!active(c)||!dlg.isConnected)return;let type=initialType==='marks'?'marks':'attendance';const render=()=>{
  const target=dlg.querySelector('[data-report]');
  target.innerHTML='<nav class="nar-tabs"><button data-type="attendance" aria-pressed="'+(type==='attendance')+'">Annual Attendance Report</button><button data-type="marks" aria-pressed="'+(type==='marks')+'">Annual Marks Report</button></nav>'+reportHTML(d,type)+
- '<div class="nar-actions"><strong>Open report:</strong><button data-export="pdf">PDF</button><button data-export="word">Word</button><button data-export="excel">Excel</button>'+(type==='marks'?'<button data-add-marks>Add / Upload Marks</button>':'')+(c.principal?'<button data-settings>Principal Settings</button>':'')+'</div><p class="nar-note">PDF opens browser print / Save as PDF. Word and Excel download editable files. Only recorded school data appears; holidays marked by school leadership are excluded.</p><p role="status" data-status></p>';
+ '<div class="nar-actions"><strong>Open report:</strong><button data-export="pdf">↓ PDF</button><button data-export="word">↓ Word (.docx)</button><button data-export="excel">↓ Excel (.xlsx)</button>'+(type==='marks'?'<button data-add-marks>Add / Upload Marks</button>':'')+(c.principal?'<button data-settings>Principal Settings</button>':'')+'</div><p class="nar-note">One click downloads a real PDF, editable Word document, or Excel workbook. Only recorded school data appears; holidays marked by school leadership are excluded.</p><p role="status" data-status></p>';
  target.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{type=b.dataset.type;render();});
- target.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{try{exportReport(d,type,b.dataset.export);target.querySelector('[data-status]').textContent=b.dataset.export==='pdf'?'Choose Save as PDF in print preview.':'File created.';}catch(e){target.querySelector('[data-status]').textContent=e.message;}});
+ target.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{try{exportReport(d,type,b.dataset.export);target.querySelector('[data-status]').textContent='Report downloaded.';}catch(e){target.querySelector('[data-status]').textContent=e.message;}});
  target.querySelector('[data-settings]')?.addEventListener('click',()=>editSettings(c));target.querySelector('[data-add-marks]')?.addEventListener('click',()=>markEntry(d));};render();if(openEditor&&active(c)&&dlg.isConnected)markEntry(d);
  }catch(err){if(dlg.isConnected)dlg.querySelector('[data-report]').textContent='Report unavailable: '+err.message;}
 }

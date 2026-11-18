@@ -59,3 +59,27 @@ create trigger noor_calendar_holiday_guard_trg before insert or update on public
  for each row execute function private.noor_calendar_holiday_guard();
 
 comment on table public.noor_calendar_day_overrides is 'Principal-approved exceptional working or non-working dates; checked by school attendance reports.';
+
+-- Public Google Calendar IDs only. Never store OAuth tokens or private calendar contents here.
+create table if not exists public.noor_calendar_google_sources (
+ institution_id uuid primary key references public.institutions(id) on delete cascade,
+ calendar_id text not null check (char_length(calendar_id) between 4 and 180 and calendar_id ~ '^[A-Za-z0-9._@%#-]+$'),
+ connected_by uuid not null references auth.users(id),
+ updated_at timestamptz not null default now()
+);
+alter table public.noor_calendar_google_sources enable row level security;
+revoke all on public.noor_calendar_google_sources from anon;
+grant select, insert, update, delete on public.noor_calendar_google_sources to authenticated;
+drop policy if exists noor_google_calendar_read on public.noor_calendar_google_sources;
+create policy noor_google_calendar_read on public.noor_calendar_google_sources for select to authenticated
+ using (private.is_active_member(institution_id));
+drop policy if exists noor_google_calendar_insert on public.noor_calendar_google_sources;
+create policy noor_google_calendar_insert on public.noor_calendar_google_sources for insert to authenticated
+ with check (private.can_manage_academics(institution_id) and connected_by=(select auth.uid()));
+drop policy if exists noor_google_calendar_update on public.noor_calendar_google_sources;
+create policy noor_google_calendar_update on public.noor_calendar_google_sources for update to authenticated
+ using (private.can_manage_academics(institution_id))
+ with check (private.can_manage_academics(institution_id) and connected_by=(select auth.uid()));
+drop policy if exists noor_google_calendar_delete on public.noor_calendar_google_sources;
+create policy noor_google_calendar_delete on public.noor_calendar_google_sources for delete to authenticated
+ using (private.can_manage_academics(institution_id));

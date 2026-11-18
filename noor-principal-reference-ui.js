@@ -16,7 +16,7 @@ function secondary(classes,sections,students,sessions,records,day){
  const groups=cs.map(c=>{
   const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
   const unassigned=students.filter(s=>s.class_id===c.id&&!secs.some(sec=>sec.id===s.section_id));
-  const entries=secs.map(s=>({label:s.name,students:students.filter(p=>p.class_id===c.id&&p.section_id===s.id)}));
+  const entries=secs.map(s=>({label:s.name,axisLabel:String(number(c))+String(s.name||'').replace(/^section\s*/i,'').trim(),students:students.filter(p=>p.class_id===c.id&&p.section_id===s.id)}));
   if(unassigned.length||!entries.length)entries.push({label:secs.length?'Unassigned':'All',students:unassigned});
   return {name:c.name,entries:entries.map(entry=>{
    const marks=entry.students.map(s=>latest.get(s.id)).filter(Boolean);
@@ -38,7 +38,7 @@ function secondary(classes,sections,students,sessions,records,day){
     svg+=`<rect x="${x-barWidth/2-5}" y="${base-scale(s.present)}" width="${barWidth}" height="${scale(s.present)}" fill="var(--pd-ref-accent,var(--berry))"/>`;
     svg+=`<rect x="${x+barWidth/2-4}" y="${base-scale(s.absent)}" width="8" height="${scale(s.absent)}" fill="var(--pd-ref-border,var(--rose-line))"/><rect x="${x+barWidth/2+5}" y="${base-scale(s.late)}" width="8" height="${scale(s.late)}" fill="var(--pd-ref-gold,var(--gold))"/>`;
    }
-   svg+=`<text x="${x-5}" y="${base-scale(s.present)-9}" text-anchor="middle" fill="currentColor" font-size="17" font-weight="750">${mark}</text><text x="${x}" y="262" text-anchor="middle" fill="currentColor" font-size="12">${E(s.label)}</text></g>`;
+   svg+=`<text x="${x-5}" y="${base-scale(s.present)-9}" text-anchor="middle" fill="currentColor" font-size="17" font-weight="750">${mark}</text><text x="${x}" y="262" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">${E(s.axisLabel||s.label)}</text></g>`;
   });
   svg+=`<rect x="${offset+5}" y="276" width="${groupWidth-10}" height="27" rx="9" fill="var(--pd-ref-soft,var(--rose-soft))"/><text x="${offset+groupWidth/2}" y="295" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="700">${E(g.name)}</text>`;
   offset+=groupWidth;

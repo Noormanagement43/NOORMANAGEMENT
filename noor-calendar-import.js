@@ -42,26 +42,75 @@ function parseLines(lines){
  }
  return out;
 }
-async function parsePdf(file){
+/* OCR runs in the browser. Images are never uploaded to external AI services. */
+let ocrLoader;
+async function ocrLibrary(){
+ if(window.Tesseract?.createWorker)return window.Tesseract;
+ if(!ocrLoader)ocrLoader=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js';
+  script.crossOrigin='anonymous';script.referrerPolicy='no-referrer';
+  script.onload=()=>window.Tesseract?.createWorker?resolve(window.Tesseract):reject(Error('OCR library is unavailable'));
+  script.onerror=()=>reject(Error('OCR library could not load. Check internet and retry.'));
+  document.head.appendChild(script);
+ });
+ return ocrLoader;
+}
+function pdfTextLines(content){
+ const groups=new Map();
+ for(const item of content.items||[]){
+  if(!item.str?.trim())continue;
+  const y=Math.round((item.transform?.[5]||0)/3)*3,x=item.transform?.[4]||0;
+  if(!groups.has(y))groups.set(y,[]);
+  groups.get(y).push({x,word:item.str.trim()});
+ }
+ return [...groups.keys()].sort((a,b)=>b-a).map(y=>groups.get(y).sort((a,b)=>a.x-b.x).map(a=>a.word).join(' '));
+}
+async function parsePdf(file,progress=()=>{},language='eng'){
  if(file.size>10*1024*1024)throw Error('PDF must be 10 MB or smaller.');
+ if(!['eng','hin','tel','urd'].includes(language))throw Error('Choose a supported OCR language.');
  const url='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/';
  let lib;
  try{lib=await import(url+'pdf.min.mjs');}catch(_){throw Error('PDF reader could not load. Check internet connection and retry.');}
  lib.GlobalWorkerOptions.workerSrc=url+'pdf.worker.min.mjs';
  const pdf=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
- if(pdf.numPages>30)throw Error('For accuracy, upload up to 30 PDF pages at a time.');
- const lines=[];
+ if(pdf.numPages>30)throw Error('Upload no more than 30 PDF pages.');
+ const all=[],needsOcr=[];
  for(let p=1;p<=pdf.numPages;p++){
-  const pg=await pdf.getPage(p),content=await pg.getTextContent(),groups=new Map();
-  for(const item of content.items){
-   if(!item.str?.trim())continue;
-   const y=Math.round((item.transform?.[5]||0)/3)*3,x=item.transform?.[4]||0;
-   if(!groups.has(y))groups.set(y,[]);groups.get(y).push({x,word:item.str.trim()});
-  }
-  for(const y of [...groups.keys()].sort((a,b)=>b-a))lines.push(groups.get(y).sort((a,b)=>a.x-b.x).map(a=>a.word).join(' '));
+  progress('Reading page '+p+' / '+pdf.numPages+'…');
+  const page=await pdf.getPage(p),lines=pdfTextLines(await page.getTextContent());
+  all[p-1]=lines;
+  // Mixed PDFs are supported: only pages without a usable selectable-text layer need OCR.
+  if(lines.join(' ').replace(/\s/g,'').length<35)needsOcr.push(p);
+  page.cleanup?.();
  }
- if(!lines.length)throw Error('This PDF has no readable text layer. Scanned/photo PDFs need OCR or manual calendar entry; no dates were guessed.');
- return parseLines(lines);
+ if(needsOcr.length){
+  if(needsOcr.length>12)throw Error('This scan has '+needsOcr.length+' image-only pages. Split it into 12-page PDFs to protect your device memory.');
+  progress('Scanned pages detected. Starting local OCR…');
+  const tess=await ocrLibrary();
+  const worker=await tess.createWorker(language==='eng'?'eng':['eng',language],undefined,{
+   logger:x=>{if(x.status==='recognizing text')progress('Reading scanned text… '+Math.round((x.progress||0)*100)+'%');}
+  });
+  try{
+   for(let i=0;i<needsOcr.length;i++){
+    const n=needsOcr[i];progress('OCR page '+(i+1)+' / '+needsOcr.length+'…');
+    const page=await pdf.getPage(n),viewport=page.getViewport({scale:1.8});
+    // Upper bound on pixels avoids accidental memory exhaustion on huge architectural PDFs.
+    if(viewport.width*viewport.height>12000000)throw Error('PDF page dimensions exceed the safe OCR limit.');
+    const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+    const context=canvas.getContext('2d',{alpha:false});
+    if(!context)throw Error('Your browser cannot prepare this scanned page.');
+    await page.render({canvasContext:context,viewport}).promise;
+    const {data}=await worker.recognize(canvas);
+    all[n-1]=String(data?.text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    canvas.width=0;canvas.height=0;page.cleanup?.();
+   }
+  }finally{await worker.terminate();}
+ }
+ const lines=all.flat();
+ const rows=parseLines(lines);
+ if(!rows.length)throw Error('No reliable dated events found. Try clearer scans or enter dates manually. No holidays were guessed.');
+ return rows.map(x=>({...x,ocr:needsOcr.length>0}));
 }
 function unfoldIcs(text){return text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/);}
 function parseIcs(text){
@@ -125,8 +174,8 @@ function open(){
  document.getElementById('nscImportDialog')?.remove();
  const dlg=document.createElement('dialog');dlg.id='nscImportDialog';dlg.className='nsc-import-dialog';dlg.style.cssText='width:min(930px,95vw);max-height:89vh;overflow:auto;border:1px solid #e7cad6;border-radius:18px;padding:22px;background:var(--paper,#fff);color:var(--ink,#381e2b);box-shadow:0 25px 80px #25102055';
  dlg.innerHTML='<header style="display:flex;justify-content:space-between;gap:12px"><div><h2 style="font:800 19px Manrope;margin:0">Import school calendar</h2><p style="font-size:12px;color:var(--muted)">Upload a school PDF or a Google Calendar .ics export. Dates are reviewed before publishing to the existing shared calendar.</p></div><button type="button" id="nscImportClose" class="btn light">Close</button></header>'+
- '<div class="field"><label for="nscImportFile">Calendar PDF / Google Calendar .ics</label><input id="nscImportFile" type="file" accept=".pdf,application/pdf,.ics,text/calendar" style="width:100%;padding:13px;border:1px dashed #c99dae;border-radius:11px"></div>'+
- '<p style="font-size:11px;color:var(--muted)">Only approved dates are saved. Scanned PDFs need OCR. Public festival references are not assumed to be school closures. Private school data stays in your institution.</p>'+
+ '<div class="field"><label for="nscImportFile">Calendar PDF / Google Calendar .ics</label><input id="nscImportFile" type="file" accept=".pdf,application/pdf,.ics,text/calendar" style="width:100%;padding:13px;border:1px dashed #c99dae;border-radius:11px"></div><div class="field"><label for="nscOcrLanguage">Language for scanned PDF text (OCR)</label><select id="nscOcrLanguage"><option value="eng">English</option><option value="hin">Hindi + English</option><option value="tel">Telugu + English</option><option value="urd">Urdu + English</option></select></div>'+
+ '<p style="font-size:11px;color:var(--muted)">Only approved dates are saved. Scanned PDFs are read by local OCR. All extracted dates must be reviewed and approved. Public festival references are not automatically school closures. Private school data stays in your institution.</p>'+
  '<p role="status" id="nscImportMsg" style="font-size:12px"></p><div id="nscImportPreview"></div>';
  document.body.append(dlg);dlg.showModal?.();if(!dlg.open)dlg.setAttribute('open','');
  dlg.querySelector('#nscImportClose').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove(),{once:true});
@@ -145,7 +194,7 @@ function open(){
  }
  dlg.querySelector('#nscImportFile').onchange=async e=>{
   const file=e.target.files?.[0];if(!file)return;msg('Reading '+file.name+' …');rows=[];render();
-  try{const googleFile=/\.ics$/i.test(file.name);rows=(googleFile?parseIcs(await file.text()):await parsePdf(file)).map(r=>({...r,source:googleFile?'google':'pdf'}));
+  try{const googleFile=/\.ics$/i.test(file.name);rows=(googleFile?parseIcs(await file.text()):await parsePdf(file,status=>msg(status),dlg.querySelector('#nscOcrLanguage').value)).map(r=>({...r,source:googleFile?'google':'pdf'}));
    if(!rows.length)throw Error('No reliable dated entries were detected. Try a text-based PDF or add school events manually.');
    msg('Dates extracted. Check each holiday and working-day classification before publishing.');render();
   }catch(err){msg(err.message,true);}

@@ -11,6 +11,16 @@ const monthRows=d=>{
  return rows;
 };
 function contents(d,type){
+ if(type==='register'){
+  const school=d.c.schoolInfo.name||'School',student='Class attendance register',group=d.s.class_label||'Class',year=d.year.label||'';
+  const rows=(d.registerRows||[]).map(x=>[x.name,x.roll,x.group,x.status]);
+  const totals={present:0,absent:0,late:0,leave:0,unmarked:0};
+  for(const x of d.registerRows||[]){const status=x.status==='Not marked'?'unmarked':x.status;if(Object.hasOwn(totals,status))totals[status]++;}
+  return {attendance:false,register:true,school,student,group,year,title:'Daily Attendance Register',period:d.year.start_date,
+   headers:['Student','Roll No.','Class / Section','Attendance'],rows,
+   summary:[['Total students',rows.length],['Present',totals.present],['Absent',totals.absent],['Late',totals.late],['Leave',totals.leave],['Not marked',totals.unmarked]],
+   note:'Only submitted attendance records are included. Unmarked students are not counted absent.'};
+ }
  const attendance=type==='attendance',school=d.c.schoolInfo.name||'School',student=d.s.name||'Student',group=d.s.class_label||d.c.group.name||'Class',year=d.year.label||'Academic year';
  const keys=Object.keys(d.cfg.exam_labels||{}),last=keys.includes('term3')?'term3':keys[keys.length-1];
  const headers=attendance?['Month','Working Days','Present','Absent','Late','Leave','Unmarked','Attendance %']:['Subject',...keys.map(x=>d.cfg.exam_labels[x]),'Grade'];
@@ -56,7 +66,7 @@ function xlsx(d,type){
  return zip({
   '[Content_Types].xml':'<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
   '_rels/.rels':'<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
-  'xl/workbook.xml':'<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+(x.attendance?'Annual Attendance':'Annual Marks')+'" sheetId="1" r:id="rId1"/></sheets></workbook>',
+  'xl/workbook.xml':'<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+(x.register?'Daily Attendance':x.attendance?'Annual Attendance':'Annual Marks')+'" sheetId="1" r:id="rId1"/></sheets></workbook>',
   'xl/_rels/workbook.xml.rels':'<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
   'xl/styles.xml':styles,'xl/worksheets/sheet1.xml':sheet
  });
@@ -120,5 +130,14 @@ function exportFile(d,type,format){
  if(!formats[format])throw Error('Unknown report format.');
  const [bytes,ext,mime]=formats[format]();download(bytes,basename+ext,mime);
 }
-window.NOOR_REPORT_FILES=Object.freeze({exportFile,xlsx,docx,pdf,contents});
+function exportRegister({school,group,date,students,marks}){
+ if(!Array.isArray(students)||!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Choose a valid date and class.');
+ const seen=new Map();
+ for(const record of marks||[]){if(record.student_membership_id&&!seen.has(record.student_membership_id))seen.set(record.student_membership_id,record.attendance_status);}
+ const d={c:{schoolInfo:{name:school||'School'},group:{name:group||'Class'}},
+ s:{name:'Attendance-Register',class_label:group||'Class'},year:{start_date:date,end_date:date,label:date},
+ registerRows:students.map(s=>({name:s.name||'Student',roll:s.roll_number||'—',group:group||'Class',status:seen.get(s.membership_id)||'Not marked'}))};
+ return d;
+}
+window.NOOR_REPORT_FILES=Object.freeze({exportFile,exportRegister,xlsx,docx,pdf,contents});
 })();

@@ -327,12 +327,12 @@ function showEventModal(presetDate=''){
   const kind={school:'event',reminder:'event'}[val('type')]||val('type');
   if(!isLeader&&kind==='holiday')throw Error('Only school leadership can publish holidays.');
   if(canonical()&&!isLeader&&!a.profile?.section_id&&!a.profile?.class_id)throw Error('Select your teaching class first.');
-  result=await a.db.from(canonical()?'noor_calendar_events':'calendar_events').insert(canonical()?{
+  const query=a.db.from(canonical()?'noor_calendar_events':'calendar_events').insert(canonical()?{
     institution_id:a.schoolId,academic_group_id:isLeader?null:(a.profile.section_id||a.profile.class_id),created_by:a.user.id,title,kind,description:val('description')||'',starts_at:when.toISOString(),ends_at:when.toISOString()
   }:{school_id:a.schoolId,created_by:a.user.id,teacher_id:a.profile?.role==='teacher'?a.user.id:null,title,event_type:val('type'),description:val('description')||null,starts_at:when.toISOString(),status:'scheduled',target_roles:targetRoles});
+  result=await (canonical()?query.select('id').single():query);
   if(!result.error&&canonical()&&isLeader&&st.googleConnected&&st.googleOutbound){
-   const saved=await a.db.from('noor_calendar_events').select('id').eq('institution_id',a.schoolId).eq('created_by',a.user.id).eq('title',title).eq('starts_at',when.toISOString()).order('created_at',{ascending:false}).limit(1);
-   const eventId=saved.data?.[0]?.id;
+   const eventId=result.data?.id;
    if(eventId){
     const synced=await a.db.functions.invoke('noor-google-oauth',{body:{action:'publish',institution_id:a.schoolId,event_id:eventId}});
     if(synced.error||synced.data?.error)a.toast?.('NOOR event saved, but Google sync needs retry.','error');

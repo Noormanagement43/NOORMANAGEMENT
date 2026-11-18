@@ -135,7 +135,7 @@ export async function handle(req:Request):Promise<Response>{
    const q=out.questions[i],k=out.answer_key[i],f=plan[i].format;q.marks=plan[i].marks;
    if(q.type!==(f==='one_word'?'short':f)||typeof q.prompt!=='string'||!q.prompt.trim()||q.prompt.length>2000||typeof k?.answer!=='string'||!k.answer.trim()||k.answer.length>2000)return send(502,{error:'Question format did not match settings. Regenerate with corrections.'});
    q.response_mode=f==='one_word'?'one_word':'short';q.scene='none';q.visuals=[];
-   if(q.type!=='short'&&(!Array.isArray(q.options)||q.options.length!==plan[i].option_count||q.options.some((o:unknown)=>typeof o!=='string'||!o.trim()||o.length>300)||new Set(q.options.map((o:string)=>o.trim())).size!==q.options.length||!/^\d$/.test(k.answer)||Number(k.answer)>=q.options.length))return send(502,{error:'An answer key needs correction. Regenerate the draft.'});
+   if(q.type!=='short'&&(!Array.isArray(q.options)||q.options.length<2||q.options.length>6||(requested!==undefined&&q.options.length!==plan[i].option_count)||q.options.some((o:unknown)=>typeof o!=='string'||!o.trim()||o.length>300)||new Set(q.options.map((o:string)=>o.trim())).size!==q.options.length||!/^\d$/.test(k.answer)||Number(k.answer)>=q.options.length))return send(502,{error:'An answer key needs correction. Regenerate the draft.'});
    if(q.type==='short')q.options=[];
   }
   return send(200,{output:out,requires_teacher_approval:true});

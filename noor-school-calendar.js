@@ -140,7 +140,7 @@ function draw(){
    add(dateParts(new Date(e.starts_at)),{label:e.title,type:e.event_type||'school',id:e.id});
  }
 
- if(st.filter==='all')for(const e of st.googleEvents){if(e.date)add(e.date,{label:e.title,type:'google'});}
+ if(st.filter==='all')for(const e of st.googleEvents){if(e.date&&!st.events.some(x=>x.title?.toLowerCase()===e.title?.toLowerCase()&&dateParts(new Date(x.starts_at))===e.date))add(e.date,{label:e.title,type:'google'});}
  const cells=Array(offset).fill('<span class="nsc-blank"></span>');
  for(let day=1;day<=total;day++){
   const key=y+'-'+pad(m+1)+'-'+pad(day),entries=[...(items.get(key)||[])],status=schoolDayStatus(key);
@@ -176,6 +176,10 @@ function draw(){
 
  r.querySelectorAll('[data-del-event]').forEach(b=>b.onclick=async()=>{
    if(!confirm('Remove this event from the calendar?'))return;
+   if(canonical()&&leader()&&st.googleConnected){
+    const remote=await A().db.functions.invoke('noor-google-oauth',{body:{action:'deletePublished',institution_id:A().schoolId,event_id:b.dataset.delEvent}});
+    if(remote.error||remote.data?.error){A().toast?.('Google sync failed; school event was kept. Retry: '+(remote.data?.error||remote.error?.message),'error');return;}
+   }
    const {error}=await A().db.from(canonical()?'noor_calendar_events':'calendar_events').delete().eq('id',b.dataset.delEvent).eq(canonical()?'institution_id':'school_id',A().schoolId);
    if(error)A().toast?.('Could not delete event: '+error.message,'error');
    else { A().toast?.('Event removed.','success'); await load(); }
@@ -326,6 +330,14 @@ function showEventModal(presetDate=''){
   result=await a.db.from(canonical()?'noor_calendar_events':'calendar_events').insert(canonical()?{
     institution_id:a.schoolId,academic_group_id:isLeader?null:(a.profile.section_id||a.profile.class_id),created_by:a.user.id,title,kind,description:val('description')||'',starts_at:when.toISOString(),ends_at:when.toISOString()
   }:{school_id:a.schoolId,created_by:a.user.id,teacher_id:a.profile?.role==='teacher'?a.user.id:null,title,event_type:val('type'),description:val('description')||null,starts_at:when.toISOString(),status:'scheduled',target_roles:targetRoles});
+  if(!result.error&&canonical()&&isLeader&&st.googleConnected&&st.googleOutbound){
+   const saved=await a.db.from('noor_calendar_events').select('id').eq('institution_id',a.schoolId).eq('created_by',a.user.id).eq('title',title).eq('starts_at',when.toISOString()).order('created_at',{ascending:false}).limit(1);
+   const eventId=saved.data?.[0]?.id;
+   if(eventId){
+    const synced=await a.db.functions.invoke('noor-google-oauth',{body:{action:'publish',institution_id:a.schoolId,event_id:eventId}});
+    if(synced.error||synced.data?.error)a.toast?.('NOOR event saved, but Google sync needs retry.','error');
+   }
+  }
   }catch(error){result={error};}
 
 

@@ -48,9 +48,13 @@ create trigger noor_calendar_day_guard_trg before update on public.noor_calendar
 create or replace function private.noor_calendar_holiday_guard()
  returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
- if (new.kind='holiday' or (tg_op='UPDATE' and old.kind='holiday'))
-   and not private.can_manage_academics(new.institution_id) then
-  raise exception 'Only school leadership may publish or change school holidays' using errcode='42501';
+ if new.kind='holiday' and not private.can_manage_academics(new.institution_id) then
+  raise exception 'Only school leadership may publish school holidays' using errcode='42501';
+ end if;
+ if tg_op='UPDATE' then
+  if old.kind='holiday' and not private.can_manage_academics(new.institution_id) then
+   raise exception 'Only school leadership may edit school holidays' using errcode='42501';
+  end if;
  end if;
  return new;
 end; $$;

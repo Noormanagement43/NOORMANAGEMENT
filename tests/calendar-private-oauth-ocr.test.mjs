@@ -13,7 +13,7 @@ test('Scanned-PDF local OCR renders image-only pages and requires principal-revi
   cleanup(){}
  };
  const win={
-  PDF_MOCK:{getDocument:()=>({promise:Promise.resolve({numPages:1,getPage:async()=>mockPage})})},
+  PDF_MOCK:{GlobalWorkerOptions:{},getDocument:()=>({promise:Promise.resolve({numPages:1,getPage:async()=>mockPage})})},
   Tesseract:{async createWorker(){calls.push('createWorker');return {
    async recognize(){calls.push('recognize');return {data:{text:'November 2026\n18 Wed School Holiday - Diwali'}}},
    async terminate(){calls.push('terminate')}

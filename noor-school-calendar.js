@@ -184,29 +184,95 @@ function draw(){
 
 function connectGoogle(){
  if(!leader())return;
- const a=A();document.getElementById('nscGoogleDialog')?.remove();
- const dlg=document.createElement('dialog');dlg.id='nscGoogleDialog';dlg.style.cssText='width:min(510px,95vw);padding:22px;border:1px solid var(--line,#e8d3dc);border-radius:16px;background:var(--paper,#fff);color:var(--ink,#38212e)';
- dlg.innerHTML='<h2 style="font-size:19px;margin:0 0 12px">Connect Google Calendar</h2><p style="font-size:12px;line-height:1.7">Connect a school-owned <b>public Google Calendar</b> using its Calendar ID. Events appear in the same shared NOOR calendar for every school role. Google references never change school working days without approval.</p>'+
+ const a=A(),school=a.schoolId;
+ document.getElementById('nscGoogleDialog')?.remove();
+ const dlg=document.createElement('dialog');dlg.id='nscGoogleDialog';
+ dlg.style.cssText='width:min(570px,95vw);max-height:88vh;overflow:auto;padding:22px;border:1px solid var(--line,#e8d3dc);border-radius:16px;background:var(--paper,#fff);color:var(--ink,#38212e)';
+ dlg.innerHTML='<h2 style="font-size:19px;margin:0 0 12px">School Google Calendar Sync</h2>'+
+ '<p class="nsc-hint">Connect school dates and Google events in the existing NOOR Calendar. Google reference dates never change attendance working days automatically.</p>'+
+ '<h3>Public Google Calendar (optional)</h3>'+
  '<div class="field"><label>Public Google Calendar ID</label><input id="nscGoogleId" type="text" maxlength="180" placeholder="school-calendar@group.calendar.google.com" style="width:100%"></div>'+
- '<p class="nsc-hint">Do not publish private student information. Private Google calendars require separate Google OAuth authorization and are not connected by this option.</p><p id="nscGoogleMessage" role="status"></p>'+
- '<div class="row" style="justify-content:flex-end;gap:8px"><button type="button" class="btn danger" id="nscGoogleDisconnect">Disconnect</button><button type="button" class="btn light" id="nscGoogleClose">Cancel</button><button type="button" class="btn" id="nscGoogleSave">Connect</button></div>';
+ '<div class="row" style="gap:8px"><button type="button" class="btn" id="nscGoogleSave">Save public ID</button><button type="button" class="btn light" id="nscGoogleDisconnect">Remove public ID</button></div>'+
+ '<p id="nscGoogleMessage" role="status" class="nsc-hint"></p>'+
+ '<hr style="border:0;border-top:1px solid var(--line,#e8d3dc);margin:20px 0"><h3>Private School Google Calendar</h3>'+
+ '<p class="nsc-hint">Use a dedicated school Google account. Authorized school members can see its selected calendar events in NOOR. They cannot see Google access tokens.</p>'+
+ '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="nscGoogleOAuth">Connect school Google account</button><button type="button" class="btn light" id="nscGooglePrivateDisconnect">Disconnect private</button></div>'+
+ '<div class="field" style="margin-top:12px"><label>Select school-owned Google calendar</label><select id="nscGooglePrivateSelect" style="width:100%"><option value="">Not connected</option></select></div>'+
+ '<label style="display:flex;gap:8px;align-items:center;font-size:12px;margin:12px 0"><input type="checkbox" id="nscGooglePublish"> Automatically publish new school-wide NOOR events to selected Google Calendar</label>'+
+ '<p class="nsc-hint">Publishing is off by default. Class-specific and student-private events are never published. Google editing requires the school account owner to approve access.</p>'+
+ '<div class="row" style="justify-content:flex-end;gap:8px"><button type="button" class="btn light" id="nscGoogleClose">Close</button><button type="button" class="btn" id="nscGooglePrivateSave">Save Google settings</button></div><p id="nscGooglePrivateMessage" role="status" class="nsc-hint"></p>';
  document.body.append(dlg);dlg.showModal?.();if(!dlg.open)dlg.setAttribute('open','');
  const msg=dlg.querySelector('#nscGoogleMessage'),field=dlg.querySelector('#nscGoogleId');
- dlg.querySelector('#nscGoogleClose').onclick=()=>dlg.close();dlg.addEventListener('close',()=>dlg.remove(),{once:true});
- a.db.from('noor_calendar_google_sources').select('calendar_id').eq('institution_id',a.schoolId).maybeSingle().then(x=>{if(x.data&&dlg.isConnected)field.value=x.data.calendar_id;});
+ const privateMsg=dlg.querySelector('#nscGooglePrivateMessage'),select=dlg.querySelector('#nscGooglePrivateSelect'),publish=dlg.querySelector('#nscGooglePublish');
+ dlg.querySelector('#nscGoogleClose').onclick=()=>dlg.close();
+ dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+ a.db.from('noor_calendar_google_sources').select('calendar_id').eq('institution_id',school).maybeSingle()
+  .then(x=>{if(x.data&&dlg.isConnected&&A().schoolId===school)field.value=x.data.calendar_id;});
  dlg.querySelector('#nscGoogleSave').onclick=async()=>{
-  const id=field.value.trim();if(!/^[A-Za-z0-9._@%#-]{4,180}$/.test(id)){msg.textContent='Enter a valid Google Calendar ID, not a website link.';return;}
-  const b=dlg.querySelector('#nscGoogleSave');b.disabled=true;msg.textContent='Connecting school calendar…';
-  const r=await a.db.from('noor_calendar_google_sources').upsert({institution_id:a.schoolId,calendar_id:id,connected_by:a.user.id,updated_at:new Date().toISOString()},{onConflict:'institution_id'});
-  if(r.error){msg.textContent=r.error.message;b.disabled=false;return;}
-  dlg.close();a.toast?.('Public Google calendar source connected.','success');load();
+  const id=field.value.trim();
+  if(!/^[A-Za-z0-9._@%#-]{4,180}$/.test(id)){msg.textContent='Enter a valid public Calendar ID, not a web link.';return;}
+  const r=await a.db.from('noor_calendar_google_sources').upsert({institution_id:school,calendar_id:id,connected_by:a.user.id,updated_at:new Date().toISOString()},{onConflict:'institution_id'});
+  if(r.error){msg.textContent=r.error.message;return;}
+  msg.textContent='Public calendar connected.';load();
  };
  dlg.querySelector('#nscGoogleDisconnect').onclick=async()=>{
-  if(!confirm('Disconnect Google Calendar from this school?'))return;
-  const r=await a.db.from('noor_calendar_google_sources').delete().eq('institution_id',a.schoolId);
+  if(!confirm('Remove the public Google Calendar from this school?'))return;
+  const r=await a.db.from('noor_calendar_google_sources').delete().eq('institution_id',school);
   if(r.error){msg.textContent=r.error.message;return;}
-  dlg.close();a.toast?.('Google calendar disconnected.','success');load();
+  field.value='';msg.textContent='Public reference removed.';load();
  };
+ const call=async(action,extra={})=>{
+  if(A().schoolId!==school)throw Error('School changed. Close this dialog and reopen.');
+  const r=await a.db.functions.invoke('noor-google-oauth',{body:{action,institution_id:school,...extra}});
+  if(r.error||r.data?.error)throw Error(r.data?.error||r.error?.message||'Google service unavailable');
+  return r.data;
+ };
+ const refresh=async()=>{
+  try{
+   const status=await call('status');
+   if(!dlg.isConnected)return;
+   privateMsg.textContent=status.connected?'Private Google account connected. Choose the calendar.':'Private Google account not connected.';
+   publish.checked=status.outbound_enabled===true;
+   select.innerHTML='<option value="">Select a calendar</option>';
+   if(!status.connected)return;
+   const result=await call('calendars');
+   if(!dlg.isConnected)return;
+   select.innerHTML=(result.calendars||[]).map(x=>'<option value="'+E(x.id)+'" '+(x.id===status.calendar_id?'selected':'')+'>'+E(x.summary)+(x.primary?' (Primary)':'')+'</option>').join('');
+  }catch(err){if(dlg.isConnected)privateMsg.textContent=err.message;}
+ };
+ const onCallback=e=>{
+  if(e.origin!=='https://ayrryemawwplguaauxij.supabase.co'||e.data?.type!=='noor-google-oauth')return;
+  if(!dlg.isConnected||A().schoolId!==school)return;
+  privateMsg.textContent=e.data.connected?'Google permission received. Loading calendars…':'Google consent was not completed.';
+  if(e.data.connected){refresh();load();}
+ };
+ window.addEventListener('message',onCallback);
+ dlg.addEventListener('close',()=>window.removeEventListener('message',onCallback),{once:true});
+ dlg.querySelector('#nscGoogleOAuth').onclick=async()=>{
+  const popup=window.open('about:blank','noorSchoolGoogleConsent','width=610,height=710');
+  if(!popup){privateMsg.textContent='Allow this Google consent pop-up and retry.';return;}
+  try{
+   popup.document.write('<p style="font:16px system-ui;padding:30px">Opening Google permission…</p>');
+   const result=await call('start');
+   if(!/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/.test(result.url||''))throw Error('Invalid Google authorization URL');
+   popup.location.assign(result.url);
+  }catch(err){popup.close();privateMsg.textContent=err.message;}
+ };
+ dlg.querySelector('#nscGooglePrivateSave').onclick=async()=>{
+  const id=select.value;if(!id){privateMsg.textContent='Choose a school Google calendar.';return;}
+  const button=dlg.querySelector('#nscGooglePrivateSave');button.disabled=true;
+  try{
+   await call('select',{calendar_id:id});
+   await call('outbound',{enabled:publish.checked});
+   privateMsg.textContent='Private Google Calendar saved.';await refresh();load();
+  }catch(err){privateMsg.textContent=err.message;}finally{button.disabled=false;}
+ };
+ dlg.querySelector('#nscGooglePrivateDisconnect').onclick=async()=>{
+  if(!confirm('Disconnect private Google Calendar from this school?'))return;
+  try{await call('disconnect');privateMsg.textContent='Private account disconnected.';await refresh();load();}
+  catch(err){privateMsg.textContent=err.message;}
+ };
+ refresh();
 }
 
 function showEventModal(presetDate=''){

@@ -3,48 +3,84 @@
 const E=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=name=>window.NOOR_UI_POLISH?.icon(name)||'';
 function secondary(classes,sections,students,sessions,records,day){
- const number=c=>Number(String(c.name).match(/\d+/)?.[0]||0);
- const cs=classes.filter(c=>number(c)>=6&&number(c)<=10).sort((a,b)=>number(a)-number(b));
- if(!cs.length)return '<p class="pd-empty">No classes 6–10 have been created yet.</p>';
+ const classNumber=c=>Number(String(c.name||'').match(/\d+/)?.[0]||0);
+ const chosen=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
+ if(!chosen.length)return '<p class="pd-empty">No classes 6–10 have been created yet.</p>';
  const submitted=new Set(sessions.filter(x=>x.attendance_date===day&&x.status==='submitted').map(x=>x.id));
- const roster=new Set(students.map(s=>s.id)),latest=new Map();
+ const enrolled=new Set(students.map(s=>s.id)),latest=new Map();
  for(const record of records){
-  if(!submitted.has(record.session_id)||!roster.has(record.student_id)||!['present','absent','late','leave','excused'].includes(record.status))continue;
+  if(!submitted.has(record.session_id)||!enrolled.has(record.student_id)||!['present','absent','late','leave','excused'].includes(record.status))continue;
   const old=latest.get(record.student_id);
   if(!old||String(record.updated_at||record.marked_at||'')>String(old.updated_at||old.marked_at||''))latest.set(record.student_id,record);
  }
- const groups=cs.map(c=>{
+ const groups=chosen.map(c=>{
   const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
-  const unassigned=students.filter(s=>s.class_id===c.id&&!secs.some(sec=>sec.id===s.section_id));
-  const entries=secs.map(s=>({label:s.name,students:students.filter(p=>p.class_id===c.id&&p.section_id===s.id)}));
-  if(unassigned.length||!entries.length)entries.push({label:secs.length?'Unassigned':'All',students:unassigned});
-  return {name:c.name,entries:entries.map(entry=>{
-   const marks=entry.students.map(s=>latest.get(s.id)).filter(Boolean);
-   return {label:entry.label,total:entry.students.length,marked:marks.length,present:marks.filter(r=>r.status==='present').length,absent:marks.filter(r=>r.status==='absent').length,late:marks.filter(r=>r.status==='late').length,leave:marks.filter(r=>['leave','excused'].includes(r.status)).length};
+  const loose=students.filter(s=>s.class_id===c.id&&!secs.some(x=>x.id===s.section_id));
+  const parts=secs.map(sec=>({label:sec.name,axisLabel:String(classNumber(c))+String(sec.name||'').replace(/^section\s*/i,'').trim(),students:students.filter(s=>s.class_id===c.id&&s.section_id===sec.id)}));
+  if(loose.length||!parts.length)parts.push({label:secs.length?'Unassigned':'All',axisLabel:String(classNumber(c))+(secs.length?' Other':' All'),students:loose});
+  return{name:c.name,entries:parts.map(part=>{
+   const marked=part.students.map(s=>latest.get(s.id)).filter(Boolean);
+   return{label:part.label,axisLabel:part.axisLabel,total:part.students.length,marked:marked.length,present:marked.filter(x=>x.status==='present').length,absent:marked.filter(x=>x.status==='absent').length,late:marked.filter(x=>x.status==='late').length,leave:marked.filter(x=>['leave','excused'].includes(x.status)).length};
   })};
  });
- const entries=groups.flatMap(g=>g.entries),top=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));
- const step=Math.max(1,Math.ceil(top/5)),max=step*5,left=44,plot=206,base=242;
- const widths=groups.map(g=>Math.max(96,g.entries.length*70+20)),width=Math.max(620,left+widths.reduce((a,b)=>a+b,0)+16),plotWidth=width-left-16;
- const scale=n=>plot*n/max;let svg=`<svg class="pd-secondary-svg" viewBox="0 0 ${width} 320" role="img" aria-label="Secondary attendance by class and section; numbers above bars show present students"><title>Classes 6–10: recorded present, absent and late student counts</title>`;
- for(let n=0;n<=5;n++){const value=n*step,y=base-scale(value);svg+=`<path d="M${left} ${y}H${width-16}" stroke="currentColor" opacity=".15"/><text x="${left-9}" y="${y+4}" text-anchor="end" fill="currentColor" font-size="12">${value}</text>`;}
- let offset=left;
- groups.forEach((g,i)=>{
-  const groupWidth=widths[i]*plotWidth/widths.reduce((a,b)=>a+b,0),slot=groupWidth/g.entries.length;
-  g.entries.forEach((s,j)=>{
-   const x=offset+slot*(j+.5),barWidth=Math.min(27,slot*.4),mark=s.marked?String(s.present):'—';
-   svg+=`<g><title>${E(g.name)} · ${E(s.label)}: ${s.marked?s.present+' present, '+s.absent+' absent, '+s.late+' late, '+s.leave+' on leave; '+s.marked+' marked of '+s.total:'Attendance not submitted; '+s.total+' enrolled'}</title>`;
-   if(s.marked){
-    svg+=`<rect x="${x-barWidth/2-5}" y="${base-scale(s.present)}" width="${barWidth}" height="${scale(s.present)}" fill="var(--pd-ref-accent,var(--berry))"/>`;
-    svg+=`<rect x="${x+barWidth/2-4}" y="${base-scale(s.absent)}" width="8" height="${scale(s.absent)}" fill="var(--pd-ref-border,var(--rose-line))"/><rect x="${x+barWidth/2+5}" y="${base-scale(s.late)}" width="8" height="${scale(s.late)}" fill="var(--pd-ref-gold,var(--gold))"/>`;
+ const entries=groups.flatMap(g=>g.entries),highest=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));
+ const step=Math.max(1,Math.ceil(highest/25)),maximum=5*step,left=44,base=244,plot=190;
+ const widths=groups.map(g=>Math.max(140,g.entries.length*73+18)),width=Math.max(650,left+widths.reduce((sum,v)=>sum+v,0)+18);
+ const scale=n=>plot*n/maximum;
+ let svg='<svg class="pd-secondary-svg" viewBox="0 0 '+width+' 320" role="img" aria-label="Section-wise present, absent and late attendance for classes 6 to 10"><title>Actual submitted attendance by class and section</title>';
+ for(let i=0;i<=5;i++){
+  const count=i*step,y=base-scale(count);
+  svg+='<path d="M'+left+' '+y+'H'+(width-12)+'" stroke="currentColor" opacity=".16"/><text x="'+(left-10)+'" y="'+(y+4)+'" text-anchor="end" fill="currentColor" font-size="12">'+count+'</text>';
+ }
+ let start=left;
+ for(const group of groups){
+  const groupWidth=widths[groups.indexOf(group)],slot=groupWidth/group.entries.length;
+  for(let j=0;j<group.entries.length;j++){
+   const section=group.entries[j],x=start+slot*(j+.5),num=section.marked?String(section.present):'—';
+   svg+='<g><title>'+E(group.name)+' · '+E(section.label)+': '+(section.marked?section.present+' present, '+section.absent+' absent, '+section.late+' late, '+section.leave+' on leave; '+section.marked+' marked of '+section.total:'Attendance not submitted; '+section.total+' enrolled')+'</title>';
+   if(section.marked){
+    svg+='<rect x="'+(x-20)+'" y="'+(base-scale(section.present))+'" width="23" height="'+scale(section.present)+'" rx="2" fill="var(--pd-ref-accent,var(--berry))"/>';
+    svg+='<rect x="'+(x+5)+'" y="'+(base-scale(section.absent))+'" width="8" height="'+scale(section.absent)+'" rx="1" fill="var(--pd-ref-border,var(--rose-line))"/>';
+    svg+='<rect x="'+(x+15)+'" y="'+(base-scale(section.late))+'" width="8" height="'+scale(section.late)+'" rx="1" fill="var(--pd-ref-gold,var(--gold))"/>';
    }
-   svg+=`<text x="${x-5}" y="${base-scale(s.present)-9}" text-anchor="middle" fill="currentColor" font-size="17" font-weight="750">${mark}</text><text x="${x}" y="262" text-anchor="middle" fill="currentColor" font-size="12">${E(s.label)}</text></g>`;
-  });
-  svg+=`<rect x="${offset+5}" y="276" width="${groupWidth-10}" height="27" rx="9" fill="var(--pd-ref-soft,var(--rose-soft))"/><text x="${offset+groupWidth/2}" y="295" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="700">${E(g.name)}</text>`;
-  offset+=groupWidth;
- });
- const totals=entries.reduce((t,x)=>({present:t.present+x.present,total:t.total+x.total,marked:t.marked+x.marked}),{present:0,total:0,marked:0});
- return '<div class="pd-secondary-subhead"><span>Classes 6–10 · Section-wise</span><div class="pd-secondary-legend"><span><i class="present"></i>Present</span><span><i class="absent"></i>Absent</span><span><i class="late"></i>Late</span></div></div><div class="pd-secondary-scroll" tabindex="0" aria-label="Scroll class attendance chart">'+svg+'</svg></div><div class="pd-secondary-summary">'+(totals.marked?'Present: '+totals.present+' / '+totals.total+' · Attendance: '+Math.round(totals.present/Math.max(1,totals.total)*1000)/10+'%':'Attendance not submitted')+'</div><p class="pd-muted">'+totals.marked+' marked · '+(totals.total-totals.marked)+' unmarked · Numbers above bars show present students. Late and leave are separate.</p>';
+   svg+='<text x="'+(x-9)+'" y="'+(base-scale(section.present)-8)+'" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="15" font-weight="750">'+num+'</text>';
+   svg+='<text x="'+x+'" y="266" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="12" font-weight="700">'+E(section.axisLabel||section.label)+'</text></g>';
+  }
+  svg+='<rect x="'+(start+8)+'" y="279" width="'+(groupWidth-16)+'" height="29" rx="11" fill="var(--pd-ref-soft,var(--rose-soft))"/>';
+  svg+='<text x="'+(start+groupWidth/2)+'" y="298" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="750">'+E(group.name)+'</text>';
+  start+=groupWidth;
+ }
+ svg+='</svg>';
+ const totals=entries.reduce((all,r)=>({total:all.total+r.total,present:all.present+r.present,marked:all.marked+r.marked,leave:all.leave+r.leave}),{total:0,present:0,marked:0,leave:0});
+ const percent=totals.total?Math.round(1000*totals.present/totals.total)/10:0;
+ return '<div class="pd-secondary-subhead"><span>Classes 6–10 · Section-wise</span><div class="pd-secondary-legend"><span><i class="present"></i>Present</span><span><i class="absent"></i>Absent</span><span><i class="late"></i>Late</span></div></div>'+
+ '<div class="pd-secondary-scroll" tabindex="0" aria-label="Scroll to see all class and section attendance groups">'+svg+'</div>'+
+ '<div class="pd-secondary-summary">'+(totals.marked?'Present: '+totals.present+' / '+totals.total+' <span aria-hidden="true">•</span> Attendance: '+percent+'%':'Attendance not submitted today')+'</div>'+
+ '<p class="pd-muted">'+totals.marked+' marked · '+(totals.total-totals.marked)+' unmarked'+(totals.leave?' · '+totals.leave+' on leave':'')+' · Counts reflect real submitted records; unmarked is not absent.</p>';
+}
+function running(periods,teachers,classes,sections,runs,photos={}){
+ if(!periods.length)return '<p class="pd-empty pd-running-empty">No periods are running right now. Only current school-time periods appear here.</p>';
+ const teacherMap=new Map(teachers.map(t=>[t.id,t]));
+ const classMap=new Map(classes.map(c=>[c.id,c.name])),sectionMap=new Map(sections.map(s=>[s.id,s.name]));
+ const cleanTime=value=>/^\d{2}:\d{2}/.test(String(value||''))?String(value).slice(0,5):'—';
+ return '<div class="pd-running-list" role="list" aria-label="Current periods">'+periods.map(p=>{
+  const teacher=teacherMap.get(p.teacher_id),name=String(teacher?.full_name||p.teacher_name||'School teacher');
+  const rawParts=String(p.class_label||'').split(' · '),cl=classMap.get(p.class_id)||rawParts[0]||'Class not set';
+  const sec=sectionMap.get(p.section_id)||rawParts[1]||'';
+  const assigned=cl+(sec?' '+sec.replace(/^section\s+/i,''):'');
+  const period=Number.isInteger(Number(p.period_number))&&Number(p.period_number)>0?'Period '+Number(p.period_number):'Period not set';
+  const started=runs.get(p.id)?.status==='ongoing'||p.progress_status==='ongoing';
+  const status=started?'In progress':'Scheduled now';
+  const image=String(photos[p.teacher_id]||''),safePhoto=/^https:\/\/[^?#]+\/storage\/v1\/object\/sign\//i.test(image)?image:'';
+  const initials=name.trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+  const avatar=safePhoto?'<img src="'+E(safePhoto)+'" alt="'+E(name)+' photo" loading="lazy" referrerpolicy="no-referrer">':'<span class="pd-running-initials" aria-label="No teacher photo uploaded">'+E(initials)+'</span>';
+  return '<article class="pd-running-person" role="listitem"><button type="button" class="pd-running-photo" data-view-teacher="'+E(p.teacher_id||'')+'" aria-label="View '+E(name)+' profile">'+avatar+'</button>'+
+  '<div class="pd-running-copy"><button type="button" class="pd-running-name" data-view-teacher="'+E(p.teacher_id||'')+'">'+E(name)+'</button>'+
+  '<div class="pd-running-subject">'+E(p.subject_name||'Subject not set')+'</div>'+
+  '<div class="pd-running-meta"><span>'+E(assigned)+'</span><span>'+E(period)+'</span></div>'+
+  '<div class="pd-running-time"><span>'+E(cleanTime(p.start_time))+' – '+E(cleanTime(p.end_time))+'</span><span class="pd-running-state">'+status+'</span></div></div>'+
+  '<button type="button" class="pd-running-open" data-pd-period="'+E(p.id)+'" aria-label="View '+E(period)+' details">›</button></article>';
+ }).join('')+'</div>';
 }
 function actions(items){return items.map(x=>{
  const staff=x.route==='staff-management',help=x.route==='help-support';
@@ -60,5 +96,5 @@ function messages(rows,kind,tz){
  }).join('')||`<p class="pd-empty">${rows.some(x=>x.unavailable)?'School messages could not load. Open Notices & Meetings to retry.':'No '+(kind==='meeting'?'meetings':kind==='email'?'emails':'notices')+' to display.'}</p>`;
  return html;
 }
-window.NOOR_PRINCIPAL_REFERENCE=Object.freeze({secondary,actions,messages});
+window.NOOR_PRINCIPAL_REFERENCE=Object.freeze({secondary,running,actions,messages});
 })();

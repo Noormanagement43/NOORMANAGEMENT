@@ -2,6 +2,7 @@
    Postgres authorizes registration and stores all effective availability settings. */
 (()=>{'use strict';
 const catalog=[
+  {feature_key:"learning_gap_time_machine",label:"Learning Gap Time Machine",category:"academics",description:"Teacher-reviewed Class 3 Maths concept evidence and recovery",views:[]},
   {
     "feature_key": "attendance",
     "label": "Student Attendance",
@@ -229,7 +230,8 @@ const catalog=[
     "category": "People",
     "description": "Manager substitute attendance, manual marks and activity workspace",
     "views": [
-      "manager"
+      "manager",
+      "manager-activities"
     ]
   }
 ];

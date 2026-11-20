@@ -7,7 +7,7 @@ const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 test('Principal dashboard does not assign or edit a teacher period; timetable remains visible',async()=>{
  const code=await read('principal-live.js');
  assert.doesNotThrow(()=>new Script(code));
- assert.match(code,/Currently Active Periods/);
+ assert.match(code,/Running now/);
  assert.match(code,/id="pd-timetable"/);
  assert.match(code,/showTimetable/);
  assert.match(code,/id="pd-periods"/);
@@ -21,9 +21,9 @@ test('Principal dashboard does not assign or edit a teacher period; timetable re
  assert.doesNotMatch(code,/\.from\('noor_teacher_periods'\)\.delete\(/);
 });
 
-test('Principal sidebar has Staff and classes, but no Assign Teacher page',async()=>{
+test('Principal sidebar keeps Teacher and delegates class setup to Manager',async()=>{
  const html=await read('index.html');
- assert.match(html,/id:'staff-management',icon:'staff',label:'Staff'/);
+ assert.match(html,/id:'staff-management',icon:'staff',label:'Teacher'/);assert.match(html,/id:'classes',icon:'classes',label:'Class & Section'/);
  assert.match(html,/School setup/);assert.match(html,/openView\('classes'\)/);
  assert.doesNotMatch(html,/label:'Teacher Assignments'/);
  assert.doesNotMatch(html,/label:'Timetables & Teachers'/);

@@ -121,3 +121,22 @@ access decoration hides them when disabled, including clock-driven re-renders.
 The new Ask My Teacher chat's direct entry checks its existing `diary` key before
 loading; private chat storage and question rows retain main's server/RLS guards.
 No new defaults or overrides are changed by these compatibility updates.
+
+
+## Learning Gap and external calendars
+
+The registry includes the existing `learning_gap_time_machine` catalog entry,
+keeping its existing OFF default and per-school choices. `manager-activities`
+uses Manager Workspace availability. New universal learning, reporting and
+calendar UI updates from main are retained.
+
+Google Calendar POST operations and OAuth callbacks now check effective Calendar
+availability before accessing credentials or calling Google. The callback uses a
+service-only boolean RPC against the persisted actor's active school membership
+and the existing feature predicate; anon/authenticated cannot invoke it. Public
+Google reads use the caller's authenticated `noor_feature_access`. Calendar import
+also checks Calendar before writes. Apply
+`20261120130335_calendar_feature_access.sql` before deploying the matching Google
+Edge Functions. A rolled-back database check verified Creator OFF, school OFF,
+re-enable, unrelated actor denial, and service-only grants without new accounts
+or persisted feature changes. No production deployment is claimed.

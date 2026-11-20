@@ -75,3 +75,13 @@
  #noorSoundQuickControl{display:none!important}
  #workspace #noorSchoolBell [data-count]{width:auto!important;height:auto!important;min-height:14px;padding:1px 3px!important;border:0!important;font:700 10px/1.2 system-ui!important;color:#fff!important}
 }
+
+/* One mobile navigation: the left drawer. The floating assistant is the only AI launcher. */
+#workspace #noorHeaderAI{display:none!important}
+#workspace .sidebar-bottom .noor-side-signout{display:block;width:100%;min-height:44px;margin-top:18px;padding:10px 14px;border:1px solid rgba(255,255,255,.55);border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font:700 13px/1.3 system-ui;text-align:left;cursor:pointer}
+#workspace .sidebar-bottom .noor-side-signout:focus-visible{outline:3px solid #f3d294;outline-offset:2px}
+@media(max-width:1024px){
+ #workspace #noorMobileNav{display:none!important}
+ #workspace .content{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
+ #workspace .sidebar-bottom{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+}

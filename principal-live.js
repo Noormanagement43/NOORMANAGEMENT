@@ -20,6 +20,21 @@ function activePeriods(periods,runs,now){
  }).sort((a,b)=>a.start_time.localeCompare(b.start_time));
 }
 
+async function periodPortraits(periods,teachers,db,canonical,sid,uid){
+ const ids=new Set(periods.map(p=>p.teacher_id).filter(Boolean));
+ const photos={};
+ await Promise.all(teachers.filter(t=>ids.has(t.id)).map(async teacher=>{
+  let url=null;
+  try{
+   if(String(teacher.avatar_url||'').startsWith('noor-profile-photos/')){
+    url=await window.NOOR_AVATAR_SAFE?.signedUrl({client:db,storedReference:teacher.avatar_url,userId:teacher.user_id||teacher.id});
+   }
+  }catch{/* Photos are private. Show initials when storage access is denied. */}
+  if(a().user?.id===uid&&a().schoolId===sid)photos[teacher.id]=url;
+ }));
+ return photos;
+}
+
 function setup(){
   const r=root(),key=a().user.id+':'+a().schoolId;if(r.dataset.liveIdentity===key)return;r.dataset.liveIdentity=key;
   r.innerHTML=`<div id="noor-principal">
@@ -62,18 +77,22 @@ function setup(){
           <span id="pd-status" role="status">Syncing school records…</span>
           <button class="pd-link" id="pd-refresh">↻ Refresh</button>
         </div>
-        <section class="pd-card pd-schedule" data-feature-view="schedules">
-          <header>
-            <h2>Currently Active Periods</h2>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="pd-link" id="pd-timetable">Staff · All Periods →</button>
-            </div>
-          </header>
-          <div id="pd-periods"></div>
-        </section>
+        <div class="pd-focus-row" aria-label="Section attendance and periods running now">
+          <section class="pd-card pd-secondary-card" data-feature-view="attendance">
+            <header class="pd-focus-heading"><h2>Secondary Attendance</h2></header>
+            <div id="pd-trend"><p class="pd-empty">Loading actual attendance…</p></div>
+          </section>
+          <section class="pd-card pd-running-card" data-feature-view="schedules">
+            <header class="pd-focus-heading">
+              <div><h2>Running now</h2><p class="pd-running-clock" id="pd-running-clock">Checking school timetable…</p></div>
+              <span class="pd-running-live" id="pd-running-live" data-live="false">Checking</span>
+            </header>
+            <div id="pd-periods"><p class="pd-empty">Checking current periods…</p></div>
+            <button class="pd-running-view" id="pd-timetable" type="button">View Staff <span aria-hidden="true">→</span></button>
+          </section>
+        </div>
         <div class="pd-charts">
           ${card('Class-wise Attendance (Classes 1 – 5)','pd-classes','classes','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
-          ${card('Secondary Attendance','pd-trend','attendance','Full report →')}
         </div>
         <div class="pd-reference-bottom">
         <section class="pd-card pd-reference-actions"><header><h2>${window.NOOR_UI_POLISH?.icon('warning')||''} Action Required</h2></header><div id="pd-actions"></div></section>
@@ -551,7 +570,7 @@ async function refresh(){
 
     const spec={
       students:()=>db.from('profiles').select('id,class_id,section_id').eq('school_id',sid).eq('role','student').eq('status','active').order('id'),
-      teachers:()=>db.from('profiles').select('id,full_name').eq('school_id',sid).eq('role','teacher').eq('status','active').order('id'),
+      teachers:()=>db.from('profiles').select('id,full_name,avatar_url').eq('school_id',sid).eq('role','teacher').eq('status','active').order('id'),
       staff:()=>db.from('noor_staff_attendance').select('teacher_id,status').eq('school_id',sid).eq('attendance_date',d.day).order('teacher_id'),
       periods:()=>window.NOOR_SHARED_TIMETABLE?.current()?window.NOOR_SHARED_TIMETABLE.load().then(r=>({...r,data:r.data.filter(p=>p.weekday===d.weekday)})):db.from('noor_teacher_periods').select('id,teacher_id,period_number,start_time,end_time,subject_name,class_label,class_id,section_id,block_type').eq('school_id',sid).eq('weekday',d.weekday).eq('approval_status','approved').order('id'),
       runs:()=>db.from('noor_teacher_period_runs').select('period_id,status').eq('school_id',sid).eq('class_date',d.day).order('period_id'),
@@ -628,18 +647,19 @@ async function refresh(){
     // Secondary Trend
     q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
 
-    // Only periods running within the school-local time window belong on the dashboard.
-    q('#pd-periods').innerHTML=res.periods.error||(!window.NOOR_SHARED_TIMETABLE?.current()&&(res.runs.error||res.teachers.error))?empty(res.periods.error?.message||'Teacher timetable could not be loaded.'):runningPeriods.length?`<div class="pd-table-wrap"><table><thead><tr><th>Teacher Name</th><th>Subject</th><th>Class</th><th>Section</th><th>Period Time</th><th>Status</th></tr></thead><tbody>${runningPeriods.map(p=>{
-      const run=runs.get(p.id),status=run?.status==='ongoing'?'In progress':p.progress_status==='ongoing'?'In progress':'Scheduled now';
-      return `<tr>
-        <td><button type="button" class="pd-link" data-view-teacher="${p.teacher_id}" style="font-weight:700;color:#6f334e;cursor:pointer">${e(p.teacher_name||teacherMap.get(p.teacher_id)||'Teacher')}</button></td>
-        <td><button type="button" class="pd-link noor-period-detail" data-pd-period="${e(p.id)}">${e(p.subject_name)} →</button><small class="noor-period-topic">${e([p.lesson,p.topic].filter(Boolean).join(' · ')||'Lesson / topic not added yet')}</small></td>
-        <td>${e(classes.find(c=>c.id===p.class_id)?.name||p.class_label)}</td>
-        <td>${e(sections.find(s=>s.id===p.section_id)?.name||'—')}</td>
-        <td>${e(p.start_time.slice(0,5)+' – '+p.end_time.slice(0,5))}</td>
-        <td><span class="pd-tag now">● ${status}</span></td>
-      </tr>`;
-    }).join('')}</tbody></table></div><p class="pd-muted">${e(d.tz)} · Click any teacher's name above to inspect their full profile, timetable and logs.</p>`:empty('No periods are running right now.');
+    // The cards represent actual current school-time schedules, never invented staff.
+    const periodError=res.periods.error||(!canonical&&(res.runs.error||res.teachers.error));
+    const displayed=runningPeriods.slice(0,6);
+    const photoUrls=periodError?{}:await periodPortraits(displayed,teachers,db,canonical,sid,uid);
+    if(a().schoolId!==sid||a().user?.id!==uid||!permitted())return;
+    const liveBadge=q('#pd-running-live');
+    liveBadge.dataset.live=String(!periodError&&runningPeriods.length>0);
+    liveBadge.textContent=periodError?'Unavailable':runningPeriods.length?'● Live':'No active period';
+    const windows=[...new Set(runningPeriods.map(p=>String(p.start_time||'').slice(0,5)+' – '+String(p.end_time||'').slice(0,5)))];
+    q('#pd-running-clock').textContent=windows.length===1?windows[0]+' · '+d.tz:'School time '+d.time+' · '+d.tz;
+    q('#pd-periods').innerHTML=periodError?empty('Could not load current periods. Refresh to retry.'):
+      window.NOOR_PRINCIPAL_REFERENCE.running(displayed,teachers,classes,sections,runs,photoUrls)+
+      (runningPeriods.length>displayed.length?'<p class="pd-running-overflow">'+(runningPeriods.length-displayed.length)+' more running now · Open Staff for the complete timetable</p>':'');
 
     const eventList=(items,route)=>items.map(x=>`<button class="pd-item" data-route="${route}"><strong>${e(x.title)}</strong><small>${x.starts_at?e(new Date(x.starts_at).toLocaleString('en-IN',{timeZone:d.tz,dateStyle:'medium',timeStyle:'short'})):''}</small>${x.body?`<p>${e(x.body.slice(0,180))}</p>`:''}</button>`).join('');
     const upcoming=rows('events').filter(x=>!['cancelled','deleted'].includes(x.status)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));

@@ -3,9 +3,12 @@
 const E=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=name=>window.NOOR_UI_POLISH?.icon(name)||'';
 function secondary(classes,sections,students,sessions,records,day){
- const classNumber=c=>Number(String(c.name||'').match(/\d+/)?.[0]||0);
- const chosen=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b));
- if(!chosen.length)return '<p class="pd-empty">No classes 6–10 have been created yet.</p>';
+ const ordinal={first:1,second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10};
+ const classNumber=c=>{const name=String(c.name||'').trim().toLowerCase(),numeric=name.match(/\\d+/);if(numeric)return Number(numeric[0]);const word=name.match(/\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\\b/);return word?ordinal[word[1]]:Number(c.sort_order)||0;};
+ const classLabel=c=>String(c.name||'').trim().replace(/^class\\s*/i,'');
+ const sectionLabel=s=>String(s.name||'').trim().replace(/^section\\s*/i,'');
+ const chosen=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b)||String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+ if(!chosen.length)return '<p class="pd-empty">No secondary classes 6–10 have been created yet.</p>';
  const submitted=new Set(sessions.filter(x=>x.attendance_date===day&&x.status==='submitted').map(x=>x.id));
  const enrolled=new Set(students.map(s=>s.id)),latest=new Map();
  for(const record of records){
@@ -14,20 +17,18 @@ function secondary(classes,sections,students,sessions,records,day){
   if(!old||String(record.updated_at||record.marked_at||'')>String(old.updated_at||old.marked_at||''))latest.set(record.student_id,record);
  }
  const groups=chosen.map(c=>{
-  const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
-  const loose=students.filter(s=>s.class_id===c.id&&!secs.some(x=>x.id===s.section_id));
-  const parts=secs.map(sec=>({label:sec.name,axisLabel:String(classNumber(c))+String(sec.name||'').replace(/^section\s*/i,'').trim(),students:students.filter(s=>s.class_id===c.id&&s.section_id===sec.id)}));
-  if(loose.length||!parts.length)parts.push({label:secs.length?'Unassigned':'All',axisLabel:String(classNumber(c))+(secs.length?' Other':' All'),students:loose});
-  return{name:c.name,entries:parts.map(part=>{
-   const marked=part.students.map(s=>latest.get(s.id)).filter(Boolean);
-   return{label:part.label,axisLabel:part.axisLabel,total:part.students.length,marked:marked.length,present:marked.filter(x=>x.status==='present').length,absent:marked.filter(x=>x.status==='absent').length,late:marked.filter(x=>x.status==='late').length,leave:marked.filter(x=>['leave','excused'].includes(x.status)).length};
+  const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(sectionLabel(a)).localeCompare(String(sectionLabel(b)),undefined,{numeric:true}));
+  return{name:c.name,entries:secs.map(sec=>{
+   const roster=students.filter(s=>s.class_id===c.id&&s.section_id===sec.id),marked=roster.map(s=>latest.get(s.id)).filter(Boolean);
+   return{label:sectionLabel(sec),axisLabel:classLabel(c)+' '+sectionLabel(sec),total:roster.length,marked:marked.length,present:marked.filter(x=>x.status==='present').length,absent:marked.filter(x=>x.status==='absent').length,late:marked.filter(x=>x.status==='late').length,leave:marked.filter(x=>['leave','excused'].includes(x.status)).length};
   })};
- });
+ }).filter(group=>group.entries.length);
+ if(!groups.length)return '<p class="pd-empty">No sections have been created for secondary classes yet. Create sections to view attendance by section.</p>';
  const entries=groups.flatMap(g=>g.entries),highest=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));
  const step=Math.max(1,Math.ceil(highest/25)),maximum=5*step,left=44,base=244,plot=190;
- const widths=groups.map(g=>Math.max(140,g.entries.length*73+18)),width=Math.max(650,left+widths.reduce((sum,v)=>sum+v,0)+18);
+ const widths=groups.map(g=>Math.max(140,g.entries.length*92+18)),width=Math.max(650,left+widths.reduce((sum,v)=>sum+v,0)+18);
  const scale=n=>plot*n/maximum;
- let svg='<svg class="pd-secondary-svg" viewBox="0 0 '+width+' 320" role="img" aria-label="Section-wise present, absent and late attendance for classes 6 to 10"><title>Actual submitted attendance by class and section</title>';
+ let svg='<svg class="pd-secondary-svg" viewBox="0 0 '+width+' 320" role="img" aria-label="Secondary attendance by class and section, in class and section order"><title>Actual submitted attendance by secondary class and section</title>';
  for(let i=0;i<=5;i++){
   const count=i*step,y=base-scale(count);
   svg+='<path d="M'+left+' '+y+'H'+(width-12)+'" stroke="currentColor" opacity=".16"/><text x="'+(left-10)+'" y="'+(y+4)+'" text-anchor="end" fill="currentColor" font-size="12">'+count+'</text>';
@@ -37,14 +38,14 @@ function secondary(classes,sections,students,sessions,records,day){
   const groupWidth=widths[groups.indexOf(group)],slot=groupWidth/group.entries.length;
   for(let j=0;j<group.entries.length;j++){
    const section=group.entries[j],x=start+slot*(j+.5),num=section.marked?String(section.present):'—';
-   svg+='<g><title>'+E(group.name)+' · '+E(section.label)+': '+(section.marked?section.present+' present, '+section.absent+' absent, '+section.late+' late, '+section.leave+' on leave; '+section.marked+' marked of '+section.total:'Attendance not submitted; '+section.total+' enrolled')+'</title>';
+   svg+='<g><title>'+E(section.axisLabel)+': '+(section.marked?section.present+' present, '+section.absent+' absent, '+section.late+' late, '+section.leave+' on leave; '+section.marked+' marked of '+section.total:'Attendance not submitted; '+section.total+' enrolled')+'</title>';
    if(section.marked){
     svg+='<rect x="'+(x-20)+'" y="'+(base-scale(section.present))+'" width="23" height="'+scale(section.present)+'" rx="2" fill="var(--pd-ref-accent,var(--berry))"/>';
     svg+='<rect x="'+(x+5)+'" y="'+(base-scale(section.absent))+'" width="8" height="'+scale(section.absent)+'" rx="1" fill="var(--pd-ref-border,var(--rose-line))"/>';
     svg+='<rect x="'+(x+15)+'" y="'+(base-scale(section.late))+'" width="8" height="'+scale(section.late)+'" rx="1" fill="var(--pd-ref-gold,var(--gold))"/>';
    }
    svg+='<text x="'+(x-9)+'" y="'+(base-scale(section.present)-8)+'" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="15" font-weight="750">'+num+'</text>';
-   svg+='<text x="'+x+'" y="266" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="12" font-weight="700">'+E(section.axisLabel||section.label)+'</text></g>';
+   svg+='<text x="'+x+'" y="266" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="12" font-weight="700">'+E(section.axisLabel)+'</text></g>';
   }
   svg+='<rect x="'+(start+8)+'" y="279" width="'+(groupWidth-16)+'" height="29" rx="11" fill="var(--pd-ref-soft,var(--rose-soft))"/>';
   svg+='<text x="'+(start+groupWidth/2)+'" y="298" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="750">'+E(group.name)+'</text>';

@@ -85,3 +85,18 @@
  #workspace .content{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
  #workspace .sidebar-bottom{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 }
+
+
+/* Mobile role shortcuts are intentionally removed: all role navigation lives in the left drawer. */
+#workspace #noorMobileNav,
+#workspace #noor-principal .pd-mobile{display:none!important}
+#workspace .sidebar{display:flex;flex-direction:column;min-height:100dvh}
+#workspace .sidebar #mainNav{flex:1 0 auto}
+#workspace .sidebar .sidebar-bottom{margin-top:auto;flex:0 0 auto;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+#workspace .sidebar .sidebar-bottom .noor-side-signout{
+ display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin-top:16px;
+ padding:11px 14px;border:1px solid var(--berry,#79253a);border-radius:11px;
+ background:var(--berry,#79253a);color:#fff!important;font:700 13px/1.3 system-ui;text-align:center;cursor:pointer;
+}
+#workspace .sidebar .sidebar-bottom .noor-side-signout:hover{filter:brightness(.94)}
+#workspace .sidebar .sidebar-bottom .noor-side-signout:focus-visible{outline:3px solid var(--gold,#c99c58);outline-offset:3px}

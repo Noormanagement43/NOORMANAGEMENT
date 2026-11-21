@@ -57,8 +57,8 @@ test('secondary attendance uses true A/B labels, actual submitted records and th
   [{session_id:'session1',student_id:'student1',status:'present'}],
   '2026-11-18'
  );
- assert.match(html,/>6A<\/text>/);
- assert.match(html,/>7B<\/text>/);
+ assert.match(html,/ >Sixth A<\/text>/);
+ assert.match(html,/>Seventh B<\/text>/);
  assert.match(html,/Class 6/);
  assert.match(html,/Present: 1 \/ 2/);
  assert.match(html,/Attendance: 50%/);

@@ -77,7 +77,10 @@ function setup(){
           <span id="pd-status" role="status">Syncing school records…</span>
           <button class="pd-link" id="pd-refresh">↻ Refresh</button>
         </div>
-        <div class="pd-focus-row" aria-label="Section attendance and periods running now">
+        <div class="pd-charts pd-primary-attendance">
+          ${card('Primary Attendance (Classes 1 – 5)','pd-classes','attendance','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
+        </div>
+        <div class="pd-focus-row" aria-label="Secondary attendance and periods running now">
           <section class="pd-card pd-secondary-card" data-feature-view="attendance">
             <header class="pd-focus-heading"><h2>Secondary Attendance</h2></header>
             <div id="pd-trend"><p class="pd-empty">Loading actual attendance…</p></div>
@@ -90,9 +93,6 @@ function setup(){
             <div id="pd-periods"><p class="pd-empty">Checking current periods…</p></div>
             <button class="pd-running-view" id="pd-timetable" type="button">View Staff <span aria-hidden="true">→</span></button>
           </section>
-        </div>
-        <div class="pd-charts">
-          ${card('Class-wise Attendance (Classes 1 – 5)','pd-classes','classes','Manage →',`<button type="button" class="pd-btn" id="pd-quick-add-class" style="padding:4px 8px;font-size:10px">+ Class</button><button type="button" class="pd-btn" id="pd-quick-add-section" style="padding:4px 8px;font-size:10px">+ Section</button>`)}
         </div>
         <div class="pd-reference-bottom">
         <section class="pd-card pd-reference-actions"><header><h2>${window.NOOR_UI_POLISH?.icon('warning')||''} Action Required</h2></header><div id="pd-actions"></div></section>

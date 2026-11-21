@@ -5,7 +5,7 @@ const icon=name=>window.NOOR_UI_POLISH?.icon(name)||'';
 function secondary(classes,sections,students,sessions,records,day){
  const ordinal={first:1,second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10};
  const classNumber=c=>{const name=String(c.name||'').trim().toLowerCase(),numeric=name.match(/\\d+/);if(numeric)return Number(numeric[0]);const word=name.match(/\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\\b/);return word?ordinal[word[1]]:Number(c.sort_order)||0;};
- const classLabel=c=>String(c.name||'').trim().replace(/^class\\s*/i,'');
+ const ordinalNames={6:'Sixth',7:'Seventh',8:'Eighth',9:'Ninth',10:'Tenth'};\n const classLabel=c=>ordinalNames[classNumber(c)]||String(c.name||'').trim().replace(/^class\\s*/i,'');
  const sectionLabel=s=>String(s.name||'').trim().replace(/^section\\s*/i,'');
  const chosen=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b)||String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
  if(!chosen.length)return '<p class="pd-empty">No secondary classes 6–10 have been created yet.</p>';

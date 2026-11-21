@@ -1,0 +1,24 @@
+.noor-secondary-settings{color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:16px;margin:16px 0;padding:clamp(16px,2.5vw,24px);box-shadow:var(--shadow)}
+.noor-secondary-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.noor-secondary-settings-head h2{font:800 19px/1.25 Manrope,system-ui,sans-serif;color:var(--berry);margin:5px 0 7px}
+.noor-secondary-settings-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.65;max-width:720px}
+.noor-secondary-settings-count{display:inline-flex;align-items:center;min-height:32px;padding:6px 11px;border-radius:30px;background:var(--rose-soft);color:var(--berry);font-size:11px;font-weight:800;white-space:nowrap}
+.noor-secondary-settings-toolbar{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 14px}
+.noor-secondary-settings-search{display:grid;gap:6px;flex:1 1 240px;min-width:0;color:var(--muted);font-size:11px;font-weight:700}
+.noor-secondary-settings-search .noor-input-clear-wrap{width:100%}
+.noor-secondary-settings-search input{width:100%;min-width:0;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--canvas);color:var(--ink);padding:9px 38px 9px 11px;font:inherit;font-weight:500}
+.noor-secondary-settings-actions{display:flex;gap:8px;flex-wrap:wrap}
+.noor-secondary-settings-actions .btn{min-height:40px;font-size:11px}
+.noor-secondary-settings-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:360px;overflow:auto;padding:2px}
+.noor-secondary-class-option{display:flex;align-items:flex-start;gap:11px;min-width:0;border:1px solid var(--line);border-radius:11px;background:var(--paper);padding:12px;cursor:pointer}
+.noor-secondary-class-option:has(input:checked){border-color:var(--berry);background:var(--rose-soft)}
+.noor-secondary-class-option input{width:18px;height:18px;flex:0 0 18px;margin:2px 0 0;accent-color:var(--berry)}
+.noor-secondary-class-copy{display:grid;gap:4px;min-width:0}
+.noor-secondary-class-copy strong{font-size:12px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+.noor-secondary-class-copy small{font-size:10px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.noor-secondary-settings-empty{grid-column:1/-1;text-align:center;padding:24px 12px;color:var(--muted);font-size:12px}
+.noor-secondary-settings-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+.noor-secondary-settings-footer p{flex:1 1 200px;margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+.noor-secondary-settings-footer .btn{min-width:130px;min-height:42px}
+[data-noor-mode=dark] .noor-secondary-class-option{background:var(--paper)}
+@media(max-width:620px){.noor-secondary-settings-list{grid-template-columns:1fr;max-height:320px}.noor-secondary-settings-actions{width:100%}.noor-secondary-settings-actions .btn{flex:1 1 auto}.noor-secondary-settings-footer .btn{width:100%}}

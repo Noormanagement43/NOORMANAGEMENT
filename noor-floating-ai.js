@@ -50,7 +50,7 @@
     if(window.innerWidth<=760){
       const nav=document.getElementById('noorMobileNav');
       const r=nav?.getBoundingClientRect();
-      return r&&r.height>20?Math.max(92,r.height+19):96;
+      return r&&r.height>20?Math.max(92,r.height+19):26;
     }
     return document.getElementById('noorSoundQuickControl')?78:28;
   }

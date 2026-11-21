@@ -524,8 +524,8 @@ function aggregate(students,sessions,records,day){
   return {present:marks.filter(x=>x.status!=='absent').length,marked:marks.length,total:students.length};
 }
 
-function graph(classes,sections,students,sessions,records,day){
-  return window.NOOR_PRINCIPAL_REFERENCE.secondary(classes,sections,students,sessions,records,day);
+function graph(classes,sections,students,sessions,records,day,selectedClassIds=null){
+  return window.NOOR_PRINCIPAL_REFERENCE.secondary(classes,sections,students,sessions,records,day,selectedClassIds);
 }
 
 function paintCommunications(){
@@ -645,7 +645,7 @@ async function refresh(){
     if(!classes.some(c=>classNumber(c)>=1&&classNumber(c)<=5))q('#pd-classes').innerHTML=empty('No primary classes yet. Use + Class button above to create Classes 1–5 and sections.');
 
     // Secondary Trend
-    q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day);
+    q('#pd-trend').innerHTML=attError||res.sections.error||res.classes.error?empty('Attendance could not be loaded.'):graph(classes,sections,students,sessions,records,d.day,canonical?res.secondaryClassIds:null);
 
     // The cards represent actual current school-time schedules, never invented staff.
     const periodError=res.periods.error||(!canonical&&(res.runs.error||res.teachers.error));
@@ -701,7 +701,7 @@ function connect(){
   if(channel)a().db.removeChannel(channel);identity=key;
   const db=a().db;channel=db.channel('noor-principal-'+key);
   if(window.NOOR_PRINCIPAL_DATA?.current()){
-    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons','noor_staff_checkins','noor_manager_activity'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
+    for(const table of ['institution_memberships','academic_groups','academic_group_memberships','teacher_timetable_periods','class_sessions','attendance_records','noor_calendar_events','noor_learning_items','noor_daily_period_lessons','noor_staff_checkins','noor_manager_activity','institution_dashboard_preferences'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'institution_id=eq.'+a().schoolId},refresh);
   }else{
   for(const table of ['noor_teacher_periods','noor_teacher_period_runs','noor_staff_attendance','attendance_sessions','attendance_records','noor_teacher_lesson_logs','school_notices','calendar_events','school_tasks','profiles','classes','noor_principal_dashboard_settings'])channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'school_id=eq.'+a().schoolId},refresh);
   channel.on('postgres_changes',{event:'*',schema:'public',table:'sections'},refresh);

@@ -2,14 +2,21 @@
 (()=>{'use strict';
 const E=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=name=>window.NOOR_UI_POLISH?.icon(name)||'';
-function secondary(classes,sections,students,sessions,records,day){
- const ordinal={first:1,second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10};
- const classNumber=c=>{const name=String(c.name||'').trim().toLowerCase(),numeric=name.match(/\d+/);if(numeric)return Number(numeric[0]);const word=name.match(/\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b/);return word?ordinal[word[1]]:Number(c.sort_order)||0;};
- const ordinalNames={6:'Sixth',7:'Seventh',8:'Eighth',9:'Ninth',10:'Tenth'};
- const classLabel=c=>ordinalNames[classNumber(c)]||String(c.name||'').trim().replace(/^class\s*/i,'');
- const sectionLabel=s=>String(s.name||'').trim().replace(/^section\s*/i,'');
- const chosen=classes.filter(c=>classNumber(c)>=6&&classNumber(c)<=10).sort((a,b)=>classNumber(a)-classNumber(b)||String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
- if(!chosen.length)return '<p class="pd-empty">No secondary classes 6–10 have been created yet.</p>';
+function secondary(classes,sections,students,sessions,records,day,selectedClassIds=null){
+ const numericRank=c=>{
+  const name=String(c.name||'').trim().toLowerCase(),numeric=name.match(/\d+/);
+  if(numeric)return Number(numeric[0]);
+  const words={first:1,second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10};
+  const word=name.match(/\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b/);
+  return word?words[word[1]]:(Number(c.sort_order)||9999);
+ };
+ const defaultIds=classes.filter(c=>{
+  const rank=numericRank(c),path=c.education_path||'school';
+  return path==='school'&&rank>=6&&rank<=10;
+ }).map(c=>String(c.id));
+ const chosenIds=new Set(Array.isArray(selectedClassIds)?selectedClassIds.map(String):defaultIds);
+ const chosen=classes.filter(c=>c.is_active!==false&&chosenIds.has(String(c.id))).sort((a,b)=>numericRank(a)-numericRank(b)||String(a.name||'').localeCompare(String(b.name||''),undefined,{numeric:true,sensitivity:'base'}));
+ if(!chosen.length)return '<p class="pd-empty">No secondary classes selected. Choose classes or streams in Settings → Secondary Attendance Classes.</p>';
  const submitted=new Set(sessions.filter(x=>x.attendance_date===day&&x.status==='submitted').map(x=>x.id));
  const enrolled=new Set(students.map(s=>s.id)),latest=new Map();
  for(const record of records){
@@ -18,25 +25,26 @@ function secondary(classes,sections,students,sessions,records,day){
   if(!old||String(record.updated_at||record.marked_at||'')>String(old.updated_at||old.marked_at||''))latest.set(record.student_id,record);
  }
  const groups=chosen.map(c=>{
-  const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(sectionLabel(a)).localeCompare(String(sectionLabel(b)),undefined,{numeric:true}));
-  return{name:c.name,entries:secs.map(sec=>{
+  const secs=sections.filter(s=>s.class_id===c.id).sort((a,b)=>String(a.name||'').replace(/^section\s*/i,'').localeCompare(String(b.name||'').replace(/^section\s*/i,''),undefined,{numeric:true,sensitivity:'base'}));
+  return{name:String(c.name||'Class'),entries:secs.map(sec=>{
+   const label=String(sec.name||'').trim().replace(/^section\s*/i,'')||'—';
    const roster=students.filter(s=>s.class_id===c.id&&s.section_id===sec.id),marked=roster.map(s=>latest.get(s.id)).filter(Boolean);
-   return{label:sectionLabel(sec),axisLabel:classLabel(c)+' '+sectionLabel(sec),total:roster.length,marked:marked.length,present:marked.filter(x=>x.status==='present').length,absent:marked.filter(x=>x.status==='absent').length,late:marked.filter(x=>x.status==='late').length,leave:marked.filter(x=>['leave','excused'].includes(x.status)).length};
+   return{label,axisLabel:String(c.name||'Class')+' · '+label,total:roster.length,marked:marked.length,present:marked.filter(x=>x.status==='present').length,absent:marked.filter(x=>x.status==='absent').length,late:marked.filter(x=>x.status==='late').length,leave:marked.filter(x=>['leave','excused'].includes(x.status)).length};
   })};
  }).filter(group=>group.entries.length);
- if(!groups.length)return '<p class="pd-empty">No sections have been created for secondary classes yet. Create sections to view attendance by section.</p>';
+ if(!groups.length)return '<p class="pd-empty">The selected classes do not have active sections yet. Add sections in Classes & Sections to show attendance.</p>';
  const entries=groups.flatMap(g=>g.entries),highest=Math.max(1,...entries.map(x=>Math.max(x.total,x.present,x.absent,x.late)));
  const step=Math.max(1,Math.ceil(highest/25)),maximum=5*step,left=44,base=244,plot=190;
  const widths=groups.map(g=>Math.max(140,g.entries.length*92+18)),width=Math.max(650,left+widths.reduce((sum,v)=>sum+v,0)+18);
  const scale=n=>plot*n/maximum;
- let svg='<svg class="pd-secondary-svg" viewBox="0 0 '+width+' 320" role="img" aria-label="Secondary attendance by class and section, in class and section order"><title>Actual submitted attendance by secondary class and section</title>';
+ let svg='<svg class="pd-secondary-svg" viewBox="0 0 '+width+' 320" role="img" aria-label="Secondary attendance grouped by selected class and section"><title>Actual submitted attendance by class and section</title>';
  for(let i=0;i<=5;i++){
   const count=i*step,y=base-scale(count);
   svg+='<path d="M'+left+' '+y+'H'+(width-12)+'" stroke="currentColor" opacity=".16"/><text x="'+(left-10)+'" y="'+(y+4)+'" text-anchor="end" fill="currentColor" font-size="12">'+count+'</text>';
  }
  let start=left;
  for(const group of groups){
-  const groupWidth=widths[groups.indexOf(group)],slot=groupWidth/group.entries.length;
+  const groupIndex=groups.indexOf(group),groupWidth=widths[groupIndex],slot=groupWidth/group.entries.length;
   for(let j=0;j<group.entries.length;j++){
    const section=group.entries[j],x=start+slot*(j+.5),num=section.marked?String(section.present):'—';
    svg+='<g><title>'+E(section.axisLabel)+': '+(section.marked?section.present+' present, '+section.absent+' absent, '+section.late+' late, '+section.leave+' on leave; '+section.marked+' marked of '+section.total:'Attendance not submitted; '+section.total+' enrolled')+'</title>';
@@ -46,7 +54,7 @@ function secondary(classes,sections,students,sessions,records,day){
     svg+='<rect x="'+(x+15)+'" y="'+(base-scale(section.late))+'" width="8" height="'+scale(section.late)+'" rx="1" fill="var(--pd-ref-gold,var(--gold))"/>';
    }
    svg+='<text x="'+(x-9)+'" y="'+(base-scale(section.present)-8)+'" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="15" font-weight="750">'+num+'</text>';
-   svg+='<text x="'+x+'" y="266" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="12" font-weight="700">'+E(section.axisLabel)+'</text></g>';
+   svg+='<text x="'+x+'" y="266" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="12" font-weight="700">'+E(section.label)+'</text></g>';
   }
   svg+='<rect x="'+(start+8)+'" y="279" width="'+(groupWidth-16)+'" height="29" rx="11" fill="var(--pd-ref-soft,var(--rose-soft))"/>';
   svg+='<text x="'+(start+groupWidth/2)+'" y="298" text-anchor="middle" fill="var(--pd-ref-ink,var(--ink))" font-size="13" font-weight="750">'+E(group.name)+'</text>';
@@ -55,8 +63,8 @@ function secondary(classes,sections,students,sessions,records,day){
  svg+='</svg>';
  const totals=entries.reduce((all,r)=>({total:all.total+r.total,present:all.present+r.present,marked:all.marked+r.marked,leave:all.leave+r.leave}),{total:0,present:0,marked:0,leave:0});
  const percent=totals.total?Math.round(1000*totals.present/totals.total)/10:0;
- return '<div class="pd-secondary-subhead"><span>Classes 6–10 · Section-wise</span><div class="pd-secondary-legend"><span><i class="present"></i>Present</span><span><i class="absent"></i>Absent</span><span><i class="late"></i>Late</span></div></div>'+
- '<div class="pd-secondary-scroll" tabindex="0" aria-label="Scroll to see all class and section attendance groups">'+svg+'</div>'+
+ return '<div class="pd-secondary-subhead"><span>Section-wise · Selected classes</span><div class="pd-secondary-legend"><span><i class="present"></i>Present</span><span><i class="absent"></i>Absent</span><span><i class="late"></i>Late</span></div></div>'+
+ '<div class="pd-secondary-scroll" tabindex="0" aria-label="Scroll to see all selected class and section attendance groups">'+svg+'</div>'+
  '<div class="pd-secondary-summary">'+(totals.marked?'Present: '+totals.present+' / '+totals.total+' <span aria-hidden="true">•</span> Attendance: '+percent+'%':'Attendance not submitted today')+'</div>'+
  '<p class="pd-muted">'+totals.marked+' marked · '+(totals.total-totals.marked)+' unmarked'+(totals.leave?' · '+totals.leave+' on leave':'')+' · Counts reflect real submitted records; unmarked is not absent.</p>';
 }

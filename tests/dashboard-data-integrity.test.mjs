@@ -23,7 +23,7 @@ test('principal analytics use recorded submissions and no benchmark fallback',as
   const code=await source('noor-principal-reference-ui.js');
   assert.doesNotMatch(code,/mock-c|Classes 6 – 10 Benchmark|Present \(Optimal\)|\[92, 88, 95, 85, 90\]/);
   assert.match(code,/attendance_date===day&&x\.status==='submitted'/);
-  assert.match(code,/No classes 6–10 have been created yet/);
+  assert.match(code,/No secondary classes 6–10 have been created yet/);
 });
 
 test('teacher dashboard metrics are drawn from real period records',async()=>{

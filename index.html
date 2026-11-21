@@ -226,7 +226,7 @@ body.noor-principal-mode #noor-principal #pd-profile .pd-profile-info{padding:22
       <div class="brand"><img class="nmark" src="./noor-official-logo.svg?v=20261020-brand1" width="52" height="52" alt="Noor School Management logo"><div><b>NOOR</b><small>SCHOOL MANAGEMENT</small></div></div>
       <div class="schoolbadge"><div class="school-logo" id="sidebarSchoolLogo">N</div><div><b id="sidebarSchoolName">My school workspace</b><small id="sidebarRole">Student workspace</small></div></div>
       <div class="navlabel">Workspace</div><nav class="nav" id="mainNav"></nav>
-      <div class="sidebar-bottom"><b id="sideUserName">Account</b><span id="sideUserEmail">Signed in securely</span><br>NOOR School Management · Learning, organised.<button type="button" class="noor-side-signout" id="sidebarSignOut">Sign out</button></div>
+      <div class="sidebar-bottom"><b id="sideUserName">Account</b><span id="sideUserEmail">Signed in securely</span><br>NOOR School Management · Learning, organised.<button type="button" class="noor-side-signout" id="sidebarSignOut" aria-label="Log out">Log out</button></div>
     </aside>
     <section class="main">
       <header class="topbar"><div class="row"><button class="mobilemenu" id="mobileMenu" aria-label="Open navigation">☰</button><div><div class="crumb"><span id="crumbBrand">NOOR School Management</span> / <b id="breadcrumb">Overview</b></div><div class="small-note" id="topCaption">Your authorised school workspace</div></div></div><label class="noor-ref-search" aria-label="Search dashboard sections"><span aria-hidden="true">⌕</span><input type="search" id="noorReferenceNavSearch" placeholder="Search workspace pages..." autocomplete="off" aria-label="Search workspace sections"><div id="noorReferenceSearchResults" class="noor-ref-search-results" role="listbox" hidden></div></label><div class="user-mini"><button type="button" class="noor-header-ai" id="noorHeaderAI" aria-label="Open AI chatbot" aria-haspopup="dialog"><img class="noor-header-ai-avatar" src="./assets/guide-avatar.png" alt="" aria-hidden="true"><span>AI</span></button><button type="button" class="avatar" id="topAvatar" aria-label="Open profile settings">N</button><div><b id="topName">My profile</b><small id="topRole">Account</small></div><button class="btn light" id="logoutBtn" type="button" style="padding:9px 11px;margin-left:5px">Sign out</button></div></header>
@@ -399,7 +399,7 @@ function renderWorkspace(){
 
   const sideFooter = document.querySelector('.sidebar-bottom');
   if (sideFooter) {
-    sideFooter.innerHTML = `<b id="sideUserName">${escapeHtml(name)}</b><span id="sideUserEmail">${escapeHtml(currentProfile?.email||currentUser?.email||'')}</span><br>${isSchoolScope ? escapeHtml(schoolName) : 'NOOR School Management'} · Learning, organised.<button type="button" class="noor-side-signout" id="sidebarSignOut">Sign out</button>`;
+    sideFooter.innerHTML = `<b id="sideUserName">${escapeHtml(name)}</b><span id="sideUserEmail">${escapeHtml(currentProfile?.email||currentUser?.email||'')}</span><br>${isSchoolScope ? escapeHtml(schoolName) : 'NOOR School Management'} · Learning, organised.<button type="button" class="noor-side-signout" id="sidebarSignOut" aria-label="Log out">Log out</button>`;
     sideFooter.querySelector('#sidebarSignOut')?.addEventListener('click',()=>document.getElementById('logoutBtn')?.click());
   }
 

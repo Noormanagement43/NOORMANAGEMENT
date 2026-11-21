@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 const awaitProfileValidator=await fs.readFile(new URL('../noor-profile-editor.js',import.meta.url),'utf8');
 const source=await fs.readFile(new URL('../noor-teacher-data.js',import.meta.url),'utf8');
-function setup({mismatch=false}={}){
+function setup({mismatch=false,access=null}={}){
  const writes=[],user={id:mismatch?'other':'own',email:'teacher@example.invalid',user_metadata:{noor_contact:{phone:'9876543210',joined_on:'2026-01-02',qualification:'B.Ed'}}};
  const membership={id:'teacher-member',user_id:'own',institution_id:'school',role:'teacher',status:'active',joined_at:'2026-01-02T00:00:00Z'};
  const groups=[{id:'class',name:'Class 4',group_type:'class',is_active:true},{id:'section',name:'Section B',group_type:'section',parent_group_id:'class',is_active:true}];
@@ -12,7 +12,7 @@ function setup({mismatch=false}={}){
  const app={user:{id:'own'},schoolId:'school',school:{timezone:'Asia/Kolkata'},profile:{role:'teacher',full_name:'Teacher'},db:null};
  const db={auth:{getUser:async()=>({data:{user}}),updateUser:async value=>{writes.push(value);Object.assign(user.user_metadata,value.data);return{data:{user}};}},from(table){if(!(table in tables)&&table!=='profiles')throw Error('Legacy table used: '+table);let patch;const q={select(){return q;},eq(){return q;},order(){return q;},gte(){return q;},limit(){return q;},range(){return q;},update(v){writes.push({table,...v});patch=v;return q;},single:async()=>({data:patch}),maybeSingle:async()=>({data:tables[table]}),then(resolve){resolve({data:tables[table]});}};return q;},rpc:async(name,args)=>{writes.push({name,args});return{data:{status:'present'}};}};
  app.db=db;
- const w={NOOR_AI_APP:app,NOOR_ACCOUNT_CONTEXT:{enabled:()=>true},NOOR_SCHOOL_STRUCTURE:{fetchGroups:async()=>groups},NOOR_SHARED_TIMETABLE:{schoolDay:()=> '2026-11-06',context:async()=>({db,userId:'own',membership,school:{id:'school',timezone:'Asia/Kolkata'}}),load:async()=>({data:[{id:'one',teacher_membership_id:'teacher-member',completed:true},{id:'two',teacher_membership_id:'teacher-member'},{id:'other',teacher_membership_id:'other-member'}]})},dispatchEvent(){}};
+ const w={NOOR_PLATFORM_ACCESS:access,NOOR_AI_APP:app,NOOR_ACCOUNT_CONTEXT:{enabled:()=>true},NOOR_SCHOOL_STRUCTURE:{fetchGroups:async()=>groups},NOOR_SHARED_TIMETABLE:{schoolDay:()=> '2026-11-06',context:async()=>({db,userId:'own',membership,school:{id:'school',timezone:'Asia/Kolkata'}}),load:async()=>({data:[{id:'one',teacher_membership_id:'teacher-member',completed:true},{id:'two',teacher_membership_id:'teacher-member'},{id:'other',teacher_membership_id:'other-member'}]})},dispatchEvent(){}};
  vm.runInNewContext(awaitProfileValidator,{window:w});
  vm.runInNewContext(source,{window:w,Intl,Date,document:{getElementById:()=>null},CustomEvent:class{},console});return{api:w.NOOR_TEACHER_DATA,app,writes,user};
 }
@@ -33,4 +33,10 @@ test('teacher location persists and email changes stay pending confirmation',asy
 });
 test('invalid teacher email is rejected before any write',async()=>{
  const x=setup();await assert.rejects(()=>x.api.saveProfile({full_name:'Teacher',email:'invalid'}),/valid email/);assert.equal(x.writes.length,0);
+});
+
+
+test('Teacher Attendance OFF stops direct check-in before the backend RPC',async()=>{
+ const checked=[],x=setup({access:{requireFeature:async key=>{checked.push(key);throw Error('Teacher Attendance is OFF');}}});
+ await assert.rejects(()=>x.api.checkIn(),/Teacher Attendance is OFF/);assert.deepEqual(checked,['staff_attendance']);assert.equal(x.writes.length,0);
 });

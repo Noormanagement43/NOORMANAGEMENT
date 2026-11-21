@@ -11,7 +11,7 @@
   button.setAttribute('aria-label','Open Your School Assistant');
   button.setAttribute('aria-haspopup','dialog');
   button.title='Your School Assistant';
-  button.innerHTML='<span class="noor-floating-ai-icon" aria-hidden="true"><img src="./assets/school-assistant-avatar.webp?v=20261116-portrait-1" alt="" width="128" height="128"><i class="noor-floating-ai-indicator"></i></span>'+ 
+  button.innerHTML='<span class="noor-floating-ai-icon" aria-hidden="true"><img src="./assets/school-assistant-avatar.webp?v=20261116-portrait-1" alt="" width="128" height="128"><i class="noor-floating-ai-indicator"></i></span>'+
     '<span class="noor-floating-ai-copy"><strong>AI</strong></span>';
   document.body.appendChild(button);
 

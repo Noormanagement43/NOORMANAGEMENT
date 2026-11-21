@@ -9,3 +9,11 @@ function parentTimetable(links){const today=['Sunday','Monday','Tuesday','Wednes
 test('parent timetable only includes linked section and its class, never siblings or other schools',async()=>{const x=parentTimetable(['own']),r=await x.api.load();assert.equal(r.error,null);assert.deepEqual(Array.from(r.data,p=>p.id),['all','ownperiod']);assert.equal(x.writes.length,0);});
 test('no guardian links means no timetable records, without inferring access from a class name',async()=>{const x=parentTimetable([]),r=await x.api.load();assert.equal(r.error,null);assert.equal(r.data.length,0);assert.equal(r.guardianGroupCount,0);});
 test('check-in is the first teacher card and the header uses the existing avatar asset',()=>{const s=read('teacher-reference.js');assert.match(s,/wrapper.innerHTML='<div class="noor-t4">'\+checkinHTML/);assert.equal((s.match(/id="ntCheckIn"/g)||[]).length,1);const html=read('index.html');assert.match(html,/id="noorHeaderAI"[^>]+><img class="noor-header-ai-avatar" src="\.\/assets\/guide-avatar.png"/);assert.match(html,/NOOR_PARENT_DASHBOARD\?\.mount/);});
+
+
+test('current-period and first check-in cards declare their existing independent availability controls',()=>{
+ const a=experience(),html=a.readerFocus([]);assert.match(html,/data-feature-view="timetable"/);
+ assert.match(a.teacherFocus([],new Map()),/data-feature-view="timetable"/);
+ assert.match(read('teacher-reference.js'),/nt-checkin-first" data-feature-view="staff_attendance"/);
+ assert.match(read('noor-parent-dashboard.js'),/noor-live-periods" data-feature-view="timetable"/);
+});

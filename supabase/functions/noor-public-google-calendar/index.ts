@@ -50,6 +50,8 @@ export async function handle(req:Request){
  const db=createClient(url,anon,{global:{headers:{Authorization:token}},auth:{persistSession:false,autoRefreshToken:false}});
  const auth=await db.auth.getUser(token.slice(7));
  if(auth.error||!auth.data.user)return send(401,{error:'Invalid session'});
+ const availability=await db.rpc('noor_feature_access',{p_institution:id});
+ if(availability.error||availability.data?.paused||availability.data?.features?.calendar!==true)return send(403,{error:'Calendar is disabled or unavailable for this school'});
  const [membership,source]=await Promise.all([
   db.from('institution_memberships').select('id').eq('institution_id',id).eq('user_id',auth.data.user.id).eq('status','active').limit(1),
   db.from('noor_calendar_google_sources').select('calendar_id').eq('institution_id',id).maybeSingle()

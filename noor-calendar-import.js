@@ -134,6 +134,7 @@ function localNoonISO(day,zone){
  };let guess=base;for(let i=0;i<3;i++)guess+=base-partsOf(guess);return new Date(guess).toISOString();
 }
 async function verifyLeader(){
+ await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('calendar');
  const a=A();if(!a.schoolId||!a.user?.id||!leadership())throw Error('Only the principal or authorized school management can import a calendar.');
  const auth=await a.db.auth.getUser();if(auth.error||auth.data?.user?.id!==a.user.id)throw Error('Session expired. Sign in again.');
  const r=await a.db.from('institution_memberships').select('role,status').eq('institution_id',a.schoolId).eq('user_id',a.user.id).eq('status','active').maybeSingle();

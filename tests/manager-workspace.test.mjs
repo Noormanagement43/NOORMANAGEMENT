@@ -7,7 +7,7 @@ function setup(role='school_admin'){
  const user={id:'user'},school={id:'school',timezone:'Asia/Kolkata'},member={id:'member',role};
  const q={select(){return q},eq(){return q},single:async()=>({data:member})};
  const app={user,school,schoolId:school.id,profile:{role:'manager'},db:{auth:{getUser:async()=>({data:{user}})},from:()=>q}};
- const window={NOOR_AI_APP:app};runInNewContext(source,{window,Intl,Date});return{api:window.NOOR_MANAGER_WORKSPACE,app,member};
+ const window={NOOR_AI_APP:app};runInNewContext(source,{window,Intl,Date});return{api:window.NOOR_MANAGER_WORKSPACE,app,member,window};
 }
 test('manager access comes from current authenticated school membership, not profile role',async()=>{
  const x=setup();assert.equal((await x.api.context()).role,'school_admin');
@@ -29,4 +29,19 @@ test('attendance requires a status for every roster member',()=>{
 test('manager history escapes names and feedback and shows exact before/after values',()=>{
  const {api}=setup();const html=api.activityHTML([{actor_name:'<img src=x>',created_at:'2026-11-14T10:00:00Z',entity_table:'noor_assessment_results',action:'UPDATE',before_data:{marks:0},after_data:{marks:15,feedback:'<script>bad</script>'},class_label:'Class 5 A',student_name:'Student'}]);
  assert.ok(html.includes('&lt;img'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));assert.ok(html.includes('<td>0</td><td>15</td>'));
+});
+
+test('Manager OFF blocks direct workspace context before any membership lookup',async()=>{
+ const x=setup();let reads=0;x.app.db.from=()=>{reads++;throw Error('Unexpected read');};x.window.NOOR_PLATFORM_ACCESS={async requireFeature(key){assert.equal(key,'manager_tools');throw Error('Manager workspace is disabled by NOOR');}};
+ await assert.rejects(x.api.context(),/disabled by NOOR/);assert.equal(reads,0);
+});
+
+
+test('assistant direct attendance honors both Attendance and Manager availability before reading school data',async()=>{
+ for(const disabled of ['attendance','manager_tools']){
+  const x=setup(),checked=[];let reads=0;x.app.db.from=()=>{reads++;throw Error('Unexpected read');};
+  x.window.NOOR_PLATFORM_ACCESS={async requireFeature(key){checked.push(key);if(key===disabled)throw Error('Feature is OFF');}};
+  await assert.rejects(()=>x.api.openAttendance('group-a'),/Feature is OFF/);assert.equal(reads,0);
+  assert.deepEqual(checked,disabled==='attendance'?['attendance']:['attendance','manager_tools']);
+ }
 });

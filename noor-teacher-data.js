@@ -47,7 +47,7 @@ async function saveProfile(values){
  return 'Teacher profile saved.';
 }
 function syncHeader(){const a=A(),photo=a.profile?.avatar_url;for(const id of ['topName','sideUserName']){const el=document.getElementById(id);if(el)el.textContent=a.profile?.full_name||'Teacher';}const av=document.getElementById('topAvatar');if(av){av.innerHTML=photo&&/^https:\/\//.test(photo)?'<img src="'+E(photo)+'" alt="My profile photo">':'<span aria-label="Profile photo not uploaded">◉</span>';}}
-async function checkIn(){const c=await context(),r=await c.db.rpc('noor_teacher_check_in',{p_institution:c.school.id});if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:staff-checkin-saved'));return r.data;}
+async function checkIn(){await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('staff_attendance');const c=await context(),r=await c.db.rpc('noor_teacher_check_in',{p_institution:c.school.id});if(r.error)throw r.error;window.dispatchEvent(new CustomEvent('noor:staff-checkin-saved'));return r.data;}
 const shell=(title,body)=>'<div class="ta-page"><header class="ta-header"><h1>'+E(title)+'</h1><button class="ta-soft" type="button" data-back>← Dashboard</button></header>'+body+'</div>';
 let registerVersion=0;
 const attendanceStatuses=['present','absent','late','leave'];

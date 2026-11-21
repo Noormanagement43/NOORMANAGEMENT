@@ -70,6 +70,8 @@ export async function handle(req:Request):Promise<Response>{
    if(claimed.error||!record)return callbackPage(false);
    const member=await admin.from('institution_memberships').select('role').eq('institution_id',record.institution_id).eq('user_id',record.actor_id).eq('status','active').maybeSingle();
    if(member.error||!allowedRoles.includes(member.data?.role))return callbackPage(false);
+   const availability=await admin.rpc('noor_calendar_actor_access',{p_institution:record.institution_id,p_actor:record.actor_id});
+   if(availability.error||availability.data!==true)return callbackPage(false);
    const token=await getToken({grant_type:'authorization_code',code,redirect_uri:CALLBACK,code_verifier:record.verifier},conf);
    if(!token.refresh_token)return callbackPage(false);
    const sealed=await encrypt(token.refresh_token,conf.key);
@@ -96,6 +98,8 @@ export async function handle(req:Request):Promise<Response>{
  if(member.error||!member.data)return send(403,{error:'No access to this school'});
  const leader=allowedRoles.includes(member.data.role);
  if(['start','calendars','select','outbound','publish','deletePublished','disconnect'].includes(action)&&!leader)return send(403,{error:'Only school management may change Google connection'});
+ const availability=await admin.rpc('noor_calendar_actor_access',{p_institution:school,p_actor:actor});
+ if(availability.error||availability.data!==true)return send(403,{error:'Calendar is disabled or unavailable for this school'});
  const recordResponse=await admin.from('noor_google_oauth_credentials').select('*').eq('institution_id',school).maybeSingle();
  if(recordResponse.error)return send(503,{error:'Google Calendar settings unavailable'});
  const record=recordResponse.data;

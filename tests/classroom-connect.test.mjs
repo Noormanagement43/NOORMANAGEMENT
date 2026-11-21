@@ -15,3 +15,9 @@ test('teacher publishes homework to another school class without changing My Cla
 test('chat accepts photos and PDF up to 5 MB and rejects executable or empty uploads',()=>{const x=setup();for(const type of ['image/jpeg','image/png','image/webp','application/pdf'])assert.equal(x.api.validateChatFile({type,size:5242880,name:'file'}).type,type);for(const file of [{type:'text/html',size:10},{type:'image/svg+xml',size:10},{type:'image/png',size:0},{type:'application/pdf',size:5242881}])assert.throws(()=>x.api.validateChatFile(file),/under 5 MB/);});
 test('chat attachments use the private chat bucket and escape stored filenames',async()=>{const x=setup();x.db.storage.from=bucket=>{assert.equal(bucket,'noor-chat-files');return {createSignedUrl:async(path,seconds)=>{assert.equal(path,'school/student/question.pdf');assert.equal(seconds,900);return {data:{signedUrl:'https://private.invalid/file?token=one&download=1'}};}};};const html=await x.api.questionAttachment({attachment_path:'school/student/question.pdf',attachment_type:'application/pdf',attachment_name:'<script>.pdf'});assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>/);assert.match(html,/noopener noreferrer/);});
 test('account changes during file URL signing cannot expose the previous conversation',async()=>{const x=setup();x.db.storage.from=()=>({createSignedUrl:async()=>{x.app.user.id='another';return {data:{signedUrl:'https://private.invalid/file'}};}});await assert.rejects(()=>x.api.questionAttachment({attachment_path:'old.pdf'}),/Account changed/);});
+
+
+test('Ask My Teacher direct chat entry checks Diary availability before reading or uploading',async()=>{
+ const x=setup(),checked=[];x.window.NOOR_PLATFORM_ACCESS={requireFeature:async key=>{checked.push(key);throw Error('Chat is OFF');}};
+ await assert.rejects(()=>x.api.studentQuestions({}),/Chat is OFF/);assert.deepEqual(checked,['diary']);assert.equal(x.writes.length,0);
+});

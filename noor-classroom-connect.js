@@ -18,6 +18,7 @@ async function questionAttachment(q){
  const url=E(r.data.signedUrl),name=E(q.attachment_name||'Attachment');return '<a class="nc-chat-attachment" href="'+url+'" target="_blank" rel="noopener noreferrer">'+(q.attachment_type?.startsWith('image/')?'<img src="'+url+'" alt="'+name+'" loading="lazy">':'<span>PDF · '+name+'</span>')+'</a>';
 }
 async function studentQuestions(host,chosen=null){
+ await window.NOOR_PLATFORM_ACCESS?.requireFeature?.('diary');
  const uid=A().user?.id,sid=A().schoolId,member=A().profile?.membership_id;
  let st=chatStates.get(host);if(!st||st.uid!==uid||st.sid!==sid||st.member!==member){st={uid,sid,member,chosen:null,drafts:new Map(),limit:50,version:0,search:''};chatStates.set(host,st);}
  if(chosen)st.chosen=chosen;const version=++st.version,valid=()=>A().user?.id===uid&&A().schoolId===sid&&A().profile?.membership_id===member&&st.version===version;
